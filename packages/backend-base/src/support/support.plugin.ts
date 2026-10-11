@@ -171,7 +171,7 @@ const plugin = new Elysia()
 
         return { success: true };
       },
-      { parse: ({ request }) => request.text() },
+      { parse: "text" },
     ),
   );
 

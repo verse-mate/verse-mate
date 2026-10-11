@@ -6,8 +6,31 @@ import { SupportRepository } from "../repository/support.repository";
 
 const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
 
+const SLACK_SECTION_MAX_LENGTH = 3000;
+
 const escapeSlackText = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const decodeSlackText = (value: string) =>
+  value.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+const slackSections = (text: string) => {
+  const chunks = [""];
+  for (const char of text) {
+    const escaped = escapeSlackText(char);
+    if (
+      chunks[chunks.length - 1].length + escaped.length >
+      SLACK_SECTION_MAX_LENGTH
+    ) {
+      chunks.push("");
+    }
+    chunks[chunks.length - 1] += escaped;
+  }
+  return chunks.map((chunk) => ({
+    type: "section" as const,
+    text: { type: "mrkdwn" as const, text: chunk },
+  }));
+};
 
 export class SupportService {
   private slackClient: WebClient;
@@ -54,13 +77,7 @@ export class SupportService {
             text: `*New Support Request*\n*User:* ${userName}\n*Email:* ${userEmail}${subjectLine}`,
           },
         },
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: escapeSlackText(text),
-          },
-        },
+        ...slackSections(text),
       ],
     });
 
@@ -106,11 +123,12 @@ export class SupportService {
       "user" as SupportSenderEnum,
     );
 
-    // 3. Post reply to Slack thread
+    const sections = slackSections(text);
     await this.slackClient.chat.postMessage({
       channel: this.channelId,
       thread_ts: conversation.slack_thread_ts,
-      text: escapeSlackText(text),
+      text: sections[0].text.text,
+      blocks: sections,
     });
 
     // 4. Update last_message_at
@@ -126,16 +144,23 @@ export class SupportService {
       return { success: true, ignored: true };
     }
 
-    if (
-      event.type !== "message" ||
-      event.channel !== this.channelId ||
-      typeof event.text !== "string"
-    ) {
+    if (event.type !== "message") {
+      return { success: true, ignored: true, reason: "Not a message" };
+    }
+
+    if (event.channel !== this.channelId) {
+      console.warn(
+        `Ignored a Slack message from channel ${String(event.channel).replace(/[^\w-]/g, "")}: support replies are read from the configured support channel only`,
+      );
       return {
         success: true,
         ignored: true,
-        reason: "Not a message in the support channel",
+        reason: "Not in the support channel",
       };
+    }
+
+    if (typeof event.text !== "string" || event.text.trim() === "") {
+      return { success: true, ignored: true, reason: "No text" };
     }
 
     const threadTs = event.thread_ts;
@@ -156,16 +181,12 @@ export class SupportService {
     const saved = await this.supportRepository.addSlackReply(
       conversation.id,
       conversation.user_id,
-      event.text,
+      decodeSlackText(event.text),
       typeof event.ts === "string" ? event.ts : null,
     );
     if (!saved) {
       return { success: true, ignored: true, reason: "Already delivered" };
     }
-
-    await this.supportRepository.updateConversationLastMessageAt(
-      conversation.id,
-    );
 
     // TODO: Send push notification to user
 
