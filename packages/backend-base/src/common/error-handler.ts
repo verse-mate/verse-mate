@@ -24,6 +24,12 @@ export function unexpectedErrorResponse(
   };
 }
 
+export const isRouteNotFound = (error: unknown): boolean =>
+  error instanceof NotFoundError ||
+  (error instanceof Error &&
+    !(error instanceof ApiError) &&
+    error.constructor.name === "NotFoundError");
+
 const statusOf = (error: unknown): unknown =>
   typeof error === "object" && error !== null
     ? (error as { status?: unknown }).status
@@ -36,7 +42,7 @@ function rateLimitResponse(source: string, error: object, set: ResponseSet) {
     message?: unknown;
   };
   const retryAfter =
-    typeof wait === "number" && wait > 0
+    !(error instanceof Error) && typeof wait === "number" && wait > 0
       ? Math.min(wait, MAX_RETRY_AFTER)
       : undefined;
   const message =
@@ -68,6 +74,11 @@ export function answerError(
     set.status = error.status;
     return error.toResponse();
   }
+  if (
+    code === "VALIDATION" &&
+    (error as { type?: unknown }).type === "response"
+  )
+    return unexpectedErrorResponse(source, error, set);
   if (code === "VALIDATION") {
     set.status = 422;
     return {
@@ -88,10 +99,7 @@ export function answerError(
   }
   if (statusOf(error) === 429)
     return rateLimitResponse(source, error as object, set);
-  if (
-    error instanceof ElysiaCustomStatusResponse ||
-    error instanceof NotFoundError
-  )
+  if (error instanceof ElysiaCustomStatusResponse || isRouteNotFound(error))
     return undefined;
   return unexpectedErrorResponse(source, error, set);
 }
@@ -112,9 +120,6 @@ export const createErrorHandler = (pluginName: string) => {
         message: "Route not found",
       };
     }
-    return (
-      answerError(pluginName, code, error, set) ??
-      unexpectedErrorResponse(pluginName, error, set)
-    );
+    return answerError(pluginName, code, error, set);
   };
 };
