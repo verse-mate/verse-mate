@@ -10,6 +10,9 @@
 
 name: Backend CI/CD
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -175,6 +178,20 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      minio:
+        image: bitnamilegacy/minio:2025.7.23-debian-12-r5@sha256:6dabb4a2088c9a79908de3bc05f4586c23ad2182c8908e7e3acbf61c1467fb20
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_DEFAULT_BUCKETS: saas-starter-dev
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
     env:
       POSTGRES_URL: postgresql://postgres_user:postgres_password@localhost:5432/postgres_db
       REDIS_URL: redis://:@localhost:6379/0
@@ -211,20 +228,6 @@ jobs:
           cp apps/backend/.env.example .env
           cp apps/backend/.env.example packages/database/.env
           cp packages/backend-base/.env.example packages/backend-base/.env
-
-      - name: Start MinIO
-        run: |
-          docker run -d --name minio -p 9000:9000 \
-            -e MINIO_ROOT_USER="$OBJECT_STORAGE_ACCESS_KEY_ID" \
-            -e MINIO_ROOT_PASSWORD="$OBJECT_STORAGE_SECRET_ACCESS_KEY" \
-            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
-          for attempt in $(seq 1 30); do
-            curl -sf "$OBJECT_STORAGE_ENDPOINT/minio/health/live" && break
-            sleep 2
-          done
-          docker exec minio mc alias set local http://localhost:9000 \
-            "$OBJECT_STORAGE_ACCESS_KEY_ID" "$OBJECT_STORAGE_SECRET_ACCESS_KEY"
-          docker exec minio mc mb --ignore-existing "local/$OBJECT_STORAGE_BUCKET"
 
       - name: Run database migrations and seeds
         run: |
