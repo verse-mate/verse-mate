@@ -503,11 +503,11 @@ describe("Auth - Security (audit fixes)", () => {
 
   // Audit #3: a verification token is bound to the account it was minted for.
   // Before the fix, verifyEmail's guard compared user.id to the id it selected
-  // by — always true — so any valid token, including one issued for a DIFFERENT
+  // by, always true, so any valid token, including one issued for a DIFFERENT
   // account, verified the caller. That forged the "verified" badge on a victim's
   // pre-registered email. This proves the token→account binding is enforced.
   it("verify-email rejects a token minted for a different account (audit #3)", async () => {
-    // Account A — the attacker's session, unverified, on a victim's address.
+    // Account A, the attacker's session, unverified, on a victim's address.
     const aEmail = faker.internet.email().toLocaleLowerCase();
     const { data: aData, error: aErr } = await client.auth.signup.post({
       email: aEmail,
@@ -518,7 +518,7 @@ describe("Auth - Security (audit fixes)", () => {
     if (aErr) throw aErr;
     expect(aData?.accessToken).toBeDefined();
 
-    // Account B — a second account the attacker controls; capture its valid
+    // Account B, a second account the attacker controls; capture its valid
     // verification token (still sitting in the cache).
     await client.auth.signup.post({
       email: faker.internet.email().toLocaleLowerCase(),
@@ -539,7 +539,7 @@ describe("Auth - Security (audit fixes)", () => {
       (data as { accessToken?: string } | null)?.accessToken,
     ).toBeUndefined();
 
-    // A must remain unverified — the cross-account token did nothing.
+    // A must remain unverified, the cross-account token did nothing.
     const aUser = await Backend.store.db
       .getOrCreateConnection()
       .selectFrom("user")
@@ -547,5 +547,153 @@ describe("Auth - Security (audit fixes)", () => {
       .select("emailVerified")
       .executeTakeFirstOrThrow();
     expect(aUser.emailVerified).toBe(false);
+  });
+});
+
+describe("the answers the portal's email confirmation reads", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  it("a bad key answers 400, and a used one 409 'User already verified'", async () => {
+    let key = "";
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(
+      (message) => {
+        if (message.text.includes("?key="))
+          key = message.text.split("?key=").at(-1) ?? "";
+        return Promise.resolve({ delivered: true });
+      },
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    await Backend.store.db
+      .getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: false,
+      })
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    await client.auth["send-email-verification"].post(undefined, { headers });
+    const me = async () =>
+      (
+        await Backend.store.db
+          .getOrCreateConnection()
+          .selectFrom("user")
+          .select("emailVerified")
+          .where("email", "=", email)
+          .executeTakeFirstOrThrow()
+      ).emailVerified;
+    expect(await me()).toBe(false);
+    const bad = await client.auth["verify-email"].post(
+      { token: "not-a-key" },
+      { headers },
+    );
+    expect(bad.error?.status).toBe(400);
+    expect((bad.error?.value as { message?: string }).message).toBe(
+      "Invalid verification token",
+    );
+    const good = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(good.error).toBeNull();
+    const again = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(again.error?.status as number).toBe(409);
+    expect((again.error?.value as { message?: string }).message).toBe(
+      "User already verified",
+    );
+    expect(await me()).toBe(true);
+  });
+
+  it("an account confirmed before the confirmation was stamped can confirm again", async () => {
+    let key = "";
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(
+      (message) => {
+        if (message.text.includes("?key="))
+          key = message.text.split("?key=").at(-1) ?? "";
+        return Promise.resolve({ delivered: true });
+      },
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    const conn = Backend.store.db.getOrCreateConnection();
+    const { id } = await conn
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: true,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    await client.auth["send-email-verification"].post(undefined, { headers });
+    const confirmed = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(confirmed.error).toBeNull();
+    const after = await conn
+      .selectFrom("user")
+      .select("email_verified_at")
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+    expect(after.email_verified_at).not.toBeNull();
+  });
+});
+
+describe("the confirmation email limit through the route", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  it("a sixth confirmation email within the hour is refused for that account", async () => {
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
+      Promise.resolve({ delivered: true }),
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    await Backend.store.db
+      .getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: false,
+      })
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      const res = await client.auth["send-email-verification"].post(undefined, {
+        headers,
+      });
+      statuses.push(res.status);
+    }
+    expect(statuses.slice(0, 5).every((s) => s === 204)).toBe(true);
+    expect(statuses[5]).toBe(429);
   });
 });
