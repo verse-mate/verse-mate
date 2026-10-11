@@ -28,9 +28,9 @@ export const createRateLimit = (options: RateLimitOptions) => {
     message = "Too many requests, please try again later",
   } = options;
 
-  return async (context: any) => {
+  return async ({ server, ...context }: any) => {
     const cache: cache = context.store.cache;
-    const key = keyGenerator(context);
+    const key = keyGenerator({ ...context, server });
     const cacheKey = `rate-limit:${key}`;
 
     const count = await cache.increment(cacheKey, windowSeconds);
