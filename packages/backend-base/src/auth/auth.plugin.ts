@@ -21,6 +21,11 @@ import { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import { AuthSignupInput } from "./dto/auth-signup.input";
 import { AuthSSOInput, SSOCallbackQuery } from "./dto/auth-sso.input";
 import { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
+import {
+  confirmEmailChangeForm,
+  emailChangeConfirmed,
+  emailChangeLinkUnusable,
+} from "./email-change-page";
 import type { AuthPayload } from "./entities/auth.entity";
 import {
   AuthPayloadSchema,
@@ -312,6 +317,45 @@ const plugin = new Elysia()
           }),
           response: {
             200: SuccessResponse,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/confirm-email-change",
+        async ({ query, store: { authService } }) =>
+          (await authService.emailChangeKeyUsable(query.key))
+            ? confirmEmailChangeForm(query.key)
+            : emailChangeLinkUnusable(),
+        {
+          query: t.Object({
+            key: t.String({ maxLength: 200 }),
+          }),
+          response: {
+            200: t.Any(),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/confirm-email-change",
+        async ({ body, store: { authService } }) => {
+          const outcome = await authService.confirmEmailChange(
+            body.key,
+            body.email,
+          );
+          if (outcome === "confirmed") return emailChangeConfirmed();
+          if (outcome === "wrong-address")
+            return confirmEmailChangeForm(body.key, true);
+          return emailChangeLinkUnusable();
+        },
+        {
+          body: t.Object({
+            key: t.String({ maxLength: 200 }),
+            email: t.String({ maxLength: 320 }),
+          }),
+          response: {
+            200: t.Any(),
             ...StandardErrorResponses,
           },
         },
