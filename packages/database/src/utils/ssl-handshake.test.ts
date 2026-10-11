@@ -1,15 +1,33 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { type AddressInfo, type Server, createServer } from "node:net";
+import { type AddressInfo, type Server, connect, createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TLSSocket } from "node:tls";
+import {
+  type Server as TlsServer,
+  createServer as createTlsServer,
+} from "node:tls";
 import pg from "pg";
 import { getCleanConnectionString, getSSLConfig } from "./ssl-config";
 
 type Handshake = "trusted" | "refused";
 
 const SSL_REQUEST_LENGTH = 8;
+
+const CERTIFICATE_ERRORS = new Set([
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "UNABLE_TO_GET_ISSUER_CERT",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "CERT_SIGNATURE_FAILURE",
+]);
+
+function isCertificateError(error: unknown) {
+  return CERTIFICATE_ERRORS.has(
+    String((error as { code?: unknown } | null)?.code),
+  );
+}
 
 function openssl(cwd: string, args: string[]) {
   const result = Bun.spawnSync(["openssl", ...args], { cwd });
@@ -79,32 +97,42 @@ describe("Postgres TLS handshake", () => {
   const ORIGINAL_URL = process.env.POSTGRES_URL;
   const ORIGINAL_CA = process.env.POSTGRES_CA_CERT;
   const certificates = testCertificates();
-  let server: Server;
+  let tlsServer: TlsServer;
+  let front: Server;
   let port: number;
-  let waiting: ((outcome: Handshake) => void) | undefined;
+  let settle: ((outcome: Handshake) => void) | undefined;
 
   beforeAll(async () => {
-    server = createServer((socket) => {
+    tlsServer = createTlsServer(
+      { key: certificates.key, cert: certificates.cert },
+      (socket) => {
+        socket.on("error", () => undefined);
+        socket.once("data", () => {
+          settle?.("trusted");
+          socket.destroy();
+        });
+      },
+    );
+    tlsServer.on("tlsClientError", () => undefined);
+    await new Promise<void>((resolve) =>
+      tlsServer.listen(0, "127.0.0.1", resolve),
+    );
+    const tlsPort = (tlsServer.address() as AddressInfo).port;
+
+    front = createServer((socket) => {
+      socket.on("error", () => undefined);
       socket.once("data", (request) => {
         if (request.length !== SSL_REQUEST_LENGTH) return socket.destroy();
         socket.write("S");
-        const secure = new TLSSocket(socket, {
-          isServer: true,
-          key: certificates.key,
-          cert: certificates.cert,
-        });
-        secure.once("secure", () => {
-          waiting?.("trusted");
-          secure.destroy();
-        });
-        secure.once("error", () => waiting?.("refused"));
-        secure.once("close", () => waiting?.("refused"));
+        const upstream = connect(tlsPort, "127.0.0.1");
+        upstream.on("error", () => socket.destroy());
+        socket.on("close", () => upstream.destroy());
+        socket.pipe(upstream);
+        upstream.pipe(socket);
       });
     });
-    await new Promise<void>((resolve) =>
-      server.listen(0, "127.0.0.1", resolve),
-    );
-    port = (server.address() as AddressInfo).port;
+    await new Promise<void>((resolve) => front.listen(0, "127.0.0.1", resolve));
+    port = (front.address() as AddressInfo).port;
   });
 
   afterEach(() => {
@@ -118,25 +146,32 @@ describe("Postgres TLS handshake", () => {
   });
 
   afterAll(() => {
-    server.close();
+    front.close();
+    tlsServer.close();
   });
 
   async function handshake(): Promise<Handshake> {
     process.env.POSTGRES_URL = `postgresql://app:secret@localhost:${port}/app?sslmode=require`;
     const outcome = new Promise<Handshake>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error("no handshake")), 5000);
-      waiting = (result) => {
+      const timer = setTimeout(
+        () => reject(new Error("the client neither sent data nor refused")),
+        5000,
+      );
+      settle = (result) => {
         clearTimeout(timer);
-        waiting = undefined;
+        settle = undefined;
         resolve(result);
       };
     });
+    const onClientError = (error: unknown) => {
+      if (isCertificateError(error)) settle?.("refused");
+    };
     const client = new pg.Client({
       connectionString: getCleanConnectionString(),
       ssl: getSSLConfig(),
     });
-    client.on("error", () => undefined);
-    client.connect().catch(() => undefined);
+    client.on("error", onClientError);
+    client.connect().catch(onClientError);
     try {
       return await outcome;
     } finally {

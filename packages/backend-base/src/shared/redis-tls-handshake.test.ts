@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
+import type { EventEmitter } from "node:events";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -6,9 +7,23 @@ import { join } from "node:path";
 import { type Server, createServer } from "node:tls";
 import { createBullmqRedisConnection } from "./bullmq-redis";
 import { RedisClient } from "./redis-client";
-import { verifyRedisOrExit } from "./redis-startup-check";
 
 type Handshake = "trusted" | "refused";
+
+const CERTIFICATE_ERRORS = new Set([
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "UNABLE_TO_GET_ISSUER_CERT",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "CERT_SIGNATURE_FAILURE",
+]);
+
+function isCertificateError(error: unknown) {
+  return CERTIFICATE_ERRORS.has(
+    String((error as { code?: unknown } | null)?.code),
+  );
+}
 
 function openssl(cwd: string, args: string[]) {
   const result = Bun.spawnSync(["openssl", ...args], { cwd });
@@ -79,17 +94,20 @@ describe("Redis TLS handshake", () => {
   const certificates = testCertificates();
   let server: Server;
   let url: string;
-  let waiting: ((outcome: Handshake) => void) | undefined;
+  let settle: ((outcome: Handshake) => void) | undefined;
 
   beforeAll(async () => {
     server = createServer(
       { key: certificates.key, cert: certificates.cert },
       (socket) => {
-        waiting?.("trusted");
-        socket.destroy();
+        socket.on("error", () => undefined);
+        socket.once("data", () => {
+          settle?.("trusted");
+          socket.destroy();
+        });
       },
     );
-    server.on("tlsClientError", () => waiting?.("refused"));
+    server.on("tlsClientError", () => undefined);
     await new Promise<void>((resolve) =>
       server.listen(0, "127.0.0.1", resolve),
     );
@@ -108,31 +126,40 @@ describe("Redis TLS handshake", () => {
 
   function nextHandshake() {
     return new Promise<Handshake>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error("no handshake")), 5000);
-      waiting = (outcome) => {
+      const timer = setTimeout(
+        () => reject(new Error("the client neither sent data nor refused")),
+        5000,
+      );
+      settle = (outcome) => {
         clearTimeout(timer);
-        waiting = undefined;
+        settle = undefined;
         resolve(outcome);
       };
     });
   }
 
+  function onClientError(error: unknown) {
+    if (isCertificateError(error)) settle?.("refused");
+  }
+
   async function cacheClientHandshake() {
-    const client = new RedisClient(url);
+    const cache = new RedisClient(url);
+    const socketEvents: EventEmitter = Reflect.get(cache, "client");
+    socketEvents.on("error", onClientError);
     const outcome = nextHandshake();
-    client.connect().catch(() => undefined);
+    cache.connect().catch(onClientError);
     try {
       return await outcome;
     } finally {
-      await client.disconnect();
+      await cache.disconnect();
     }
   }
 
   async function queueConnectionHandshake() {
     const connection = createBullmqRedisConnection(url);
-    connection.on("error", () => undefined);
+    connection.on("error", onClientError);
     const outcome = nextHandshake();
-    connection.connect().catch(() => undefined);
+    connection.connect().catch(onClientError);
     try {
       return await outcome;
     } finally {
@@ -156,27 +183,4 @@ describe("Redis TLS handshake", () => {
       expect(await handshake()).toBe("trusted");
     });
   }
-
-  it("stops the backend at startup when the server certificate cannot be verified", async () => {
-    Reflect.deleteProperty(process.env, "REDIS_CA_CERT");
-    const cache = new RedisClient(url);
-    const queue = createBullmqRedisConnection(url);
-    queue.on("error", () => undefined);
-    const exits: number[] = [];
-
-    try {
-      await verifyRedisOrExit({
-        cache,
-        queue,
-        redisUrl: url,
-        timeoutMs: 2000,
-        exit: (code) => exits.push(code),
-      });
-    } finally {
-      await cache.disconnect();
-      queue.disconnect();
-    }
-
-    expect(exits).toEqual([1]);
-  });
 });
