@@ -10,6 +10,22 @@ function verifyEmail(key: string): string {
   return `verifyEmail:${key}`;
 }
 
+function emailChangeKey(hash: string): string {
+  return `emailChange:key:${hash}`;
+}
+
+function emailChangePending(userId: string): string {
+  return `emailChange:pending:${userId}`;
+}
+
+function emailChangeTries(hash: string): string {
+  return `emailChange:tries:${hash}`;
+}
+
+function emailChangeMailsSent(userId: string): string {
+  return `rate-limit:email-change:${userId}`;
+}
+
 /**
  * OAuth state parameter for CSRF protection
  * Used in SSO redirect/callback flow.
@@ -34,6 +50,10 @@ const cacheConstants = {
   resetPassword,
   accessToken,
   verifyEmail,
+  emailChangeKey,
+  emailChangePending,
+  emailChangeTries,
+  emailChangeMailsSent,
   ssoState,
   dailyVersePick,
 };
