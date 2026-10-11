@@ -2,6 +2,7 @@ import type Database from "database/src/models/Database";
 import { type ExpressionBuilder, sql } from "kysely";
 
 import { CoachReport, render } from "../../../emails";
+import { isSingleRecipient } from "../common/email-address";
 import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
 import {
@@ -30,8 +31,20 @@ import type { CoachMailer, CoachSendResult } from "./coach.service";
  */
 
 /** Where a leader's reply should land, now that the coach mailbox sends nothing. */
-export const COACH_REPLY_TO_EMAIL =
-  process.env.COACH_REPLY_TO_EMAIL ?? "coach@versemate.app";
+const DEFAULT_REPLY_TO = "coach@versemate.app";
+
+export function replyToAddress(configured: string | undefined): string {
+  const address = (configured ?? DEFAULT_REPLY_TO).trim();
+  if (isSingleRecipient(address)) return address;
+  console.error(
+    `[coach] COACH_REPLY_TO_EMAIL is not one plain email address; replies go to ${DEFAULT_REPLY_TO}`,
+  );
+  return DEFAULT_REPLY_TO;
+}
+
+export const COACH_REPLY_TO_EMAIL = replyToAddress(
+  process.env.COACH_REPLY_TO_EMAIL,
+);
 export const COACH_REPLY_TO_NAME = "VerseMate Coaching";
 
 export const DELIVERY_ATTEMPT_LIMIT = 5;
@@ -109,18 +122,21 @@ export interface DeliveryResult {
  * The same subject goes to all three recipients, so a reply thread stays one
  * conversation rather than three.
  */
+export function headerText(value: string): string {
+  return value
+    .replace(/\p{Cc}+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function reportSubject(input: {
   sessionDate: string;
   leaderName: string;
   sessionTitle: string;
 }): string {
-  const title = input.sessionTitle
-    .replace(/[\r\n\t]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const parts = [input.sessionDate, input.leaderName, title].filter(
-    (p) => p.length > 0,
-  );
+  const parts = [input.sessionDate, input.leaderName, input.sessionTitle]
+    .map(headerText)
+    .filter((p) => p.length > 0);
   return `Coaching report — ${parts.join(" — ")}`;
 }
 

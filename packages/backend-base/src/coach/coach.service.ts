@@ -25,6 +25,7 @@ import {
   COACH_REPLY_TO_EMAIL,
   COACH_REPLY_TO_NAME,
   CoachDeliveryService,
+  headerText,
   isPlaceholderAddress,
   releaseDeliveredVersions,
 } from "./coach-delivery.service";
@@ -2281,7 +2282,7 @@ export class CoachService {
         // the leader had been notified.
         const sent = (await this.notification.sendEmail({
           to: { email: record.email, name: record.name },
-          subject: `Coaching note — ${report.session}`,
+          subject: headerText(`Coaching note — ${report.session}`),
           text: body,
           html: render(
             CoachNote({

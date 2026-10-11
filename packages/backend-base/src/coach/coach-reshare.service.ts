@@ -3,7 +3,7 @@ import { sql } from "kysely";
 import { CoachReshareRequest, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
-import { isPlaceholderAddress } from "./coach-delivery.service";
+import { headerText, isPlaceholderAddress } from "./coach-delivery.service";
 import { isGroupAddress } from "./coach-rotating.service";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
@@ -113,7 +113,9 @@ export class CoachReshareService {
     );
 
     const result = (await this.mailer.sendEmail({
-      subject: `Could you re-share the recording for ${sessionLabel}?`,
+      subject: headerText(
+        `Could you re-share the recording for ${sessionLabel}?`,
+      ),
       to: { name: leader.name, email: leader.email },
       text: `We could not retrieve the recording for ${sessionLabel} after ${session.retry_count} attempts. Please reply with a shareable link.`,
       html,
