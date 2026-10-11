@@ -241,7 +241,7 @@ describe("email confirmation", () => {
 });
 
 describe("email confirmation through the route", () => {
-  it("with no link for its own address, only stamps: the account keeps its other sessions and links made for another address", async () => {
+  it("with only a link made for another address, confirms the account but leaves it unstamped, keeping its other sessions and that link", async () => {
     const client = getTestClient<AuthPlugin>(Backend);
     const { id, email } = await account({ password: true });
     await links.create({
@@ -264,7 +264,10 @@ describe("email confirmation through the route", () => {
     );
 
     expect(confirmed.error).toBeNull();
-    expect((await row(id)).email_verified_at).not.toBeNull();
+    expect(await row(id)).toMatchObject({
+      emailVerified: true,
+      email_verified_at: null,
+    });
     const after = await sessionsOf(id);
     expect(after).toContain(caller);
     expect(after).toContain("another-device");
@@ -316,7 +319,10 @@ describe("email confirmation through the route", () => {
           signOutOthers: true,
         },
       );
-      expect((await row(id)).email_verified_at).not.toBeNull();
+      expect(await row(id)).toMatchObject({
+        emailVerified: true,
+        email_verified_at: null,
+      });
       expect(await sessionsOf(id)).toEqual([confirmed.data?.accessToken ?? ""]);
       expect(
         await links.findByProviderAndProviderId(
@@ -333,6 +339,36 @@ describe("email confirmation through the route", () => {
     } finally {
       audit.mockRestore();
     }
+  });
+
+  it("leaves a link made for another address to the next reset, which drops it", async () => {
+    const { id, email } = await account({ password: true });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    await service().sendVerifyEmail(id);
+    await service().verifyEmail({
+      token: keySentTo(email),
+      jwt: jwt as never,
+      currentUserId: id,
+    });
+    await service().forgotPassword({ email });
+
+    await service().resetPassword({
+      key: keySentTo(email),
+      password: "the-owners-choice",
+    });
+
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `elsewhere-${id}`,
+      ),
+    ).toBeFalsy();
+    expect((await row(id)).email_verified_at).not.toBeNull();
   });
 
   it("after a change of address, the provider account the user signed up with still reaches the same account", async () => {
