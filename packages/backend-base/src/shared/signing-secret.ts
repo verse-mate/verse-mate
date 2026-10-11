@@ -4,7 +4,7 @@ export function signingSecret(
   env: Record<string, string | undefined> = process.env,
 ): string {
   const secret = env.AUTH_ACCESS_TOKEN_SECRET;
-  if (!secret || secret === "my-super-secret") {
+  if (!secret?.trim() || secret.trim() === "my-super-secret") {
     throw new Error(
       "AUTH_ACCESS_TOKEN_SECRET is unset or the known-public default; refusing to start; set a unique secret",
     );
