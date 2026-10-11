@@ -37,8 +37,15 @@ const mockLocalStorage: Record<string, string> = {};
 const mockSessionStorage: Record<string, string> = {};
 const PENDING_VERIFIER = "v".repeat(43);
 
-function startedSignIn() {
-  mockSessionStorage[SSO_VERIFIER_KEY] = PENDING_VERIFIER;
+function startedSignIn(secondsAgo = 0) {
+  mockSessionStorage[SSO_VERIFIER_KEY] = JSON.stringify({
+    verifier: PENDING_VERIFIER,
+    startedAt: Date.now() - secondsAgo * 1000,
+  });
+}
+
+function pendingVerifier(): string {
+  return JSON.parse(mockSessionStorage[SSO_VERIFIER_KEY] ?? "{}").verifier;
 }
 const mockCookies: string[] = [];
 
@@ -126,10 +133,11 @@ describe("SSO Callback Utilities", () => {
 
       const result = parseSSOCallbackParams(params);
 
-      expect(result.success).toBe(true);
-      expect(result.accessToken).toBe("test-access-token");
-      expect(result.refreshToken).toBe("test-refresh-token");
-      expect(result.verified).toBe(true);
+      expect(result).toEqual({
+        success: true,
+        accessToken: "test-access-token",
+        verified: true,
+      });
     });
 
     it("should extract tokens from successful Apple callback URL", () => {
@@ -141,10 +149,11 @@ describe("SSO Callback Utilities", () => {
 
       const result = parseSSOCallbackParams(params);
 
-      expect(result.success).toBe(true);
-      expect(result.accessToken).toBe("apple-access-token");
-      expect(result.refreshToken).toBe("apple-refresh-token");
-      expect(result.verified).toBe(true);
+      expect(result).toEqual({
+        success: true,
+        accessToken: "apple-access-token",
+        verified: true,
+      });
     });
 
     it("should handle verified=false correctly", () => {
@@ -157,19 +166,6 @@ describe("SSO Callback Utilities", () => {
 
       expect(result.success).toBe(true);
       expect(result.verified).toBe(false);
-    });
-
-    it("should handle missing refreshToken", () => {
-      const params = new URLSearchParams({
-        accessToken: "test-token",
-        verified: "true",
-      });
-
-      const result = parseSSOCallbackParams(params);
-
-      expect(result.success).toBe(true);
-      expect(result.accessToken).toBe("test-token");
-      expect(result.refreshToken).toBeUndefined();
     });
 
     it("should extract error information from failed callback URL", () => {
@@ -376,7 +372,6 @@ describe("SSO Callback Utilities", () => {
 
       expect(result.success).toBe(true);
       expect(result.redirectUrl).toBe("/");
-      // Tokens stored in cookies only (not localStorage for XSS protection)
       expect(mockCookies.some((c) => c.includes("success-token"))).toBe(true);
     });
 
@@ -516,6 +511,81 @@ describe("SSO callback code exchange", () => {
     expect(mockLocalStorage.postLoginRedirect).toBeUndefined();
   });
 
+  it("ignores a refresh token in the callback address", async () => {
+    startedSignIn();
+
+    const result = await handleSSOCallback(
+      new URLSearchParams({
+        accessToken: "legacy-token",
+        refreshToken: "planted-refresh",
+        verified: "true",
+      }),
+      rejectExchange,
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockCookies.some((c) => c.includes("planted-refresh"))).toBe(false);
+    expect(
+      mockCookies.some((c) => c.startsWith(`${REFRESH_TOKEN_COOKIE}=`)),
+    ).toBe(false);
+  });
+
+  it("refuses a code when the pending sign-in started more than 600 seconds ago", async () => {
+    startedSignIn(601);
+    let calls = 0;
+
+    const result = await handleSSOCallback(
+      new URLSearchParams({ code: "late-code" }),
+      async () => {
+        calls++;
+        return { accessToken: "late-session", verified: true };
+      },
+    );
+
+    expect(calls).toBe(0);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("auth_failed");
+    expect(mockCookies).toHaveLength(0);
+    expect(mockSessionStorage[SSO_VERIFIER_KEY]).toBeUndefined();
+  });
+
+  it("refuses a token parameter when the pending sign-in started more than 600 seconds ago", async () => {
+    startedSignIn(601);
+
+    const result = await handleSSOCallback(
+      new URLSearchParams({ accessToken: "late-token", verified: "true" }),
+      rejectExchange,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("auth_failed");
+    expect(mockCookies).toHaveLength(0);
+    expect(mockLocalStorage.postLoginRedirect).toBeUndefined();
+  });
+
+  it("accepts a sign-in that started just under 600 seconds ago", async () => {
+    startedSignIn(590);
+
+    const result = await handleSSOCallback(
+      new URLSearchParams({ code: "timely-code" }),
+      async () => ({ accessToken: "timely-session", verified: true }),
+    );
+
+    expect(result.success).toBe(true);
+  });
+
+  it("refuses a verifier stored in the old plain-text form", async () => {
+    mockSessionStorage[SSO_VERIFIER_KEY] = PENDING_VERIFIER;
+
+    const result = await handleSSOCallback(
+      new URLSearchParams({ accessToken: "legacy-token", verified: "true" }),
+      rejectExchange,
+    );
+
+    expect(result.success).toBe(false);
+    expect(mockCookies).toHaveLength(0);
+  });
+
   it("removes the pending verifier even when the callback carries an error", async () => {
     startedSignIn();
 
@@ -539,9 +609,13 @@ describe("starting SSO sign-in", () => {
   });
 
   it("keeps a fresh verifier and sends its SHA-256 challenge to the redirect", async () => {
+    const before = Date.now();
     await startSSOSignIn("https://api.example.test/auth/sso/google/redirect");
 
-    const verifier = mockSessionStorage[SSO_VERIFIER_KEY];
+    const stored = JSON.parse(mockSessionStorage[SSO_VERIFIER_KEY]);
+    expect(stored.startedAt).toBeGreaterThanOrEqual(before);
+    expect(stored.startedAt).toBeLessThanOrEqual(Date.now());
+    const verifier = pendingVerifier();
     expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
     const expected = createHash("sha256").update(verifier).digest("base64url");
     expect((global as any).window.location.href).toBe(
@@ -550,11 +624,76 @@ describe("starting SSO sign-in", () => {
   });
 
   it("uses a new verifier for every sign-in", async () => {
-    await startSSOSignIn("/api/auth/sso/apple/redirect");
-    const first = mockSessionStorage[SSO_VERIFIER_KEY];
-    await startSSOSignIn("/api/auth/sso/apple/redirect");
+    await startSSOSignIn("https://api.example.test/auth/sso/apple/redirect");
+    const first = pendingVerifier();
+    await startSSOSignIn("https://api.example.test/auth/sso/apple/redirect");
 
-    expect(mockSessionStorage[SSO_VERIFIER_KEY]).not.toBe(first);
+    expect(pendingVerifier()).not.toBe(first);
+  });
+
+  for (const provider of ["google", "apple"] as const) {
+    it(`sends the browser to the ${provider} error page when the challenge cannot be computed`, async () => {
+      const original = globalThis.crypto;
+      Object.defineProperty(globalThis, "crypto", {
+        value: { getRandomValues: original.getRandomValues.bind(original) },
+        configurable: true,
+      });
+      try {
+        await startSSOSignIn(
+          `https://api.example.test/auth/sso/${provider}/redirect`,
+        );
+      } finally {
+        Object.defineProperty(globalThis, "crypto", {
+          value: original,
+          configurable: true,
+        });
+      }
+
+      const target = new URL(
+        (global as any).window.location.href,
+        "https://app.example.test",
+      );
+      expect(target.origin).toBe("https://app.example.test");
+      expect(target.pathname).toBe(`/auth/callback/${provider}`);
+      expect(target.searchParams.get("error")).toBe("invalid_state");
+      expect(target.searchParams.get("error_description")).toBe(
+        "Sign-in could not start, please try again",
+      );
+      expect(mockSessionStorage[SSO_VERIFIER_KEY]).toBeUndefined();
+    });
+  }
+
+  it("sends the browser to the error page when session storage refuses the verifier", async () => {
+    (global as any).sessionStorage.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+
+    await startSSOSignIn("https://api.example.test/auth/sso/google/redirect");
+
+    const target = new URL(
+      (global as any).window.location.href,
+      "https://app.example.test",
+    );
+    expect(target.pathname).toBe("/auth/callback/google");
+    expect(target.searchParams.get("error")).toBe("invalid_state");
+  });
+
+  it("shows the start failure on the callback page as a readable message", async () => {
+    (global as any).sessionStorage.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    await startSSOSignIn("https://api.example.test/auth/sso/apple/redirect");
+    const target = new URL(
+      (global as any).window.location.href,
+      "https://app.example.test",
+    );
+
+    const result = await handleSSOCallback(target.search, rejectExchange);
+
+    expect(result.success).toBe(false);
+    expect(result.errorMessage).toBe(
+      "Sign-in could not start, please try again",
+    );
   });
 });
 
