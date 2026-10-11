@@ -68,9 +68,11 @@ Same access constraints as `seed-jesus-corpus.md`, plus a provider key:
   `./dist` and `./migrations`; these scripts need the source tree.
 - **Database allowlist.** The managed database restricts by trusted source, so
   whichever machine runs this has to be on it.
-- **Keep `?sslmode=require`** in `POSTGRES_URL`. `getSSLConfig()` detects that
-  exact substring to enable TLS, then strips it before connecting. Omit it and
-  TLS is off and the connection is refused.
+- **Keep `?sslmode=require`** in `POSTGRES_URL`. `getSSLConfig()` reads the
+  `sslmode` parameter: `require`, `verify-ca` and `verify-full` connect over TLS
+  with certificate verification; no `sslmode`, or `disable`, connects without
+  TLS; any other mode stops with an error. The parameter is stripped before
+  connecting. Without TLS the managed database refuses the connection.
 - **Set `POSTGRES_CA_CERT`** to the database's CA certificate (PEM text, from
   the database's Connection Details, "Download CA certificate"). The server
   certificate is verified against it; without it, verification uses the system
