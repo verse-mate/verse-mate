@@ -3,6 +3,7 @@ import { faker } from "@faker-js/faker";
 
 import authPlugin from "../auth/auth.plugin";
 import { getTestClient } from "../shared/test-client";
+import { signupCompliantPassword } from "../shared/test-password";
 import Backend from "./user.plugin";
 
 describe("Recently Viewed Books", () => {
@@ -11,7 +12,7 @@ describe("Recently Viewed Books", () => {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password(),
+    password: signupCompliantPassword(),
   };
   const plugin = Backend.use(authPlugin);
   // @ts-ignore - TODO: Fix this
@@ -289,7 +290,7 @@ describe("Recently Viewed Books", () => {
       email: faker.internet.email().toLocaleLowerCase(),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password(),
+      password: signupCompliantPassword(),
     };
     const { data: signupData, error: signupError } =
       await testClient.auth.signup.post(freshUserSignup);
