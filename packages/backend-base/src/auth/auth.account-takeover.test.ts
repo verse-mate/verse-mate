@@ -388,7 +388,7 @@ describe("email confirmation through the route", () => {
 
   it("after a change of address, the provider account the user signed up with still reaches the same account", async () => {
     const original = address("signed-up");
-    await google(`signed-up-${original}`, original);
+    const signedUp = await google(`signed-up-${original}`, original);
     const { id } = await conn
       .selectFrom("user")
       .select("id")
@@ -398,7 +398,7 @@ describe("email confirmation through the route", () => {
     const next = address("next");
     const auth = service();
     auth.emailChangeSettleMs = 0;
-    await auth.updateProfile(id, { email: next });
+    await auth.updateProfile(id, { email: next }, signedUp.accessToken);
     expect(await auth.confirmEmailChange(await mailedKey(next), original)).toBe(
       "confirmed",
     );
