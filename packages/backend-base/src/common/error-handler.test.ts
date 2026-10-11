@@ -1,9 +1,14 @@
 import { describe, expect, it, mock, spyOn } from "bun:test";
 import { Elysia, t } from "elysia";
 
+import { PosthogService } from "../shared/posthog.service";
 import shared from "../shared/shared.plugin";
 import { createErrorHandler } from "./error-handler";
-import { NotFoundError, UnauthorizedError } from "./errors";
+import {
+  InternalServerError,
+  NotFoundError,
+  UnauthorizedError,
+} from "./errors";
 
 describe("createErrorHandler - Rate Limit Detection", () => {
   it("should detect plain objects with status 429 and return proper response", async () => {
@@ -298,5 +303,138 @@ describe("a route without its own error handler", () => {
     });
     expect((await call("/limited")).status).toBe(429);
     expect((await call("/typed?n=abc")).status).toBe(422);
+  });
+});
+
+const withCode = (message: string, fields: Record<string, unknown>) =>
+  Object.assign(new Error(message), fields);
+
+function routes(app: Elysia) {
+  return app
+    .get("/coded/:code", ({ params }) => {
+      throw withCode("secret detail", { code: params.code });
+    })
+    .get("/string", () => {
+      throw "secret detail";
+    })
+    .get("/storage", () => {
+      throw new InternalServerError("storage failed: secret detail");
+    })
+    .get("/upstream-limit", () => {
+      throw withCode("secret detail", { status: 429, retryAfter: 5 });
+    })
+    .post("/typed", ({ body }) => body, {
+      body: t.Object({ password: t.String({ minLength: 20 }) }),
+    });
+}
+
+const plugins = {
+  "a route with the shared handler": new Elysia().use(
+    routes(
+      new Elysia()
+        .use(shared)
+        .onError(createErrorHandler("test plugin")) as unknown as Elysia,
+    ),
+  ),
+  "a route without its own handler": new Elysia().use(
+    routes(new Elysia().use(shared) as unknown as Elysia),
+  ),
+};
+
+for (const [name, app] of Object.entries(plugins))
+  describe(`${name}: what a caller reads never carries internal detail`, () => {
+    const call = async (path: string, init?: RequestInit) => {
+      const logged = spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const response = await app.handle(
+          new Request(`http://localhost${path}`, init),
+        );
+        return { status: response.status, body: await response.text() };
+      } finally {
+        logged.mockRestore();
+      }
+    };
+    const generic = JSON.stringify({
+      error: "INTERNAL_SERVER_ERROR",
+      message: "An unexpected error occurred",
+    });
+
+    for (const code of ["NOT_FOUND", "VALIDATION", "PARSE", "42P01"])
+      it(`an Error carrying its own code ${code}`, async () => {
+        const { body } = await call(`/coded/${code}`);
+        expect(body).not.toContain("secret");
+      });
+
+    it("a database error with its own SQLSTATE code answers the generic 500", async () => {
+      expect(await call("/coded/42P01")).toEqual({
+        status: 500,
+        body: generic,
+      });
+    });
+
+    it("a thrown value that is not an Error", async () => {
+      expect(await call("/string")).toEqual({ status: 500, body: generic });
+    });
+
+    it("an API error with a 5xx status", async () => {
+      expect(await call("/storage")).toEqual({ status: 500, body: generic });
+    });
+
+    it("an upstream error carrying status 429 keeps the status, not its text", async () => {
+      const { status, body } = await call("/upstream-limit");
+      expect(status).toBe(429);
+      expect(JSON.parse(body)).toEqual({
+        error: "TOO_MANY_REQUESTS",
+        message: "Too many requests",
+        retryAfter: 5,
+      });
+    });
+
+    it("a body that fails validation does not echo what was sent", async () => {
+      const { status, body } = await call("/typed", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password: "hunter2-secret" }),
+      });
+      expect(status).toBe(422);
+      expect(body).not.toContain("hunter2");
+    });
+
+    it("a body that is not JSON answers 400", async () => {
+      const { status, body } = await call("/typed", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{bad",
+      });
+      expect(status).toBe(400);
+      expect(JSON.parse(body)).toEqual({
+        error: "BAD_REQUEST",
+        message: "Invalid request",
+      });
+    });
+  });
+
+describe("an unexpected error is still reported", () => {
+  it("once, with its code and path", async () => {
+    const captured = spyOn(
+      PosthogService.prototype,
+      "captureException",
+    ).mockImplementation(() => {});
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const app = new Elysia().use(
+        new Elysia().use(shared).get("/pg", () => {
+          throw withCode("relation x does not exist", { code: "42P01" });
+        }) as unknown as Elysia,
+      );
+      await app.handle(new Request("http://localhost/pg"));
+      expect(captured).toHaveBeenCalledTimes(1);
+      expect(captured.mock.calls[0][2]).toEqual(
+        expect.objectContaining({ code: "42P01", $current_url: "/pg" }),
+      );
+    } finally {
+      captured.mockRestore();
+      logged.mockRestore();
+    }
   });
 });
