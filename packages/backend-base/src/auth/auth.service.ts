@@ -256,26 +256,13 @@ export class AuthService {
         throw new ConflictError(
           "The sign-in provider has not verified this email. Verify it with the provider or sign in another way.",
         );
-      const proven = this.isConfirmed(user);
-      const updates: Record<string, unknown> = proven
-        ? {}
-        : {
-            emailVerified: true,
-            email_verified_at: sql`now()`,
-            ...(user.password ? { password: null } : {}),
-          };
-      if (picture && picture !== user.imageSrc) {
-        updates.imageSrc = picture;
-        updates.picture_source = provider as any;
-      }
-
-      await this.db
+      const userToLogin = await this.db
         .getOrCreateConnection()
         .transaction()
         .execute(async (trx) => {
           const locked = await trx
             .selectFrom("user")
-            .select("id")
+            .selectAll()
             .where("id", "=", user.id)
             .where(sql`lower(trim(email))`, "=", normalizedEmail)
             .forUpdate()
@@ -284,15 +271,16 @@ export class AuthService {
             throw new ConflictError(
               "The account's email changed while signing in. Sign in again.",
             );
+          const proven = this.isConfirmed(locked);
           if (!proven)
             await trx
               .deleteFrom("user_sso_accounts")
-              .where("user_id", "=", user.id)
+              .where("user_id", "=", locked.id)
               .execute();
-          await trx
+          const linked = await trx
             .insertInto("user_sso_accounts")
             .values({
-              user_id: user.id,
+              user_id: locked.id,
               provider,
               provider_user_id: providerUserId,
               email: normalizedEmail,
@@ -300,18 +288,41 @@ export class AuthService {
             .onConflict((oc) =>
               oc.columns(["provider", "provider_user_id"]).doNothing(),
             )
-            .execute();
+            .returning("user_id")
+            .executeTakeFirst();
+          if (!linked) {
+            const owner = await trx
+              .selectFrom("user_sso_accounts")
+              .select("user_id")
+              .where("provider", "=", provider)
+              .where("provider_user_id", "=", providerUserId)
+              .executeTakeFirstOrThrow();
+            if (owner.user_id !== locked.id)
+              throw new ConflictError(
+                "This sign-in is linked to another account.",
+              );
+          }
+          const updates: Record<string, unknown> = proven
+            ? {}
+            : {
+                emailVerified: true,
+                email_verified_at: sql`now()`,
+                ...(locked.password ? { password: null } : {}),
+              };
+          if (picture && picture !== locked.imageSrc) {
+            updates.imageSrc = picture;
+            updates.picture_source = provider as any;
+          }
           if (Object.keys(updates).length > 0)
             await trx
               .updateTable("user")
               .set(updates)
-              .where("id", "=", user.id)
+              .where("id", "=", locked.id)
               .execute();
+          if (!proven) await this.logoutAll(locked.id);
+          return { ...locked, ...updates, emailVerified: true } as User;
         });
 
-      if (!proven) await this.logoutAll(user.id);
-
-      const userToLogin: User = { ...user, ...updates, emailVerified: true };
       return this.loginUser(userToLogin, jwt, userAgent, ipAddress);
     }
 
@@ -662,31 +673,34 @@ export class AuthService {
       cacheConstants.resetPassword(authResetPasswordInput.key),
     );
 
-    const written = await this.db
+    return this.db
       .getOrCreateConnection()
-      .updateTable("user")
-      .set({
-        email: user.email,
-        password: hashedPassword,
-      })
-      .where("id", "=", user.id)
-      .where(sql`lower(trim(email))`, "=", email)
-      .executeTakeFirst();
-    if (Number(written.numUpdatedRows) === 0) {
-      return false;
-    }
+      .transaction()
+      .execute(async (trx) => {
+        const written = await trx
+          .updateTable("user")
+          .set({
+            email: user.email,
+            password: hashedPassword,
+            emailVerified: true,
+            email_verified_at: this.isConfirmed(user)
+              ? user.email_verified_at
+              : sql`now()`,
+          })
+          .where("id", "=", user.id)
+          .where(sql`lower(trim(email))`, "=", email)
+          .executeTakeFirst();
+        if (Number(written.numUpdatedRows) === 0) return false;
 
-    if (!this.isConfirmed(user)) {
-      await this.db
-        .getOrCreateConnection()
-        .deleteFrom("user_sso_accounts")
-        .where("user_id", "=", user.id)
-        .where(sql`lower(trim(email))`, "!=", email)
-        .execute();
-    }
-    await this.logoutAll(user.id);
-
-    return true;
+        if (!this.isConfirmed(user))
+          await trx
+            .deleteFrom("user_sso_accounts")
+            .where("user_id", "=", user.id)
+            .where(sql`lower(trim(email))`, "!=", email)
+            .execute();
+        await this.logoutAll(user.id);
+        return true;
+      });
   }
 
   public async verifyEmail({
@@ -898,6 +912,12 @@ export class AuthService {
       .getOrCreateConnection()
       .transaction()
       .execute(async (trx) => {
+        await trx
+          .selectFrom("user")
+          .select("id")
+          .where("id", "=", userId)
+          .forUpdate()
+          .execute();
         // Delete dependent data first (order matters for foreign key constraints)
         // 1. Explanation ratings
         await trx
