@@ -497,19 +497,67 @@ describe("confirming an email change", () => {
     expect(mails.filter((m) => m.to === user.email)).toHaveLength(1);
   });
 
-  it("notifies the old address with its undo link even when signing the sessions out fails", async () => {
+  it("notifies the old address with its undo link even when the cache fails after the move", async () => {
     const user = await account();
     const next = address("next");
     await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    const set = cache.set.bind(cache);
+    const failing = spyOn(cache, "set").mockImplementation((k, value, ttl) =>
+      k.startsWith("emailChange:done:")
+        ? Promise.reject(new Error("cache down"))
+        : set(k, value, ttl),
+    );
+
+    await confirm(key, user.email);
+    failing.mockRestore();
+
+    expect(await row(user.id)).toMatchObject({ email: next });
+    expect(revertKeyIn((await mailTo(user.email)).text)).not.toBe("");
+  });
+
+  it("leaves the account where it was when signing the sessions out fails during the move", async () => {
+    const user = await account();
+    const next = address("next");
+    const { headers } = await requestChange(user, next);
     const key = keyIn((await mailTo(next)).text);
     spyOn(Backend.store.authService, "logoutAll").mockImplementationOnce(() =>
       Promise.reject(new Error("cache down")),
     );
 
-    await confirm(key, user.email);
+    expect((await confirm(key, user.email)).status).toBe(500);
 
-    expect(await row(user.id)).toMatchObject({ email: next });
-    expect(revertKeyIn((await mailTo(user.email)).text)).not.toBe("");
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect((await client.auth.session.get({ headers })).status).toBe(200);
+  });
+
+  it("mails nothing when the session that asked for the change signed out before the mail went out", async () => {
+    Backend.store.authService.emailChangeSettleMs = 100;
+    const user = await account();
+    const next = address("next");
+    const { headers } = await requestChange(user, next);
+    await client.auth.logout.post(undefined, { headers });
+    await Bun.sleep(300);
+
+    expect(mails.filter((m) => m.to === next)).toHaveLength(0);
+    expect(
+      await cache.get(cacheConstants.emailChangePending(user.id)),
+    ).toBeNull();
+  });
+
+  it("refuses the link once the session that asked for the change signed out", async () => {
+    const user = await account();
+    const next = address("next");
+    const { headers } = await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    await client.auth.logout.post(undefined, { headers });
+
+    expect((await confirm(key, user.email)).status).toBe(404);
+
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect(
+      await cache.get(cacheConstants.emailChangePending(user.id)),
+    ).toBeNull();
   });
 
   it("leaves the account where it was when the undo link cannot be stored", async () => {
@@ -517,14 +565,20 @@ describe("confirming an email change", () => {
     const next = address("next");
     const { headers } = await requestChange(user, next);
     const key = keyIn((await mailTo(next)).text);
-    spyOn(cache, "appendToJsonArray").mockImplementationOnce(() =>
-      Promise.reject(new Error("cache down")),
-    );
+    spyOn(
+      Backend.store.authService as unknown as {
+        confirmAddress: () => Promise<unknown>;
+      },
+      "confirmAddress",
+    ).mockImplementationOnce(() => Promise.reject(new Error("database down")));
 
     expect((await confirm(key, user.email)).status).toBe(500);
 
     expect(await row(user.id)).toMatchObject({ email: user.email });
     expect(mails.filter((m) => m.to === user.email)).toHaveLength(0);
+    expect(
+      await cache.get(cacheConstants.emailChangeReverts(user.id)),
+    ).toBeNull();
     expect(
       await cache.get(
         cacheConstants.emailChangeReserved(
@@ -767,7 +821,7 @@ describe("undoing an email change from the old address", () => {
       .executeTakeFirstOrThrow();
     expect(back.email).toBe(user.email);
     expect(back.password).toBeNull();
-    expect(back.email_verified_at).not.toBeNull();
+    expect(back.email_verified_at).toBeNull();
     expect(
       await links.findByProviderAndProviderId(
         SsoProviderEnum.apple,
@@ -818,12 +872,53 @@ describe("undoing an email change from the old address", () => {
     expect((await revertPage(later)).status).toBe(404);
     expect((await revert(later)).status).toBe(404);
     expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect((await row(user.id)).email_verified_at).not.toBeNull();
+    expect((await mailTo(second)).subject).toContain("undone");
     const hashOf = (value: string) =>
       new Bun.CryptoHasher("sha256").update(value).digest("hex");
     expect(
       await cache.get(cacheConstants.emailChangeReserved(hashOf(first))),
     ).toBeNull();
-    expect(second).not.toBe(first);
+  });
+
+  it("keeps every undo link when an undo fails part way, and the account cannot be deleted meanwhile", async () => {
+    const user = await account();
+    const { next: first, revertKey: own } = await changeAndConfirm(user);
+    const { next: second, revertKey: middle } = await changeAndConfirm(
+      user,
+      first,
+    );
+    const { next: third } = await changeAndConfirm(user, second);
+    spyOn(cache, "removeFromJsonArray").mockImplementationOnce(() =>
+      Promise.reject(new Error("cache down")),
+    );
+
+    expect((await revert(middle)).status).toBe(500);
+
+    expect(await row(user.id)).toMatchObject({ email: third });
+    const headers = await signIn(third);
+    expect(
+      (await client.auth.account.delete({ password: PASSWORD }, { headers }))
+        .status,
+    ).toBe(409);
+    expect((await revert(middle)).status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: first });
+    expect((await revert(own)).status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+  });
+
+  it("keeps the link when signing the sessions out fails during the undo", async () => {
+    const user = await account();
+    const { next, revertKey } = await changeAndConfirm(user);
+    spyOn(Backend.store.authService, "logoutAll").mockImplementationOnce(() =>
+      Promise.reject(new Error("cache down")),
+    );
+
+    expect((await revert(revertKey)).status).toBe(500);
+
+    expect(await row(user.id)).toMatchObject({ email: next });
+    expect((await revert(revertKey)).status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: user.email });
   });
 
   it("keeps the first undo link working after a later change was undone from its own previous address", async () => {

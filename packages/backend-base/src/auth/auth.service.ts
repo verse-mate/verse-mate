@@ -4,6 +4,7 @@ import type Database from "database/src/models/Database";
 import type SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 import type { User } from "database/src/models/public/User";
 import type { Transaction } from "kysely";
+import ms from "ms";
 
 import {
   ConfirmEmailChange,
@@ -42,8 +43,8 @@ const EMAIL_CHANGE_MAILS_PER_RECIPIENT = 3;
 const EMAIL_CHANGE_REQUESTS_PER_HOUR = 30;
 const EMAIL_CHANGE_TRIES = 5;
 const EMAIL_CHANGE_REVERT_LIFETIME = "7d";
-const EMAIL_CHANGE_REVERT_MS = 7 * 24 * 60 * 60 * 1000;
-const EMAIL_CHANGE_REVERTS_KEPT = EMAIL_CHANGE_MAILS_PER_HOUR * 24 * 7;
+const EMAIL_CHANGE_REVERT_MS = ms(EMAIL_CHANGE_REVERT_LIFETIME);
+const EMAIL_CHANGE_REVERTS_KEPT = EMAIL_CHANGE_MAILS_PER_HOUR * (24 * 7 + 1);
 const UNIQUE_VIOLATION = "23505";
 
 type AccountProfile = Pick<
@@ -61,6 +62,7 @@ type PendingEmailChange = {
   requestId: string;
   from: string;
   to: string;
+  session: string;
   requestedAt: number;
 };
 
@@ -968,6 +970,7 @@ export class AuthService {
   public async updateProfile(
     userId: string,
     authUpdateProfileInput: AuthUpdateProfileInput,
+    accessToken: string,
   ): Promise<AccountProfile | null> {
     const { firstName, lastName, email } = authUpdateProfileInput;
 
@@ -999,7 +1002,8 @@ export class AuthService {
         .where("id", "=", userId)
         .execute();
 
-    if (newRequest) await this.requestEmailChange(userId, from, to);
+    if (newRequest)
+      await this.requestEmailChange(userId, from, to, hashKey(accessToken));
     else if (
       alreadyPending &&
       Date.now() - pending.requestedAt > this.emailChangeSettleMs
@@ -1032,7 +1036,12 @@ export class AuthService {
       await refuse(requests);
   }
 
-  private async requestEmailChange(userId: string, from: string, to: string) {
+  private async requestEmailChange(
+    userId: string,
+    from: string,
+    to: string,
+    session: string,
+  ) {
     const requestId = randomUUID();
     await this.cache.set(
       cacheConstants.emailChangePending(userId),
@@ -1040,6 +1049,7 @@ export class AuthService {
         requestId,
         from,
         to,
+        session,
         requestedAt: Date.now(),
       } satisfies PendingEmailChange,
       EMAIL_CHANGE_LIFETIME,
@@ -1072,6 +1082,10 @@ export class AuthService {
       .where(sql`lower(trim(email))`, "=", pending.from)
       .executeTakeFirst();
     if (!holder) return;
+    if (!(await this.sessionAlive(userId, pending.session))) {
+      await this.dropEmailChangeRequest(userId, requestId);
+      return;
+    }
     const mailing = cacheConstants.emailChangeMailing(requestId);
     if (!(await this.cache.claim(mailing, EMAIL_CHANGE_LIFETIME))) return;
 
@@ -1124,6 +1138,7 @@ export class AuthService {
         requestId,
         from: pending.from,
         to: pending.to,
+        session: pending.session,
       } satisfies EmailChangeKey,
       EMAIL_CHANGE_LIFETIME,
     );
@@ -1142,6 +1157,13 @@ export class AuthService {
       await this.cache.delete(keyRecord);
       await this.cache.delete(mailing);
     }
+  }
+
+  private async sessionAlive(userId: string, session: string) {
+    const tokens =
+      (await this.cache.get<string[]>(cacheConstants.accessToken(userId))) ??
+      [];
+    return tokens.some((token) => hashKey(token) === session);
   }
 
   private async dropEmailChangeRequest(userId: string, requestId: string) {
@@ -1217,24 +1239,33 @@ export class AuthService {
             .set({ email: record.from, password: null })
             .where("id", "=", locked.id)
             .execute();
-          await trx
-            .updateTable("user")
-            .set({ emailVerified: true, email_verified_at: sql`now()` })
-            .where("id", "=", locked.id)
-            .where(sql`lower(trim(email))`, "=", record.from)
-            .execute();
           let addedSince = trx
             .deleteFrom("user_sso_accounts")
             .where("user_id", "=", locked.id);
           if (record.linkIds.length > 0)
             addedSince = addedSince.where("id", "not in", record.linkIds);
           await addedSince.execute();
+          const linksKept = await trx
+            .selectFrom("user_sso_accounts")
+            .select("id")
+            .where("user_id", "=", locked.id)
+            .executeTakeFirst();
+          await trx
+            .updateTable("user")
+            .set({
+              emailVerified: true,
+              email_verified_at: linksKept ? null : sql`now()`,
+            })
+            .where("id", "=", locked.id)
+            .where(sql`lower(trim(email))`, "=", record.from)
+            .execute();
           await this.dropRevertsFrom(record.userId, hash);
           await this.cache.deleteWhen(
             cacheConstants.emailChangeReserved(hashKey(record.from)),
             "userId",
             record.userId,
           );
+          await this.logoutAll(record.userId);
           return { record, previous: locked.email.trim().toLowerCase() };
         });
     } catch (error) {
@@ -1247,9 +1278,13 @@ export class AuthService {
     console.info("Email change undone from the old address", {
       userId: record.userId,
     });
-    await this.cache.delete(cacheConstants.emailChangePending(record.userId));
     try {
+      await this.cache.removeFromJsonArray(
+        cacheConstants.emailChangeReverts(record.userId),
+        hash,
+      );
       await this.logoutAll(record.userId);
+      await this.cache.delete(cacheConstants.emailChangePending(record.userId));
     } finally {
       for (const to of new Set([record.to, previous]))
         if (to !== record.from) await this.mailEmailChangeUndone(to);
@@ -1267,7 +1302,7 @@ export class AuthService {
     const index = cacheConstants.emailChangeReverts(userId);
     const hashes = (await this.cache.get<string[]>(index)) ?? [];
     const at = hashes.indexOf(hash);
-    for (const later of at < 0 ? hashes : hashes.slice(at)) {
+    for (const later of hashes.slice(at + 1)) {
       const record = await this.cache.take<EmailChangeRevert>(
         cacheConstants.emailChangeRevert(later),
       );
@@ -1369,19 +1404,19 @@ export class AuthService {
       await this.dropEmailChangeRequest(record.userId, record.requestId);
     if (outcome === "unusable" || outcome === "refused") return "unusable";
 
-    await this.cache.set(
-      cacheConstants.emailChangeDone(hash),
-      { from: record.from },
-      EMAIL_CHANGE_LIFETIME,
-    );
-    await this.cache.deleteWhen(
-      cacheConstants.emailChangePending(record.userId),
-      "requestId",
-      record.requestId,
-    );
-    await this.cache.delete(cacheConstants.emailChangeTries(hash));
     try {
       await this.logoutAll(record.userId);
+      await this.cache.set(
+        cacheConstants.emailChangeDone(hash),
+        { from: record.from },
+        EMAIL_CHANGE_LIFETIME,
+      );
+      await this.cache.deleteWhen(
+        cacheConstants.emailChangePending(record.userId),
+        "requestId",
+        record.requestId,
+      );
+      await this.cache.delete(cacheConstants.emailChangeTries(hash));
     } finally {
       await this.mailEmailChanged(
         record,
@@ -1426,6 +1461,8 @@ export class AuthService {
       },
     );
     if (taken?.requestId !== record.requestId) return "unusable";
+    if (!(await this.sessionAlive(record.userId, record.session)))
+      return "refused";
     const other = await trx
       .selectFrom("user")
       .select("id")
@@ -1478,6 +1515,7 @@ export class AuthService {
       }))
     )
       throw new Error("The new address could not be confirmed");
+    await this.logoutAll(record.userId);
     return { revertable };
   }
 

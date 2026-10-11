@@ -197,11 +197,15 @@ const plugin = new Elysia()
           )
           .put(
             "/profile",
-            async ({ currentUserId, body, store: { authService } }) => {
-              if (!currentUserId) {
+            async ({ currentUserId, bearer, body, store: { authService } }) => {
+              if (!currentUserId || !bearer) {
                 throw new UnauthorizedError("Unauthorized");
               }
-              const user = await authService.updateProfile(currentUserId, body);
+              const user = await authService.updateProfile(
+                currentUserId,
+                body,
+                bearer,
+              );
               if (!user) {
                 throw new UnauthorizedError("User not found");
               }
