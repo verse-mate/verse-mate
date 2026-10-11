@@ -1,7 +1,7 @@
+import { authFetch } from "backend-api";
 import { $env } from "frontend-envs";
 import { useCallback, useEffect, useState } from "react";
 import { AnalyticsEvent, analytics } from "../analytics";
-import { authHeaders } from "../utils/auth-utils";
 import { userSession } from "./userSession";
 
 export interface Note {
@@ -65,11 +65,8 @@ export const useNotes = () => {
             setIsLoading(false);
             return;
           }
-          const response = await fetch(
+          const response = await authFetch(
             getApiPath(`/book/notes/${session.id}`),
-            {
-              headers: authHeaders(),
-            },
           );
           if (response.ok) {
             const data = await response.json();
@@ -136,9 +133,9 @@ export const useNotes = () => {
           if (!session?.id) {
             throw new Error("User not authenticated");
           }
-          const response = await fetch(getApiPath("/book/note/add"), {
+          const response = await authFetch(getApiPath("/book/note/add"), {
             method: "POST",
-            headers: authHeaders({ "Content-Type": "application/json" }),
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               user_id: session.id,
               book_id: noteData.bookId,
@@ -233,9 +230,9 @@ export const useNotes = () => {
 
       try {
         if (USE_BACKEND) {
-          const response = await fetch(getApiPath("/book/note/update"), {
+          const response = await authFetch(getApiPath("/book/note/update"), {
             method: "PUT",
-            headers: authHeaders({ "Content-Type": "application/json" }),
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               note_id: id,
               content,
@@ -321,11 +318,10 @@ export const useNotes = () => {
 
       try {
         if (USE_BACKEND) {
-          const response = await fetch(
+          const response = await authFetch(
             getApiPath(`/book/note/remove?note_id=${id}`),
             {
               method: "DELETE",
-              headers: authHeaders(),
             },
           );
 
