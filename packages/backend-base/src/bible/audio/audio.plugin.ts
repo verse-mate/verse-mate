@@ -1,6 +1,8 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../../auth/auth.utils";
+import { clientBucket } from "../../common/client-ip";
 import { createErrorHandler } from "../../common/error-handler";
+import { createRateLimit } from "../../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../../common/response-schemas";
 import shared from "../../shared/shared.plugin";
 import { ObjectStorageService } from "../../shared/storage/storage.service";
@@ -12,7 +14,39 @@ import {
   AudioProgressSchema,
   AudioResponseSchema,
 } from "./audio.schemas";
-import { AudioService } from "./audio.service";
+import { AudioService, MAX_EXPLANATION_ID } from "./audio.service";
+
+export const SYNTHESIS_LIMIT = {
+  windowSeconds: 600,
+  perCaller: 30,
+  overall: 100,
+  overallKey: "audio-synthesis:all",
+};
+
+const callerSynthesisLimit = createRateLimit({
+  windowSeconds: SYNTHESIS_LIMIT.windowSeconds,
+  max: SYNTHESIS_LIMIT.perCaller,
+  keyGenerator: ({ currentUserId, request, server }) =>
+    currentUserId
+      ? `audio-synthesis:user:${currentUserId}`
+      : `audio-synthesis:ip:${clientBucket(request, server)}`,
+  message: "Too many new audio requests, please try again later",
+});
+
+const overallSynthesisLimit = createRateLimit({
+  windowSeconds: SYNTHESIS_LIMIT.windowSeconds,
+  max: SYNTHESIS_LIMIT.overall,
+  keyGenerator: () => SYNTHESIS_LIMIT.overallKey,
+  message: "Too many new audio requests, please try again later",
+});
+
+const ExplanationIdParams = t.Object({
+  explanationId: t.Numeric({
+    minimum: 1,
+    maximum: MAX_EXPLANATION_ID,
+    multipleOf: 1,
+  }),
+});
 
 const plugin = new Elysia({ name: "audio" })
   .use(shared)
@@ -30,15 +64,22 @@ const plugin = new Elysia({ name: "audio" })
         async ({
           params,
           query,
-          store: { audioService },
+          store,
           currentUserId,
           set,
+          request,
+          server,
         }) => {
-          const result = await audioService.getOrQueueAudio({
+          const result = await store.audioService.getOrQueueAudio({
             explanation_id: params.explanationId,
             voice: query.voice,
             language: query.language,
             currentUserId,
+            beforeSynthesis: async () => {
+              const context = { store, set, request, server, currentUserId };
+              await callerSynthesisLimit(context);
+              await overallSynthesisLimit(context);
+            },
           });
 
           if (result.kind === "ready") {
@@ -49,7 +90,7 @@ const plugin = new Elysia({ name: "audio" })
           return { job: result.job };
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           query: t.Object({
             voice: t.Optional(t.String()),
             language: t.Optional(t.String()),
@@ -63,8 +104,11 @@ const plugin = new Elysia({ name: "audio" })
       )
       .get(
         "/jobs/:jobId",
-        async ({ params, store: { audioService } }) => {
-          const status = await audioService.getJobStatus(params.jobId);
+        async ({ params, currentUserId, store: { audioService } }) => {
+          const status = await audioService.getJobStatus(
+            params.jobId,
+            currentUserId,
+          );
           return { job: status };
         },
         {
@@ -98,7 +142,7 @@ const plugin = new Elysia({ name: "audio" })
           return progress;
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           response: {
             200: AudioProgressSchema,
             404: t.Object({ error: t.String(), message: t.String() }),
@@ -137,7 +181,7 @@ const plugin = new Elysia({ name: "audio" })
           return undefined;
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           body: AudioProgressSaveBodySchema,
           response: {
             200: AudioProgressSchema,
@@ -162,7 +206,7 @@ const plugin = new Elysia({ name: "audio" })
           return undefined;
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           response: {
             204: t.Void(),
             ...StandardErrorResponses,
