@@ -142,8 +142,8 @@ const plugin = new Elysia()
   .group("/webhooks", (app) =>
     app.post(
       "/slack",
-      async ({ headers, store: { supportService }, request, set }) => {
-        const bodyRaw = await request.text();
+      async ({ body, headers, store: { supportService }, set }) => {
+        const bodyRaw = String(body);
         const signature = headers["x-slack-signature"];
         const timestamp = headers["x-slack-request-timestamp"];
 
@@ -152,13 +152,15 @@ const plugin = new Elysia()
           !timestamp ||
           !supportService.verifySlackSignature(signature, timestamp, bodyRaw)
         ) {
+          console.warn(
+            `Refused a Slack webhook request (retry ${Number(headers["x-slack-retry-num"]) || 0}): missing, stale or invalid signature`,
+          );
           set.status = 401;
           return "Invalid signature";
         }
 
         const payload = JSON.parse(bodyRaw);
 
-        // Handle Slack URL verification challenge
         if (payload.type === "url_verification") {
           return { challenge: payload.challenge };
         }
@@ -169,6 +171,7 @@ const plugin = new Elysia()
 
         return { success: true };
       },
+      { parse: ({ request }) => request.text() },
     ),
   );
 

@@ -6,6 +6,9 @@ import { SupportRepository } from "../repository/support.repository";
 
 const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
 
+const escapeSlackText = (value: string) =>
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 export class SupportService {
   private slackClient: WebClient;
   private channelId: string;
@@ -31,28 +34,31 @@ export class SupportService {
       .select(["firstName", "lastName", "email"])
       .executeTakeFirst();
 
-    const userName = user
-      ? `${user.firstName} ${user.lastName}`
-      : "Unknown User";
-    const userEmail = user ? user.email : "Unknown Email";
+    const userName = escapeSlackText(
+      user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+    );
+    const userEmail = escapeSlackText(user ? user.email : "Unknown Email");
+    const subjectLine = subject
+      ? `\n*Subject:* ${escapeSlackText(subject)}`
+      : "";
 
     // 2. Create Slack thread (new top-level message)
     const result = await this.slackClient.chat.postMessage({
       channel: this.channelId,
-      text: `New conversation from *${userName}* (${userEmail})${subject ? `\n*Subject:* ${subject}` : ""}`,
+      text: `New conversation from *${userName}* (${userEmail})${subjectLine}`,
       blocks: [
         {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `*New Support Request*\n*User:* ${userName}\n*Email:* ${userEmail}${subject ? `\n*Subject:* ${subject}` : ""}`,
+            text: `*New Support Request*\n*User:* ${userName}\n*Email:* ${userEmail}${subjectLine}`,
           },
         },
         {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: text,
+            text: escapeSlackText(text),
           },
         },
       ],
@@ -104,7 +110,7 @@ export class SupportService {
     await this.slackClient.chat.postMessage({
       channel: this.channelId,
       thread_ts: conversation.slack_thread_ts,
-      text: text,
+      text: escapeSlackText(text),
     });
 
     // 4. Update last_message_at
@@ -116,18 +122,27 @@ export class SupportService {
   }
 
   async handleSlackReply(event: any) {
-    // 1. Filter bot messages
     if (event.bot_id || event.subtype === "bot_message") {
       return { success: true, ignored: true };
     }
 
-    // 2. Identify Thread
+    if (
+      event.type !== "message" ||
+      event.channel !== this.channelId ||
+      typeof event.text !== "string"
+    ) {
+      return {
+        success: true,
+        ignored: true,
+        reason: "Not a message in the support channel",
+      };
+    }
+
     const threadTs = event.thread_ts;
     if (!threadTs) {
       return { success: true, ignored: true, reason: "Not a thread reply" };
     }
 
-    // 3. Match Conversation
     const conversation =
       await this.supportRepository.getConversationBySlackThreadTs(threadTs);
     if (!conversation) {
@@ -138,15 +153,16 @@ export class SupportService {
       };
     }
 
-    // 4. Save message
-    await this.supportRepository.addMessage(
+    const saved = await this.supportRepository.addSlackReply(
       conversation.id,
       conversation.user_id,
       event.text,
-      "support" as SupportSenderEnum,
+      typeof event.ts === "string" ? event.ts : null,
     );
+    if (!saved) {
+      return { success: true, ignored: true, reason: "Already delivered" };
+    }
 
-    // 5. Update last_message_at
     await this.supportRepository.updateConversationLastMessageAt(
       conversation.id,
     );
@@ -204,6 +220,6 @@ export class SupportService {
       return false;
     }
 
-    return crypto.timingSafeEqual(sigBuffer as any, compBuffer as any);
+    return crypto.timingSafeEqual(sigBuffer, compBuffer);
   }
 }
