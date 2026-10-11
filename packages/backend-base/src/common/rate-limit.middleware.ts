@@ -148,6 +148,16 @@ export const authRateLimiters = {
     message: "Too many SSO attempts, please try again in a minute",
   }),
 
+  confirmEmailChange: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 3600,
+      max: 20,
+      keyGenerator: (context) =>
+        `confirm-email-change:${clientBucket(context.request, context.server)}`,
+      message: "Too many attempts, please try again later",
+    }),
+  ),
+
   sendEmailVerification: createRateLimit({
     windowSeconds: 3600,
     max: 5,
