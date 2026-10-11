@@ -130,7 +130,6 @@ export class AuthService {
     userAgent?: string,
     ipAddress?: string,
   ): Promise<AuthPayload> {
-    // Create short-lived access token (15 minutes)
     const accessToken = await jwt.sign({
       sub: user.id,
       jti: randomUUID(),

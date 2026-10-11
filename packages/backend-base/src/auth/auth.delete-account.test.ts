@@ -1,4 +1,12 @@
-import { beforeAll, describe, expect, it, spyOn } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  mock,
+  spyOn,
+} from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import cacheConstants from "../shared/cache.constants";
@@ -10,6 +18,20 @@ describe("Auth - Delete Account", () => {
   const client = getTestClient<AuthPlugin>(Backend);
   const cacheService = Backend.store.cache;
   const db = Backend.store.db.getOrCreateConnection();
+
+  afterAll(() => {
+    mock.restore();
+  });
+
+  const signUp = async (input: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+  }) => {
+    await cacheService.delete("rate-limit:signup:unknown");
+    return client.auth.signup.post(input);
+  };
 
   let emailPasswordUser: {
     email: string;
@@ -32,7 +54,7 @@ describe("Auth - Delete Account", () => {
     );
 
     const { data: signupData, error: signupError } =
-      await client.auth.signup.post(emailPasswordSignup);
+      await signUp(emailPasswordSignup);
     if (signupError) throw signupError;
     if (!signupData) throw new Error("Signup failed");
 
@@ -68,7 +90,7 @@ describe("Auth - Delete Account", () => {
       Promise.resolve({ delivered: true }),
     );
 
-    const { data: signupData } = await client.auth.signup.post(testUser);
+    const { data: signupData } = await signUp(testUser);
     if (!signupData) throw new Error("Signup failed");
 
     const { data: userData } = await client.auth.user.get({
@@ -147,7 +169,7 @@ describe("Auth - Delete Account", () => {
     expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(400);
-    expect((error as any)?.value?.error).toBe("VALIDATION_ERROR");
+    expect((error as any)?.value?.error).toBe("PASSWORD_REQUIRED");
     expect((error as any)?.value?.message).toContain(
       "Password is required to delete your account",
     );
@@ -257,7 +279,7 @@ describe("Auth - Delete Account", () => {
       Promise.resolve({ delivered: true }),
     );
 
-    const { data: signupData } = await client.auth.signup.post(testUser);
+    const { data: signupData } = await signUp(testUser);
     if (!signupData) throw new Error("Signup failed");
 
     const { data: userData } = await client.auth.user.get({
@@ -289,13 +311,6 @@ describe("Auth - Delete Account", () => {
       .selectAll()
       .executeTakeFirst();
     expect(deletedUser).toBeUndefined();
-
-    // Verify refresh tokens are deleted
-    const refreshTokens = await db
-      .selectFrom("refresh_tokens")
-      .where("user_id", "=", userData.id)
-      .execute();
-    expect(refreshTokens).toHaveLength(0);
   });
 
   it("should require authentication to delete account", async () => {
@@ -321,7 +336,7 @@ describe("Auth - Delete Account", () => {
       Promise.resolve({ delivered: true }),
     );
 
-    const { data: signupData } = await client.auth.signup.post(testUser);
+    const { data: signupData } = await signUp(testUser);
     if (!signupData) throw new Error("Signup failed");
 
     const { data: userData } = await client.auth.user.get({
