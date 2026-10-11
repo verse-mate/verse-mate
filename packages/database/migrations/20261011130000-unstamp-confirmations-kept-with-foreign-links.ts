@@ -6,14 +6,21 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await sql`
     UPDATE "user" AS u
     SET email_verified_at = NULL
-    WHERE u.email_verified_at >= (
-      SELECT "timestamp"::timestamptz FROM kysely_migration
-      WHERE name = '20261011000000-user-confirmation-stamp'
-    )
+    WHERE u.email_verified_at IS NOT NULL
     AND EXISTS (
       SELECT 1 FROM user_sso_accounts AS s
       WHERE s.user_id = u.id
-        AND lower(trim(s.email)) <> lower(trim(u.email))
+        AND (
+          lower(trim(s.email)) <> lower(trim(u.email))
+          OR s.created_at < COALESCE(
+            (
+              SELECT ("timestamp"::timestamptz AT TIME ZONE 'UTC') + interval '1 day'
+              FROM kysely_migration
+              WHERE name = '20261011000000-user-confirmation-stamp'
+            ),
+            'infinity'::timestamp
+          )
+        )
     )
   `.execute(db);
 }

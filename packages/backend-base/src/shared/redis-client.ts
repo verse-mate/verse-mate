@@ -25,7 +25,12 @@ if #kept == #list then return 0 end
 if #kept == 0 then
   redis.call("DEL", KEYS[1])
 else
-  redis.call("SET", KEYS[1], cjson.encode(kept), "KEEPTTL")
+  local ttl = redis.call("PTTL", KEYS[1])
+  if ttl > 0 then
+    redis.call("SET", KEYS[1], cjson.encode(kept), "PX", ttl)
+  else
+    redis.call("SET", KEYS[1], cjson.encode(kept))
+  end
 end
 return #list - #kept
 `;
