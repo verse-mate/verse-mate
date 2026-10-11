@@ -11,6 +11,7 @@ import {
 import { Pool } from "pg";
 
 import { DISCARD_FLAG } from "../../migrations/20261011010000-coach-reports-and-roster";
+import { RESTORE_FLAG } from "../../migrations/20261011050000-coach-clear-unproven-confirmations";
 import { getCleanConnectionString, getSSLConfig } from "../utils/ssl-config";
 
 const MIGRATIONS = path.join(import.meta.dir, "../../migrations");
@@ -272,7 +273,9 @@ async function refusals(
 ): Promise<string[]> {
   const failures: string[] = [];
   const discard = process.env[DISCARD_FLAG];
+  const restore = process.env[RESTORE_FLAG];
   delete process.env[DISCARD_FLAG];
+  delete process.env[RESTORE_FLAG];
   try {
     for (const [suffix, refusal] of REFUSALS) {
       const name = block.find((n) => n.endsWith(`-${suffix}`));
@@ -310,6 +313,7 @@ async function refusals(
   } finally {
     if (discard === undefined) delete process.env[DISCARD_FLAG];
     else process.env[DISCARD_FLAG] = discard;
+    if (restore !== undefined) process.env[RESTORE_FLAG] = restore;
   }
   return failures;
 }

@@ -56,7 +56,7 @@ empty list, an empty string).
 | Migration | Refuses while (the flag overrides) | Also |
 |---|---|---|
 | `20261011050000-coach-clear-unproven-confirmations` | `coach_confirmation_clears` holds rows, with neither `COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1` nor `COACH_ROLLBACK_DISCARD_DATA=1` | With `COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1` it restores the confirmations the sweep and the roster triggers cleared (below). With `COACH_ROLLBACK_DISCARD_DATA=1` it leaves them cleared and keeps the records. |
-| `20261011040000-coach-identity-binding` | a leader or admin is bound to an account (`user_id` on `coach_leaders` or `coach_admins`); `coach_confirmation_clears`, `coach_leader_email_requests` or `coach_leader_email_changes` holds rows | Drops the clearing function and the triggers on `coach_leaders` and `coach_admins`. A pending address change can no longer be confirmed. Clear records the M6 down could not restore are lost with the flag. |
+| `20261011040000-coach-identity-binding` | a leader or admin is bound to an account (`user_id` on `coach_leaders` or `coach_admins`); `coach_confirmation_clears`, `coach_leader_email_requests` or `coach_leader_email_changes` holds rows | Drops the clearing function and the triggers on `coach_leaders` and `coach_admins`. A pending address change can no longer be confirmed. Clear records the sweep's down did not restore are lost with the flag. |
 | `20261011030000-coach-uploads-rotating-schedules` | `coach_uploads`, `coach_rotating_classes`, `coach_reminder_sends`, `coach_reminder_summaries`, `coach_monthly_reports` or `coach_monday_reminders` holds rows; a leader is `rotating_only`; a session holds an upload or rotating-class column (`source = 'upload'`, `class_key`, `meeting_link`, `rotating_class_id`, `leader_cue`, `leader_cue_line`, `duplicate_of`, `duplicate_dismissed_at`) | Refuses with no override while a session is `received`, `upload_failed` or `duplicate`, or was matched by `rotating_class` or `upload`: the older schema cannot hold it. Dump those sessions and delete each one, or settle it on the current code. Uploaded recordings stay in the bucket, unreferenced. |
 | `20261011020000-coach-session-pipeline` | `coach_intake_sessions`, `coach_session_assets`, `coach_calibration_runs`, `coach_report_amendments` or `coach_report_edits` holds rows | Stored recordings and transcripts stay in the bucket, unreferenced. |
 | `20261011010000-coach-reports-and-roster` | `coach_reports`, `coach_monthly_narratives` or `coach_monthly_leader_summaries` holds rows; a roster column on `coach_leaders` holds data (`slug`, `is_coach`, `zoom_link`, `is_benchmark`, `title_match`, `alt_emails`, `not_teaching_attested_at`, `not_teaching_attested_by`) | Drops without a check `coach_report_dimension_scores` (their reports are guarded), `coach_dataset_meta` (derived from the reports) and `coach_admins` (the admin list; an admin bound to an account is guarded by the identity binding's down, and the roster backfill puts the bundled admins back only when the table is empty, so note any admin granted from the portal before rolling back). |
@@ -92,9 +92,10 @@ A restored account is exactly as unproven as it was before the deploy: whoever r
 roster or admin address holds it again, with the provider links made for their own address.
 While this branch's code still runs, the real owner's next Google or Apple sign-in on that
 address stamps the account and binds the leader record or admin role to it, links included.
-So restore only when the identity change is being rolled back as a whole (the identity
-binding's down next, and the code back to a build without it); otherwise leave the clears in
-place.
+So restore only when the identity change is being rolled back as a whole, and never while this
+branch's API serves: stop the API, or move it to main's image first (the deploy runbook's
+rollback), then run the sweep's down with the restore flag and the identity binding's down
+after it. Otherwise leave the clears in place.
 
 Nothing reads `coach_confirmation_clears` but this down. Once the rollback window has closed,
 empty it (`DELETE FROM coach_confirmation_clears`): it holds the addresses and removed provider
