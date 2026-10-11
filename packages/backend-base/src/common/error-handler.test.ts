@@ -309,6 +309,10 @@ describe("a route without its own error handler", () => {
 const withCode = (message: string, fields: Record<string, unknown>) =>
   Object.assign(new Error(message), fields);
 
+const UpstreamNotFoundError = class NotFoundError extends Error {
+  status = 404;
+};
+
 function routes(app: Elysia) {
   return app
     .get("/coded/:code", ({ params }) => {
@@ -322,6 +326,9 @@ function routes(app: Elysia) {
     })
     .get("/upstream-limit", () => {
       throw withCode("secret detail", { status: 429, retryAfter: 5 });
+    })
+    .get("/upstream-404", () => {
+      throw new UpstreamNotFoundError("No batch found with id secret detail");
     })
     .get("/forbidden", () => {
       throw status(403, { error: "FORBIDDEN", message: "Not yours" });
@@ -387,6 +394,13 @@ for (const [name, app] of Object.entries(plugins))
       it(`an Error carrying its own code ${code}`, async () => {
         expect(await call(`/coded/${code}`)).toEqual(answer);
       });
+
+    it("an upstream error that only shares the framework's class name gets the generic 500", async () => {
+      expect(await call("/upstream-404")).toEqual({
+        status: 500,
+        body: generic,
+      });
+    });
 
     it("a thrown status keeps its status and body", async () => {
       const { status, body } = await call("/forbidden");

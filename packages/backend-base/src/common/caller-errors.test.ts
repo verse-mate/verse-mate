@@ -5,13 +5,14 @@ import { Elysia } from "elysia";
 import adminPlugin from "../admin/admin.plugin";
 import authPlugin from "../auth/auth.plugin";
 import biblePlugin from "../bible/bible.plugin";
+import { PromptRepository } from "../bible/repository/prompt.repository";
 import {
   canonicalizeLanguageCode,
   resolveLanguageCode,
 } from "../shared/i18n/resolve-language-code";
 import { createTestUser } from "../shared/test-helpers";
 import supportPlugin from "../support/support.plugin";
-import { ValidationError } from "./errors";
+import { ConflictError, ValidationError } from "./errors";
 
 const app = new Elysia()
   .use(authPlugin)
@@ -202,5 +203,14 @@ describe("an invalid language code", () => {
           'Invalid language code "english". Expected BCP-47 format: "en" or "en-US".',
       },
     });
+  });
+});
+
+describe("a prompt the admin has not activated", () => {
+  it("is a conflict to resolve in the prompt editor, not a missing resource", async () => {
+    const prompts = new PromptRepository(adminPlugin.store.db);
+    await expect(
+      prompts.getActivePromptByType("never-configured-type"),
+    ).rejects.toBeInstanceOf(ConflictError);
   });
 });

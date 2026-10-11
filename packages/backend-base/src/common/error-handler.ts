@@ -25,10 +25,7 @@ export function unexpectedErrorResponse(
 }
 
 export const isRouteNotFound = (error: unknown): boolean =>
-  error instanceof NotFoundError ||
-  (error instanceof Error &&
-    !(error instanceof ApiError) &&
-    error.constructor.name === "NotFoundError");
+  error instanceof NotFoundError;
 
 const statusOf = (error: unknown): unknown =>
   typeof error === "object" && error !== null
