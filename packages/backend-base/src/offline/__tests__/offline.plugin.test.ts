@@ -5,19 +5,10 @@ import {
   describe,
   expect,
   it,
-  mock,
   spyOn,
 } from "bun:test";
 import { Elysia } from "elysia";
 import { type OfflineManifest, OfflineRepository } from "../offline.repository";
-
-// Set Env vars to prevent shared plugin crash if mock fails
-process.env.ENVIRONMENT = "test";
-process.env.EMAIL_FROM = "test@example.com";
-process.env.MAILGUN_API_KEY = "test";
-process.env.MAILGUN_DOMAIN = "test.com";
-process.env.POSTHOG_API_KEY = "test";
-process.env.POSTHOG_HOST = "test";
 
 const mockManifest: OfflineManifest = {
   bible_versions: [
@@ -34,25 +25,6 @@ const mockManifest: OfflineManifest = {
 };
 
 const mockLastModified = new Date("2025-01-01T00:00:00Z");
-
-// In-memory cache for the mock shared plugin
-const cacheStore = new Map<string, any>();
-const mockCache = {
-  get: async (key: string) => cacheStore.get(key) ?? null,
-  set: async (key: string, value: any) => {
-    cacheStore.set(key, value);
-  },
-  delete: async (key: string) => {
-    cacheStore.delete(key);
-  },
-};
-
-// Mock shared plugin with functional cache (uses .state, not .decorate)
-mock.module("../../shared/shared.plugin", () => ({
-  default: new Elysia({ name: "shared" })
-    .state("db", {} as any)
-    .state("cache", mockCache),
-}));
 
 const repositoryStubs = {
   buildManifest: async () => mockManifest,
@@ -84,9 +56,8 @@ describe("Offline Plugin", () => {
   let app: any;
 
   beforeAll(async () => {
-    cacheStore.clear();
-    // Dynamic import to ensure mocks and env vars are active
     const { default: offlinePlugin } = await import("../offline.plugin");
+    await offlinePlugin.store.cache.delete("offline:manifest");
     app = new Elysia().use(offlinePlugin);
   });
 
