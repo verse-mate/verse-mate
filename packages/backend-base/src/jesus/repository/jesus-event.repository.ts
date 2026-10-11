@@ -824,11 +824,7 @@ export class JesusEventRepository {
             "jesus_label_translations.entity_id",
           )
           .on("jesus_label_translations.entity_type", "=", sql.lit("theme"))
-          .on(
-            "jesus_label_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_label_translations.language_code", "=", languageCode)
           .on("jesus_label_translations.is_active", "=", true),
       )
       .where("jesus_event_themes.event_id", "in", ids)
