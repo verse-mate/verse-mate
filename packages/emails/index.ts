@@ -6,4 +6,5 @@ export {
   ConfirmEmailChange,
   EmailChangeAccountExists,
   EmailChanged,
+  EmailChangeUndone,
 } from "./src/EmailChange";

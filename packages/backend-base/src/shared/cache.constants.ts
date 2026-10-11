@@ -42,6 +42,10 @@ function emailChangeRevert(hash: string): string {
   return `emailChange:revert:${hash}`;
 }
 
+function emailChangeReverts(userId: string): string {
+  return `emailChange:reverts:${userId}`;
+}
+
 function emailChangeReserved(addressHash: string): string {
   return `emailChange:reserved:${addressHash}`;
 }
@@ -83,6 +87,7 @@ const cacheConstants = {
   emailChangeMailing,
   emailChangeDone,
   emailChangeRevert,
+  emailChangeReverts,
   emailChangeReserved,
   ssoState,
   dailyVersePick,

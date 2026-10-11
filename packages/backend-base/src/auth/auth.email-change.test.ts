@@ -41,6 +41,7 @@ afterEach(async () => {
     await cache.delete(cacheConstants.emailChangeMailsSent(id));
     await cache.delete(cacheConstants.emailChangeRequests(id));
     await cache.delete(cacheConstants.emailChangePending(id));
+    await cache.delete(cacheConstants.emailChangeReverts(id));
   }
   if (created.length > 0)
     await conn.deleteFrom("user").where("id", "in", created).execute();
@@ -338,12 +339,17 @@ describe("a profile update that changes the email", () => {
     });
   });
 
-  it("mails one address at most three change links an hour, whichever accounts ask", async () => {
+  it("mails one address at most three change links an hour, whichever accounts ask, and drops the change that got no link", async () => {
     const target = address("target");
-    for (let i = 0; i < 4; i += 1) await requestChange(await account(), target);
+    let headers: Record<string, string> = {};
+    for (let i = 0; i < 4; i += 1)
+      headers = (await requestChange(await account(), target)).headers;
     await Bun.sleep(100);
 
     expect(mails.filter((m) => m.to === target)).toHaveLength(3);
+    expect((await client.auth.session.get({ headers })).data).toMatchObject({
+      pendingEmail: null,
+    });
   });
 });
 
@@ -382,6 +388,15 @@ describe("the confirmation page", () => {
     expect(page.status).toBe(404);
     expect(await page.text()).not.toContain('method="post"');
   });
+
+  it("keeps no state for a confirmation of a key that does not exist", async () => {
+    const key = faker.string.alphanumeric(43);
+    const hash = new Bun.CryptoHasher("sha256").update(key).digest("hex");
+
+    expect((await confirm(key, address("guess"))).status).toBe(404);
+
+    expect(await cache.get(cacheConstants.emailChangeTries(hash))).toBeNull();
+  });
 });
 
 describe("confirming an email change", () => {
@@ -410,6 +425,19 @@ describe("confirming an email change", () => {
     expect(
       (await client.auth.session.get({ headers: after })).data,
     ).toMatchObject({ email: next, pendingEmail: null });
+  });
+
+  it("answers every attempt on a used link as unusable once five were made, whatever address is typed", async () => {
+    const user = await account();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    expect((await confirm(key, user.email)).status).toBe(200);
+
+    for (let i = 0; i < 5; i += 1)
+      expect((await confirm(key, address("guess"))).status).toBe(404);
+
+    expect((await confirm(key, user.email)).status).toBe(404);
   });
 
   it("changes nothing when the current address typed on the page is wrong, and burns the link after five wrong tries", async () => {
@@ -467,6 +495,46 @@ describe("confirming an email change", () => {
     expect(later.status).toBe(200);
     expect(await row(user.id)).toMatchObject({ email: next });
     expect(mails.filter((m) => m.to === user.email)).toHaveLength(1);
+  });
+
+  it("notifies the old address with its undo link even when signing the sessions out fails", async () => {
+    const user = await account();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    spyOn(Backend.store.authService, "logoutAll").mockImplementationOnce(() =>
+      Promise.reject(new Error("cache down")),
+    );
+
+    await confirm(key, user.email);
+
+    expect(await row(user.id)).toMatchObject({ email: next });
+    expect(revertKeyIn((await mailTo(user.email)).text)).not.toBe("");
+  });
+
+  it("leaves the account where it was when the undo link cannot be stored", async () => {
+    const user = await account();
+    const next = address("next");
+    const { headers } = await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    spyOn(cache, "appendToJsonArray").mockImplementationOnce(() =>
+      Promise.reject(new Error("cache down")),
+    );
+
+    expect((await confirm(key, user.email)).status).toBe(500);
+
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect(mails.filter((m) => m.to === user.email)).toHaveLength(0);
+    expect(
+      await cache.get(
+        cacheConstants.emailChangeReserved(
+          new Bun.CryptoHasher("sha256").update(user.email).digest("hex"),
+        ),
+      ),
+    ).toBeNull();
+    expect((await client.auth.session.get({ headers })).data).toMatchObject({
+      pendingEmail: null,
+    });
   });
 
   it("shows the confirmed page when the notice to the old address cannot be sent", async () => {
@@ -558,6 +626,9 @@ describe("confirming an email change", () => {
 
     expect(res.status).toBe(404);
     expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect(
+      await cache.get(cacheConstants.emailChangePending(user.id)),
+    ).toBeNull();
   });
 
   it("refuses when the account's address changed after the request", async () => {
@@ -572,8 +643,10 @@ describe("confirming an email change", () => {
       .where("id", "=", user.id)
       .execute();
 
+    const guess = await confirm(key, address("guess"));
     const res = await confirm(key, elsewhere);
 
+    expect(guess.status).toBe(404);
     expect(res.status).toBe(404);
     expect(await row(user.id)).toMatchObject({ email: elsewhere });
   });
@@ -641,13 +714,25 @@ const revert = (key: string) =>
     }),
   );
 
-async function changeAndConfirm(user: { id: string; email: string }) {
+async function changeAndConfirm(
+  user: { id: string; email: string },
+  current = user.email,
+) {
   const next = address("next");
-  await requestChange(user, next);
+  await requestChange({ ...user, email: current }, next);
   const key = keyIn((await mailTo(next)).text);
-  expect((await confirm(key, user.email)).status).toBe(200);
-  return { next, revertKey: revertKeyIn((await mailTo(user.email)).text) };
+  expect((await confirm(key, current)).status).toBe(200);
+  return { next, revertKey: revertKeyIn((await mailTo(current)).text) };
 }
+
+const passwordOf = async (id: string) =>
+  (
+    await conn
+      .selectFrom("user")
+      .select("password")
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow()
+  ).password;
 
 describe("undoing an email change from the old address", () => {
   it("moves the account back, removes the password and the sign-in links added since, signs out everywhere, and works once", async () => {
@@ -682,6 +767,13 @@ describe("undoing an email change from the old address", () => {
       .executeTakeFirstOrThrow();
     expect(back.email).toBe(user.email);
     expect(back.password).toBeNull();
+    expect(back.email_verified_at).not.toBeNull();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `before-${user.id}`,
+      ),
+    ).toBeTruthy();
     expect(
       (await client.auth.session.get({ headers: afterChange })).status,
     ).toBe(401);
@@ -708,7 +800,142 @@ describe("undoing an email change from the old address", () => {
     expect((await revert(revertKey)).status).toBe(200);
 
     expect(await row(user.id)).toMatchObject({ email: user.email });
-    expect(next).not.toBe(third);
+    for (const moved of [next, third])
+      expect((await mailTo(moved)).subject).toContain("undone");
+    expect(mails.filter((m) => m.to === user.email)).toHaveLength(1);
+  });
+
+  it("ends the undo links of every later change, so an address the account passed through cannot take it back", async () => {
+    const user = await account();
+    const { next: first, revertKey: own } = await changeAndConfirm(user);
+    const { next: second, revertKey: later } = await changeAndConfirm(
+      user,
+      first,
+    );
+
+    expect((await revert(own)).status).toBe(200);
+
+    expect((await revertPage(later)).status).toBe(404);
+    expect((await revert(later)).status).toBe(404);
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+    const hashOf = (value: string) =>
+      new Bun.CryptoHasher("sha256").update(value).digest("hex");
+    expect(
+      await cache.get(cacheConstants.emailChangeReserved(hashOf(first))),
+    ).toBeNull();
+    expect(second).not.toBe(first);
+  });
+
+  it("keeps the first undo link working after a later change was undone from its own previous address", async () => {
+    const user = await account();
+    const { next: first, revertKey: own } = await changeAndConfirm(user);
+    const { revertKey: later } = await changeAndConfirm(user, first);
+
+    expect((await revert(later)).status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: first });
+    expect((await revert(own)).status).toBe(200);
+
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+  });
+
+  it("removes a sign-in link added after the change whatever time it records", async () => {
+    const user = await account();
+    const { next, revertKey } = await changeAndConfirm(user);
+    const links = new UserSsoAccountRepository(db);
+    await links.create({
+      user_id: user.id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `backdated-${user.id}`,
+      email: next,
+    });
+    await conn
+      .updateTable("user_sso_accounts")
+      .set({ created_at: new Date(Date.now() - 24 * 60 * 60 * 1000) })
+      .where("provider_user_id", "=", `backdated-${user.id}`)
+      .execute();
+
+    expect((await revert(revertKey)).status).toBe(200);
+
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `backdated-${user.id}`,
+      ),
+    ).toBeFalsy();
+  });
+
+  it("keeps the link when the undo cannot apply yet, and undoes once it can", async () => {
+    const user = await account();
+    const { next, revertKey } = await changeAndConfirm(user);
+    const holder = await account(user.email);
+
+    expect((await revert(revertKey)).status).toBe(404);
+    expect(await row(user.id)).toMatchObject({ email: next });
+    expect((await revertPage(revertKey)).status).toBe(200);
+    await conn.deleteFrom("user").where("id", "=", holder.id).execute();
+
+    expect((await revert(revertKey)).status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+  });
+
+  it("refuses a new account through a sign-in provider for the old address while the link lives", async () => {
+    const user = await account();
+    await changeAndConfirm(user);
+
+    const signUp = new AuthService(
+      db,
+      cache,
+      Backend.store.notification,
+    ).loginWithSSO(
+      SsoProviderEnum.google,
+      {
+        providerUserId: `newcomer-${user.id}`,
+        email: user.email,
+        emailVerified: true,
+      } as never,
+      jwt as never,
+    );
+
+    await expect(signUp).rejects.toMatchObject({ status: 409 });
+    expect(
+      await conn
+        .selectFrom("user")
+        .select("id")
+        .where("email", "=", user.email)
+        .executeTakeFirst(),
+    ).toBeUndefined();
+  });
+
+  it("keeps the account from being deleted while the link lives, and deletes it once the link is gone", async () => {
+    const user = await account();
+    const { next, revertKey } = await changeAndConfirm(user);
+    const headers = await signIn(next);
+
+    const refused = await client.auth.account.delete(
+      { password: PASSWORD },
+      { headers },
+    );
+
+    expect(refused.status).toBe(409);
+    expect(refused.error?.value).toMatchObject({
+      details: { retryAfter: expect.any(Number) },
+    });
+    expect(await row(user.id)).toMatchObject({ email: next });
+    await cache.delete(
+      cacheConstants.emailChangeRevert(
+        new Bun.CryptoHasher("sha256").update(revertKey).digest("hex"),
+      ),
+    );
+
+    const deleted = await client.auth.account.delete(
+      { password: PASSWORD },
+      { headers },
+    );
+
+    expect(deleted.status).toBe(200);
+    expect(
+      await cache.get(cacheConstants.emailChangeReverts(user.id)),
+    ).toBeNull();
   });
 
   it("keeps the old address from being taken by a signup or another account while the link lives", async () => {
@@ -760,6 +987,64 @@ describe("confirming an email change on an account that was never confirmed", ()
       .where("id", "=", user.id)
       .executeTakeFirstOrThrow();
     expect(moved).toEqual({ email: next, password: null });
+  });
+
+  it("sends the old address no undo link and keeps nothing reserved for it", async () => {
+    const user = await account();
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: false })
+      .where("id", "=", user.id)
+      .execute();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+
+    expect((await confirm(key, user.email)).status).toBe(200);
+
+    const notice = await mailTo(user.email);
+    expect(notice.subject).toContain("changed");
+    expect(revertKeyIn(notice.text)).toBe("");
+    await Backend.store.authService.signup(
+      {
+        email: user.email,
+        password: "Signup1234",
+        firstName: "S",
+        lastName: "U",
+      },
+      jwt as never,
+    );
+    const newcomer = await conn
+      .selectFrom("user")
+      .select("id")
+      .where("email", "=", user.email)
+      .executeTakeFirstOrThrow();
+    created.push(newcomer.id);
+  });
+});
+
+describe("confirming email changes on a confirmed account whose stamp a provider link cleared", () => {
+  it("keeps the password across two changes", async () => {
+    const user = await account();
+    const links = new UserSsoAccountRepository(db);
+    await links.create({
+      user_id: user.id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `kept-${user.id}`,
+      email: user.email,
+    });
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", user.id)
+      .execute();
+
+    const { next: first } = await changeAndConfirm(user);
+    const { next: second } = await changeAndConfirm(user, first);
+
+    expect(await passwordOf(user.id)).not.toBeNull();
+    expect(await row(user.id)).toMatchObject({ email: second });
+    await signIn(second);
   });
 });
 
