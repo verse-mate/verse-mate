@@ -281,7 +281,7 @@ describe("Recently Viewed Books", () => {
 
     // Mock email sending for this signup
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // Create a fresh user for this test to avoid state pollution from previous tests
