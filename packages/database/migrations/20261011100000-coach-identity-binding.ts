@@ -1,6 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
-import { refuseToDrop } from "./20261011010000-coach-reports-and-roster";
+import { refuseToDrop } from "./20261011070000-coach-reports-and-roster";
 
 const TABLES = [
   "coach_confirmation_clears",

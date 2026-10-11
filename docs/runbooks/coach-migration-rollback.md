@@ -13,21 +13,27 @@ the deploy once the blocking session is gone. This page says what each down does
 that the block survives a full down and up (the round trip stops above that first file, so it
 never runs its down).
 
-The dates are placeholders: before the merge, each of the five files is renamed to the merge
-day, keeping their order, after the newest migration on `main` and after
+The dates are placeholders, set after the newest migration on `main` when they were last
+renamed (`20261011064824-support-messages-slack-ts`). Before the merge, each of the five files is
+renamed to the merge day, keeping their order, after the newest migration on `main` and after
 `20261011000000-user-confirmation-stamp` (the identity binding's function reads
-`user.email_verified_at`). The imports between them (`20261011010000-coach-reports-and-roster`
+`user.email_verified_at`). The imports between them (`20261011070000-coach-reports-and-roster`
 is imported by the later four and by the round trip) and the two coach tests that import a
 migration move with the names. The round trip finds each migration by the part of its name
-after the date, and fails while any migration from `main` sorts after the block: production has
-run it, so the migrator would refuse the block and the API would not start.
+after the date. It refuses to run, and the test `coach-migration-order.test.ts` fails in CI,
+while any other migration sorts after the first coach file: production has run that migration,
+so the migrator would refuse the block and the API would not start. After renaming, merge the
+newest `main`, run `bun run migrate:coach-roundtrip`, and merge only when it exits 0 and CI is
+green.
 
 ## A database that ran the branch's earlier migrations
 
 Before 2026-10-11 the branch carried 49 coach migrations, since consolidated into these five.
 A local or test database that ran them stops at start (`corrupted migrations: previously
-executed migration ... is missing`). Production never ran them. Recreate such a database
-(drop it, create it, `bun run migrate:deploy`, `bun run db:seed`).
+executed migration ... is missing`). So does one that ran the five under their earlier dates
+(`20261011010000` to `20261011050000`) or under any date before a later rename. Production never
+ran them. Recreate such a database (drop it, create it, `bun run migrate:deploy`,
+`bun run db:seed`).
 
 ## Check the round trip
 
@@ -63,17 +69,17 @@ empty list, an empty string).
 
 | Migration | Refuses while (the flag overrides) | Also |
 |---|---|---|
-| `20261011050000-coach-clear-unproven-confirmations` | `coach_confirmation_clears` holds rows, with neither `COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1` nor `COACH_ROLLBACK_DISCARD_DATA=1` | With `COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1` it restores the confirmations the sweep and the roster triggers cleared (below). With `COACH_ROLLBACK_DISCARD_DATA=1` it leaves them cleared and keeps the records. |
-| `20261011040000-coach-identity-binding` | a leader or admin is bound to an account (`user_id` on `coach_leaders` or `coach_admins`); `coach_confirmation_clears`, `coach_leader_email_requests` or `coach_leader_email_changes` holds rows | Drops the clearing function and the triggers on `coach_leaders` and `coach_admins`. A pending address change can no longer be confirmed. Clear records the sweep's down did not restore are lost with the flag. |
-| `20261011030000-coach-uploads-rotating-schedules` | `coach_uploads`, `coach_rotating_classes`, `coach_reminder_sends`, `coach_reminder_summaries`, `coach_monthly_reports` or `coach_monday_reminders` holds rows; a leader is `rotating_only`; a session holds an upload or rotating-class column (`source = 'upload'`, `class_key`, `meeting_link`, `rotating_class_id`, `leader_cue`, `leader_cue_line`, `duplicate_of`, `duplicate_dismissed_at`) | Refuses with no override while a session is `received`, `upload_failed` or `duplicate`, or was matched by `rotating_class` or `upload`: the older schema cannot hold it. Dump those sessions and delete each one, or settle it on the current code. Uploaded recordings stay in the bucket, unreferenced. |
-| `20261011020000-coach-session-pipeline` | `coach_intake_sessions`, `coach_session_assets`, `coach_calibration_runs`, `coach_report_amendments` or `coach_report_edits` holds rows | Stored recordings and transcripts stay in the bucket, unreferenced. |
-| `20261011010000-coach-reports-and-roster` | `coach_reports`, `coach_monthly_narratives` or `coach_monthly_leader_summaries` holds rows; a roster column on `coach_leaders` holds data (`slug`, `is_coach`, `zoom_link`, `is_benchmark`, `title_match`, `alt_emails`, `not_teaching_attested_at`, `not_teaching_attested_by`) | Drops without a check `coach_report_dimension_scores` (their reports are guarded), `coach_dataset_meta` (derived from the reports) and `coach_admins` (the admin list; an admin bound to an account is guarded by the identity binding's down, and the roster backfill puts the bundled admins back only when the table is empty, so note any admin granted from the portal before rolling back). |
+| `20261011110000-coach-clear-unproven-confirmations` | `coach_confirmation_clears` holds rows, with neither `COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1` nor `COACH_ROLLBACK_DISCARD_DATA=1` | With `COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1` it restores the confirmations the sweep and the roster triggers cleared (below). With `COACH_ROLLBACK_DISCARD_DATA=1` it leaves them cleared and keeps the records. |
+| `20261011100000-coach-identity-binding` | a leader or admin is bound to an account (`user_id` on `coach_leaders` or `coach_admins`); `coach_confirmation_clears`, `coach_leader_email_requests` or `coach_leader_email_changes` holds rows | Drops the clearing function and the triggers on `coach_leaders` and `coach_admins`. A pending address change can no longer be confirmed. Clear records the sweep's down did not restore are lost with the flag. |
+| `20261011090000-coach-uploads-rotating-schedules` | `coach_uploads`, `coach_rotating_classes`, `coach_reminder_sends`, `coach_reminder_summaries`, `coach_monthly_reports` or `coach_monday_reminders` holds rows; a leader is `rotating_only`; a session holds an upload or rotating-class column (`source = 'upload'`, `class_key`, `meeting_link`, `rotating_class_id`, `leader_cue`, `leader_cue_line`, `duplicate_of`, `duplicate_dismissed_at`) | Refuses with no override while a session is `received`, `upload_failed` or `duplicate`, or was matched by `rotating_class` or `upload`: the older schema cannot hold it. Dump those sessions and delete each one, or settle it on the current code. Uploaded recordings stay in the bucket, unreferenced. |
+| `20261011080000-coach-session-pipeline` | `coach_intake_sessions`, `coach_session_assets`, `coach_calibration_runs`, `coach_report_amendments` or `coach_report_edits` holds rows | Stored recordings and transcripts stay in the bucket, unreferenced. |
+| `20261011070000-coach-reports-and-roster` | `coach_reports`, `coach_monthly_narratives` or `coach_monthly_leader_summaries` holds rows; a roster column on `coach_leaders` holds data (`slug`, `is_coach`, `zoom_link`, `is_benchmark`, `title_match`, `alt_emails`, `not_teaching_attested_at`, `not_teaching_attested_by`) | Drops without a check `coach_report_dimension_scores` (their reports are guarded), `coach_dataset_meta` (derived from the reports) and `coach_admins` (the admin list; an admin bound to an account is guarded by the identity binding's down, and the roster backfill puts the bundled admins back only when the table is empty, so note any admin granted from the portal before rolling back). |
 
 ## The confirmation sweep and its down
 
-`20261011040000-coach-identity-binding` creates `coach_clear_unproven_confirmation` and the
+`20261011100000-coach-identity-binding` creates `coach_clear_unproven_confirmation` and the
 triggers that call it when an address joins the roster or the admin list.
-`20261011050000-coach-clear-unproven-confirmations` runs it once over every roster and admin
+`20261011110000-coach-clear-unproven-confirmations` runs it once over every roster and admin
 address. Each clear is recorded in `coach_confirmation_clears`: the account, its address as
 it was, the provider links removed with it, and whether the sweep (`sweep`) or a trigger
 (`joined`, which is how the deploy backfill clears the bundled leaders) made it.
@@ -83,7 +89,7 @@ SELECT source, email, jsonb_array_length(removed_links) AS links, cleared_at
 FROM coach_confirmation_clears ORDER BY cleared_at;
 ```
 
-The down of `20261011050000-coach-clear-unproven-confirmations` refuses while any clear is
+The down of `20261011110000-coach-clear-unproven-confirmations` refuses while any clear is
 recorded, unless told what to do with them:
 
 - `COACH_ROLLBACK_DISCARD_DATA=1` leaves every cleared account cleared and keeps the records

@@ -10,11 +10,12 @@ import {
 } from "kysely";
 import { Pool } from "pg";
 
-import { DISCARD_FLAG } from "../../migrations/20261011010000-coach-reports-and-roster";
-import { RESTORE_FLAG } from "../../migrations/20261011050000-coach-clear-unproven-confirmations";
+import { DISCARD_FLAG } from "../../migrations/20261011070000-coach-reports-and-roster";
+import { RESTORE_FLAG } from "../../migrations/20261011110000-coach-clear-unproven-confirmations";
 import { getCleanConnectionString, getSSLConfig } from "../utils/ssl-config";
 
 const MIGRATIONS = path.join(import.meta.dir, "../../migrations");
+const FIRST_COACH = "coach-reports-and-roster";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 function connect(url: URL): Kysely<unknown> {
@@ -356,15 +357,16 @@ async function roundTrip(): Promise<boolean> {
     });
     const names = (await migrator.getMigrations()).map((m) => m.name);
     const isCoach = (n: string) => /coach/i.test(n);
-    const lastCoach = names.findLastIndex(isCoach);
-    const lastOther = names.findLastIndex(
-      (n, i) => i < lastCoach && !isCoach(n),
-    );
-    if (lastCoach < 0 || lastOther < 0)
-      throw new Error("no coach migration block to round-trip");
-    const block = names.slice(lastOther + 1, lastCoach + 1);
-    const beforeBlock = names[lastOther];
-    const trailing = names.slice(lastCoach + 1);
+    const first = names.findIndex((n) => n.endsWith(`-${FIRST_COACH}`));
+    if (first < 1)
+      throw new Error(`no ${FIRST_COACH} migration to start the coach block`);
+    const misplaced = names.slice(first).filter((n) => !isCoach(n));
+    if (misplaced.length > 0)
+      throw new Error(
+        `not coach migrations, yet sorting after ${names[first]}: ${misplaced.join(", ")}. The migrator refuses the coach block on a database that ran any of them, so rename the coach migrations after them first`,
+      );
+    const block = names.slice(first);
+    const beforeBlock = names[first - 1];
     console.log(
       `coach block: ${block.length} migrations, ${block[0]} .. ${block.at(-1)}`,
     );
@@ -393,11 +395,7 @@ async function roundTrip(): Promise<boolean> {
       );
       return false;
     }
-    if (trailing.length > 0)
-      console.error(
-        `${trailing.join(", ")} sort after the coach block: Kysely refuses to deploy the block on a database that ran them, so rename the coach migrations after them first`,
-      );
-    return failures.length === 0 && trailing.length === 0;
+    return failures.length === 0;
   } finally {
     await db.destroy();
     await sql`DROP DATABASE IF EXISTS ${sql.id(throwaway)} WITH (FORCE)`.execute(
