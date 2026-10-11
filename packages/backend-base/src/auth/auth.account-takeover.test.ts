@@ -283,7 +283,7 @@ describe("email confirmation through the route", () => {
       user_id: id,
       provider: SsoProviderEnum.google,
       provider_user_id: `same-address-${id}`,
-      email: email.toUpperCase(),
+      email: `  ${email.toUpperCase()} `,
     });
     await links.create({
       user_id: id,
@@ -1063,6 +1063,48 @@ describe("a sign-in that lands while the address owner takes the account back", 
     expect(await sessionsOf(id)).toEqual([`token-${id}`]);
   });
 
+  it("sees the owner's email confirmation committed by the time sessions are revoked", async () => {
+    const { id, email } = await legacyAccount();
+    const holder = address("holder");
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `holder-${id}`,
+      email,
+    });
+    await service().sendVerifyEmail(id);
+    const token = keySentTo(email);
+    const { race, signedIn } = signingInAfterRevoke(
+      id,
+      async () =>
+        (
+          await service().loginWithSSO(
+            SsoProviderEnum.google,
+            {
+              providerUserId: `holder-${id}`,
+              email: holder,
+              emailVerified: true,
+            },
+            holderJwt as never,
+          )
+        ).accessToken,
+    );
+
+    try {
+      await service().verifyEmail({
+        token,
+        jwt: jwt as never,
+        currentUserId: id,
+      });
+    } finally {
+      race.mockRestore();
+      await forget(holder);
+    }
+
+    expect(signedIn.session).toBeDefined();
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
+  });
+
   it("with a password the owner's provider adoption removes gets no session, and the owner keeps theirs", async () => {
     const { id, email } = await account({ password: true });
     const adoptingWhileIssuing = {
@@ -1357,7 +1399,7 @@ describe("requests the previous holder started before the owner took the account
     expect((await row(id)).email_verified_at).not.toBeNull();
   });
 
-  function beforeDeleting(race: () => Promise<unknown>) {
+  function beforeNextTransaction(race: () => Promise<unknown>) {
     const begin = conn.transaction.bind(conn);
     const hook = spyOn(conn, "transaction").mockImplementation(() => {
       hook.mockRestore();
@@ -1372,10 +1414,10 @@ describe("requests the previous holder started before the owner took the account
     return hook;
   }
 
-  it("an account deletion that needs no password does not delete the account once the owner confirmed it, and signs nobody out", async () => {
+  it("an account deletion that needs no password does not delete the account once the owner confirmed it, and keeps the owner's session", async () => {
     const { id, email } = await account();
     await seedSession(id, "device-a");
-    const hook = beforeDeleting(() => google(`owner-${id}`, email));
+    const hook = beforeNextTransaction(() => google(`owner-${id}`, email));
 
     try {
       await expect(service().deleteAccount(id)).rejects.toBeInstanceOf(
@@ -1385,14 +1427,41 @@ describe("requests the previous holder started before the owner took the account
       hook.mockRestore();
     }
     expect((await row(id)).email_verified_at).not.toBeNull();
-    expect(await sessionsOf(id)).toContain(`token-${id}`);
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
+  });
+
+  it("an email confirmation read before the owner's provider adoption committed keeps the adopted link and its session", async () => {
+    const { id, email } = await account({ password: true });
+    await service().sendVerifyEmail(id);
+    const token = keySentTo(email);
+    const hook = beforeNextTransaction(() => google(`owner-${id}`, email));
+
+    try {
+      await service().verifyEmail({
+        token,
+        jwt: {
+          sign: async (p: { sub: string }) => `verified-${p.sub}`,
+        } as never,
+        currentUserId: id,
+      });
+    } finally {
+      hook.mockRestore();
+    }
+
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `owner-${id}`,
+      ),
+    ).toBeTruthy();
+    expect(await sessionsOf(id)).toEqual([`token-${id}`, `verified-${id}`]);
   });
 
   it("an account deletion does not delete an account whose address changed meanwhile", async () => {
-    const { id } = await account({ emailVerified: true, password: true });
+    const { id } = await account({ password: true });
     await seedSession(id, "device-a");
     const elsewhere = address("moved");
-    const hook = beforeDeleting(() =>
+    const hook = beforeNextTransaction(() =>
       conn
         .updateTable("user")
         .set({ email: elsewhere })
@@ -1409,6 +1478,29 @@ describe("requests the previous holder started before the owner took the account
     }
     expect((await row(id)).email).toBe(elsewhere);
     expect(await sessionsOf(id)).toEqual(["device-a"]);
+  });
+
+  it("an account deletion checked against the old password does not delete the account once its owner reset the password", async () => {
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    await service().forgotPassword({ email });
+    const key = keySentTo(email);
+    const stampBefore = (await row(id)).email_verified_at;
+    const hook = beforeNextTransaction(() =>
+      service().resetPassword({ key, password: "the-owners-choice" }),
+    );
+
+    try {
+      await expect(
+        service().deleteAccount(id, PASSWORD),
+      ).rejects.toBeInstanceOf(ConflictError);
+    } finally {
+      hook.mockRestore();
+    }
+    expect((await row(id)).email_verified_at).toEqual(stampBefore);
+    expect((await row(id)).email).toBe(email);
   });
 
   it("an account deletion signs out every session once the account is gone", async () => {
@@ -1534,6 +1626,27 @@ describe("closing the remaining ways back in", () => {
     }
   });
 
+  it("counts every link a provider adoption of a never-confirmed account drops", async () => {
+    const { id, email } = await account({ password: true });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    const audit = spyOn(console, "info");
+
+    try {
+      await google(`owner-${id}`, email);
+      expect(audit).toHaveBeenCalledWith(
+        "Address confirmation took the account back",
+        { userId: id, proof: "provider", linksDropped: 1, signOutOthers: true },
+      );
+    } finally {
+      audit.mockRestore();
+    }
+  });
+
   it("records a reset that takes a never-confirmed account back, even with no link to drop", async () => {
     const { id, email } = await account({ password: true });
     await service().forgotPassword({ email });
@@ -1587,29 +1700,28 @@ describe("closing the remaining ways back in", () => {
       email,
     });
     const update = conn.updateTable.bind(conn);
+    const droppingOnExecute = (builder: any): any =>
+      new Proxy(builder, {
+        get(target, property) {
+          const value = target[property];
+          if (typeof value !== "function") return value;
+          if (property === "execute")
+            return async () => {
+              await conn
+                .deleteFrom("user_sso_accounts")
+                .where("user_id", "=", id)
+                .execute();
+              return target.execute();
+            };
+          return (...args: unknown[]) =>
+            droppingOnExecute(value.apply(target, args));
+        },
+      });
     const race = spyOn(conn, "updateTable").mockImplementation(((
       table: "user",
     ) => {
       race.mockRestore();
-      return {
-        set: (values: never) => ({
-          where: (...first: never[]) => ({
-            where: (...second: never[]) => ({
-              execute: async () => {
-                await conn
-                  .deleteFrom("user_sso_accounts")
-                  .where("user_id", "=", id)
-                  .execute();
-                return update(table)
-                  .set(values)
-                  .where(...(first as [never, never, never]))
-                  .where(...(second as [never]))
-                  .execute();
-              },
-            }),
-          }),
-        }),
-      };
+      return droppingOnExecute(update(table));
     }) as never);
 
     try {
