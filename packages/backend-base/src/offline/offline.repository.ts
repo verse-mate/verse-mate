@@ -463,7 +463,7 @@ export class OfflineRepository {
       .leftJoin("topic_translations", (join) =>
         join
           .onRef("topics.topic_id", "=", "topic_translations.topic_id")
-          .on("topic_translations.language_code", "=", sql.lit(languageCode)),
+          .on("topic_translations.language_code", "=", languageCode),
       )
       .where("topics.is_active", "=", true)
       .where((eb) =>
@@ -471,7 +471,7 @@ export class OfflineRepository {
           eb("topic_translations.language_code", "=", languageCode),
           // Include originals when requesting English and no translation exists
           eb.and([
-            eb(sql`${sql.lit(languageCode)}`, "in", sql`('en', 'en-US')`),
+            eb(eb.val(languageCode), "in", ["en", "en-US"]),
             eb("topic_translations.language_code", "is", null),
           ]),
         ]),
