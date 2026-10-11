@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 import type { User } from "database/src/models/public/User";
-import { ConflictError, ValidationError } from "../../common/errors";
+import { ConflictError, UnauthorizedError } from "../../common/errors";
 import shared from "../../shared/shared.plugin";
 import { AuthService } from "../auth.service";
 import type { SSOUserInfo } from "./sso-provider.interface";
@@ -661,7 +661,7 @@ describe("AuthService - SSO Operations", () => {
   });
 
   describe("login - SSO-only user error handling", () => {
-    it("should return specific error when SSO-only user attempts password login", async () => {
+    it("answers an SSO-only account's password login as any failed login", async () => {
       try {
         await authService.login(
           {
@@ -674,12 +674,9 @@ describe("AuthService - SSO Operations", () => {
         // Should not reach here
         expect(true).toBe(false);
       } catch (error) {
-        expect(error).toBeInstanceOf(ValidationError);
-        const validationError = error as ValidationError;
-        expect(validationError.code).toBe("SSO_ACCOUNT_NO_PASSWORD");
-        expect(validationError.message).toContain("Google");
-        expect(validationError.message).toContain(
-          "reset your password to add email/password login",
+        expect(error).toBeInstanceOf(UnauthorizedError);
+        expect((error as UnauthorizedError).message).toBe(
+          "Invalid credentials",
         );
       }
     });

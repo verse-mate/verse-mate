@@ -154,6 +154,18 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     ]);
   });
 
+  it("the password reset route counts the address and email, then the address, then the email", () => {
+    const reset = authPlugin.routes.find(
+      (route) =>
+        route.path === "/auth/forgot-password" && route.method === "POST",
+    ) as unknown as { hooks: { beforeHandle: { fn: unknown }[] } };
+    expect(reset.hooks.beforeHandle.map((hook) => hook.fn)).toStrictEqual([
+      authRateLimiters.forgotPassword,
+      authRateLimiters.forgotPasswordIp,
+      authRateLimiters.forgotPasswordEmail,
+    ]);
+  });
+
   it("an email longer than the column is refused before any limiter or lookup, and the report carries no body", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const sized = (length: number) =>

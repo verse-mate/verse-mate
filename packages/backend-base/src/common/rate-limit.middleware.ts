@@ -114,13 +114,27 @@ export const authRateLimiters = {
     message: "Too many signup attempts, please try again later",
   }),
 
-  /**
-   * Forgot password rate limiter: 3 attempts per email per hour
-   */
   forgotPassword: createRateLimit({
     windowSeconds: 3600,
     max: 3,
-    keyGenerator: (context) => `forgot-password:${digest(context.body.email)}`,
+    keyGenerator: (context) =>
+      `forgot-password:${digest(normalizedEmail(context.body?.email))}:${clientBucket(context.request, context.server)}`,
+    message: "Too many password reset requests, please try again later",
+  }),
+
+  forgotPasswordIp: createRateLimit({
+    windowSeconds: 3600,
+    max: 20,
+    keyGenerator: (context) =>
+      `forgot-password-ip:${clientBucket(context.request, context.server)}`,
+    message: "Too many password reset requests, please try again later",
+  }),
+
+  forgotPasswordEmail: createRateLimit({
+    windowSeconds: 3600,
+    max: 10,
+    keyGenerator: (context) =>
+      `forgot-password-email:${digest(normalizedEmail(context.body?.email))}`,
     message: "Too many password reset requests, please try again later",
   }),
 

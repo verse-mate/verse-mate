@@ -325,8 +325,11 @@ describe("Topics Plugin", () => {
         bibleVersion: "INVALID_VERSION",
       });
 
-      expect(error).toBeTruthy();
-      expect(status).toBe(500); // Server error for invalid version
+      expect(status).toBe(400);
+      expect((error as any)?.value).toEqual({
+        error: "VALIDATION_ERROR",
+        message: "Invalid bible version: INVALID_VERSION",
+      });
     });
   });
 });
