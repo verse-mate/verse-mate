@@ -2,6 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { signingSecret } from "./signing-secret";
+
 const repo = join(import.meta.dir, "../../../..");
 const plugin = join(import.meta.dir, "shared.plugin.ts");
 
@@ -71,5 +73,36 @@ describe("the session signing secret at startup", () => {
     for (const environment of ["development", "test"])
       for (const secret of ["test-secret", ...exampleSecrets])
         expect(start(environment, secret).exitCode).toBe(0);
+  });
+});
+
+describe("the signing secret rule", () => {
+  const production = (secret: string) => () =>
+    signingSecret({
+      ENVIRONMENT: "production",
+      AUTH_ACCESS_TOKEN_SECRET: secret,
+    });
+
+  it("padding does not lengthen a secret", () => {
+    expect(production(" ".repeat(40))).toThrow("AUTH_ACCESS_TOKEN_SECRET");
+    expect(production(`${unique.slice(0, 20)}${" ".repeat(20)}`)).toThrow(
+      "AUTH_ACCESS_TOKEN_SECRET",
+    );
+  });
+
+  it("every published example value is refused in production, padded or not", () => {
+    for (const secret of exampleSecrets) {
+      expect(production(secret)).toThrow("AUTH_ACCESS_TOKEN_SECRET");
+      expect(production(`  ${secret.padEnd(40)}`)).toThrow(
+        "AUTH_ACCESS_TOKEN_SECRET",
+      );
+    }
+  });
+
+  it("only production applies the length rule", () => {
+    for (const ENVIRONMENT of ["development", "test", "staging", undefined])
+      expect(
+        signingSecret({ ENVIRONMENT, AUTH_ACCESS_TOKEN_SECRET: "test-secret" }),
+      ).toBe("test-secret");
   });
 });
