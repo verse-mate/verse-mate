@@ -324,6 +324,11 @@ run() {
   q "$roster_sql" | sort -u >"$WORK/roster.txt"
   off_roster="$(comm -23 "$WORK/changed-addresses.txt" "$WORK/roster.txt" | wc -l | tr -d ' ')"
   turned_on="$(grep -c 'f -> t' "$OUT/confirmation-changes.tsv" || true)"
+  local turned_off recorded
+  turned_off="$(grep -c 't -> f' "$OUT/confirmation-changes.tsv" || true)"
+  q "SELECT source, lower(trim(email)), jsonb_array_length(removed_links) FROM coach_confirmation_clears
+    ORDER BY 2, 1" >"$OUT/confirmation-clears.tsv"
+  recorded="$(q "SELECT count(DISTINCT user_id) FROM coach_confirmation_clears")"
 
   log "a leader signs in, is asked to confirm, confirms, and reaches the portal"
   local hash leader member r token key leader_account="its existing account, password set for the rehearsal"
@@ -397,6 +402,7 @@ run() {
     sed 's/^/  - /' "$OUT/coach-deploy.log"
     echo "- Roster leaders: $leaders; admins: $admins; legacy reports: $legacy"
     echo "- Accounts whose confirmation changed: $changed (confirmation-changes.tsv)"
+    echo "- Recorded clears (the sweep's and the roster triggers'): $(wc -l <"$OUT/confirmation-clears.tsv" | tr -d ' ') for $recorded account(s) (confirmation-clears.tsv: source, address, provider links removed)"
     echo "- Accounts on roster or admin addresses that kept a confirmation without the new stamp (bind on their next Google or Apple sign-in, or the link): $kept_unstamped"
     echo
     echo "## Flows"
@@ -411,6 +417,7 @@ run() {
     check "the deploy backfill logged no failure" "$(grep -c 'failed\|skipped' "$OUT/coach-deploy.log" || true)" 0
     check "only roster or admin addresses changed confirmation" "$off_roster" 0
     check "no confirmation was turned on" "$turned_on" 0
+    check "every cleared confirmation is recorded" "$recorded" "$turned_off"
     check "two containers started together, both healthy" "$api_ok $api2_ok" "yes yes"
     check "starting again with the same bundle changed no coach row" "$digest_second" "$digest_first"
     check "leader sign-in" "$leader_login" 200
