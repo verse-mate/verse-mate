@@ -47,6 +47,30 @@ export interface SendResult {
 
 export const MAILGUN_TIMEOUT_MS = 30_000;
 
+const CONTROL_CHARACTER = /\p{Cc}/u;
+
+function mailbox(person: { name: string; email: string }): string {
+  return `"${person.name.replace(/["\\]/g, "\\$&")}" <${person.email}>`;
+}
+
+function refusal(data: MailData): string | null {
+  if (!isSingleRecipient(data.to.email))
+    return "refused: the recipient is not one plain email address";
+  for (const [role, person] of [
+    ["sender", data.from],
+    ["reply-to", data.replyTo],
+  ] as const) {
+    if (!person) continue;
+    if (!isSingleRecipient(person.email))
+      return `refused: the ${role} is not one plain email address`;
+    if (CONTROL_CHARACTER.test(person.name))
+      return `refused: the ${role} name has a control character`;
+  }
+  if (CONTROL_CHARACTER.test(data.subject))
+    return "refused: the subject has a control character";
+  return null;
+}
+
 export class EmailNotificationConsumer {
   private readonly environment!: string;
   private readonly emailFrom!: string;
@@ -79,18 +103,13 @@ export class EmailNotificationConsumer {
   }
 
   async sendEmail(data: MailData): Promise<SendResult> {
-    if (!isSingleRecipient(data.to.email))
-      return {
-        delivered: false,
-        error: "refused: the recipient is not one plain email address",
-      };
+    const refused = refusal(data);
+    if (refused) return { delivered: false, error: refused };
     if (["production", "staging"].includes(this.environment)) {
       const body = new URLSearchParams();
       body.append(
         "from",
-        data.from
-          ? `${data.from.name} <${data.from.email}>`
-          : `MyDomain <${this.emailFrom}>`,
+        data.from ? mailbox(data.from) : `MyDomain <${this.emailFrom}>`,
       );
       body.append("to", data.to.email);
       body.append("subject", data.subject);
@@ -99,11 +118,7 @@ export class EmailNotificationConsumer {
         body.append("html", data.html);
       }
       if (data.replyTo) {
-        // Mailgun passes any `h:` parameter through as a header.
-        body.append(
-          "h:Reply-To",
-          `${data.replyTo.name} <${data.replyTo.email}>`,
-        );
+        body.append("h:Reply-To", mailbox(data.replyTo));
       }
 
       const authBtoa = btoa(`api:${this.mailgunApiKey}`);
@@ -138,7 +153,7 @@ export class EmailNotificationConsumer {
 
       if (res.status !== 200) {
         const error =
-          json?.message ?? res.statusText ?? "unknown mail api error";
+          json?.message || res.statusText || "unknown mail api error";
         console.log(
           `[${EmailNotificationConsumer.name}]: Send email error: ${error}`,
         );

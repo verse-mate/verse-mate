@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
 
 import {
   EmailNotificationConsumer,
@@ -6,8 +6,18 @@ import {
 } from "./email-notification.consumer";
 
 const ENV = { ...process.env };
+const TOUCHED = [
+  "ENVIRONMENT",
+  "EMAIL_FROM",
+  "MAILGUN_API_KEY",
+  "MAILGUN_DOMAIN",
+] as const;
 afterEach(() => {
-  process.env.ENVIRONMENT = ENV.ENVIRONMENT;
+  mock.restore();
+  for (const key of TOUCHED) {
+    if (ENV[key] === undefined) delete process.env[key];
+    else process.env[key] = ENV[key];
+  }
 });
 
 function consumer(): EmailNotificationConsumer {
@@ -74,15 +84,10 @@ describe("the sender reports what happened", () => {
     // throwing sender would become an unhandled rejection on a path that is
     // otherwise fine.
     const { spy } = mockFetch(500, { message: "boom" });
-    const c = consumer();
-    let threw = false;
-    try {
-      c.sendEmail(MAIL);
-      await new Promise((r) => setTimeout(r, 10));
-    } catch {
-      threw = true;
-    }
-    expect(threw).toBe(false);
+    await expect(consumer().sendEmail(MAIL)).resolves.toMatchObject({
+      delivered: false,
+      status: 500,
+    });
     spy.mockRestore();
   });
 
@@ -108,7 +113,7 @@ describe("Reply-To has a mechanism", () => {
     });
     expect(sent.length).toBe(1);
     expect(readable(sent[0])).toContain(
-      "h:Reply-To=Coach <coach@example.test>",
+      'h:Reply-To="Coach" <coach@example.test>',
     );
     spy.mockRestore();
   });
@@ -124,6 +129,7 @@ describe("Reply-To has a mechanism", () => {
 
 describe("a send cannot hang the caller", () => {
   it("the request carries a timeout signal", async () => {
+    const timeout = spyOn(AbortSignal, "timeout");
     let signal: unknown;
     const spy = spyOn(globalThis, "fetch").mockImplementation(
       async (_url: unknown, init?: unknown) => {
@@ -134,6 +140,7 @@ describe("a send cannot hang the caller", () => {
     await consumer().sendEmail(MAIL);
     spy.mockRestore();
     expect(signal).toBeInstanceOf(AbortSignal);
+    expect(timeout).toHaveBeenCalledWith(MAILGUN_TIMEOUT_MS);
     expect(MAILGUN_TIMEOUT_MS).toBe(30_000);
   });
 
@@ -191,7 +198,7 @@ describe("a non-sending environment logs only what identifies no one", () => {
     try {
       const result = await dev.sendEmail({
         subject: "Your report for the Tuesday group",
-        to: { name: "Ines Varga", email: "ines.varga@example.org" },
+        to: { name: "Test Leader", email: "test.leader@example.org" },
         text: "Private feedback body",
         html: "<p>Private feedback body</p>",
       });
@@ -204,9 +211,108 @@ describe("a non-sending environment logs only what identifies no one", () => {
     expect(logged).toContain(
       String("Your report for the Tuesday group".length),
     );
-    expect(logged).not.toContain("ines.varga");
-    expect(logged).not.toContain("Ines Varga");
+    expect(logged).not.toContain("test.leader");
+    expect(logged).not.toContain("Test Leader");
     expect(logged).not.toContain("Tuesday");
     expect(logged).not.toContain("Private feedback");
+  });
+});
+
+describe("sender and reply-to are one quoted mailbox each", () => {
+  it("a display name with a comma or a quote stays one quoted name", async () => {
+    const { sent } = mockFetch(200);
+    await consumer().sendEmail({
+      ...MAIL,
+      from: { name: 'Team "A", Ops', email: "team@example.test" },
+      replyTo: { name: "Smith, J", email: "smith@example.test" },
+    });
+    const form = new URLSearchParams(sent[0]);
+    expect(form.get("from")).toBe('"Team \\"A\\", Ops" <team@example.test>');
+    expect(form.get("h:Reply-To")).toBe('"Smith, J" <smith@example.test>');
+  });
+
+  it.each([
+    [
+      "a reply-to address with a second recipient",
+      { replyTo: { name: "R", email: "r@example.test,x@example.test" } },
+      "reply-to",
+    ],
+    [
+      "a sender address with a second recipient",
+      { from: { name: "F", email: "f@example.test x@example.test" } },
+      "sender",
+    ],
+    [
+      "a reply-to name with a line break",
+      {
+        replyTo: { name: "R\r\nBcc: x@example.test", email: "r@example.test" },
+      },
+      "reply-to name",
+    ],
+    [
+      "a subject with a line break",
+      { subject: "s\r\nBcc: x@example.test" },
+      "subject",
+    ],
+  ])("%s is refused before any request", async (_label, extra, reason) => {
+    const { sent } = mockFetch(200);
+    const result = await consumer().sendEmail({ ...MAIL, ...extra });
+    expect(result.delivered).toBe(false);
+    expect(result.error).toContain(reason);
+    expect(sent).toEqual([]);
+  });
+
+  it("a refused address is refused in a non-sending environment too, not reported as suppressed", async () => {
+    consumer();
+    process.env.ENVIRONMENT = "development";
+    const result = await new EmailNotificationConsumer().sendEmail({
+      ...MAIL,
+      to: { name: "L", email: "a@example.test;b@example.test" },
+    });
+    expect(result.suppressed).toBeUndefined();
+    expect(result.error).toContain("recipient");
+  });
+});
+
+describe("the outcome of a real send", () => {
+  it("staging sends like production", async () => {
+    const { sent } = mockFetch(200);
+    consumer();
+    process.env.ENVIRONMENT = "staging";
+    const result = await new EmailNotificationConsumer().sendEmail(MAIL);
+    expect(result.delivered).toBe(true);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("a failure whose body is not JSON still names an error", async () => {
+    spyOn(globalThis, "fetch").mockImplementation(
+      async () => new Response("<html>Bad Gateway</html>", { status: 502 }),
+    );
+    const result = await consumer().sendEmail(MAIL);
+    expect(result).toMatchObject({ delivered: false, status: 502 });
+    expect(result.error).toBeTruthy();
+  });
+
+  it("the request carries the message, the domain and the key", async () => {
+    let url = "";
+    let init: RequestInit = {};
+    spyOn(globalThis, "fetch").mockImplementation(
+      async (u: unknown, i?: unknown) => {
+        url = String(u);
+        init = i as RequestInit;
+        return new Response(JSON.stringify({ id: "ok" }), { status: 200 });
+      },
+    );
+    await consumer().sendEmail({ ...MAIL, html: "<p>hi</p>" });
+    const form = new URLSearchParams(String(init.body));
+    expect(url).toBe("https://api.mailgun.net/v3/mail.example.test/messages");
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      `Basic ${btoa("api:key")}`,
+    );
+    expect(form.get("from")).toBe("MyDomain <no-reply@example.test>");
+    expect(form.get("to")).toBe("leader@example.test");
+    expect(form.get("subject")).toBe("s");
+    expect(form.get("text")).toBe("body");
+    expect(form.get("html")).toBe("<p>hi</p>");
   });
 });

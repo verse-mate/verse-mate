@@ -10,5 +10,5 @@ export function isEmailAddress(value: string): boolean {
 }
 
 export function isSingleRecipient(value: string): boolean {
-  return /^[^\s,;<>"@]+@[^\s,;<>"@]+$/.test(value);
+  return /^[^\s,;<>"@()\\:[\]\p{Cc}]+@[^\s,;<>"@()\\:[\]\p{Cc}]+$/u.test(value);
 }
