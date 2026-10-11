@@ -75,6 +75,16 @@ describe("Postgres TLS config", () => {
     });
   }
 
+  it("refuses a POSTGRES_URL it cannot parse instead of leaving TLS off", () => {
+    process.env.POSTGRES_URL =
+      "postgresql://app:p#ss@db.example.test:25060/app?sslmode=require";
+
+    expect(() => getSSLConfig()).toThrow("POSTGRES_URL is not a valid URL");
+    expect(() => getCleanConnectionString()).toThrow(
+      "POSTGRES_URL is not a valid URL",
+    );
+  });
+
   it("refuses a URL that repeats sslmode with an unsupported value", () => {
     process.env.POSTGRES_URL = `${MANAGED_URL}&sslmode=no-verify`;
 
