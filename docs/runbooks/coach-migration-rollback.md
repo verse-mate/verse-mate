@@ -6,7 +6,10 @@ The coach pipeline migrations are the five `*-coach-*` files after
 the coach, and is not part of this block. Its down refuses while any account carries a
 confirmation stamp, unless run with `ROLLBACK_DISCARD_CONFIRMATION_STAMPS=1`: dropping the
 stamps would make every confirmation made since the deploy look unproven, and the sweep run
-again would clear all of them. This page says what each down does to data, and how to check
+again would clear all of them. Its up and down set a 5 s lock timeout that lasts for the rest
+of the migration run, so a deploy that applies it together with the coach migrations stops
+before the API starts if any of them waits longer than that for a lock on a live table; rerun
+the deploy once the blocking session is gone. This page says what each down does to data, and how to check
 that the block survives a full down and up (the round trip stops above that first file, so it
 never runs its down).
 
