@@ -1559,7 +1559,7 @@ export class BatchOperationService {
 
   private async createBookTranslateBatch(
     model: string,
-    adminUserId: string,
+    adminUserId: string | null,
     effort: "low" | "medium" | "high",
     bookName: string,
     source_language_code: string,
@@ -4671,7 +4671,7 @@ export class BatchOperationService {
   public async triggerAutoTranslations(
     explanations: { bookId: number; chapterNumber: number; type: string }[],
     model: string,
-    adminUserId: string,
+    adminUserId: string | null,
     maxOutputTokens: number,
     parentBatchId?: number,
   ) {
