@@ -1,7 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import { Elysia, t } from "elysia";
-import { authDerive } from "../auth/auth.utils";
+import { authDerive, requireCurrentUser } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
 import {
   NotFoundError,
@@ -456,9 +456,10 @@ const plugin = new Elysia()
       )
       .post(
         "/book/explanation/save-rating",
-        async ({ body, store: { bibleService } }) => {
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user.id);
           const saveRating = await bibleService.saveRating({
-            user: body.user,
+            user: { id: userId },
             book_id: body.book_id,
             chapter_number: body.chapter_number,
             explanation_id: body.explanation_id,
@@ -476,11 +477,11 @@ const plugin = new Elysia()
       )
       .put(
         "/book/explanation/update-rating",
-        async ({ body, store: { bibleService } }) => {
-          const { user, book_id, chapter_number, explanation_id, rating } =
-            body;
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user.id);
+          const { book_id, chapter_number, explanation_id, rating } = body;
           const updateRating = await bibleService.updatedUserRating({
-            user,
+            user: { id: userId },
             book_id,
             chapter_number,
             explanation_id,
@@ -498,13 +499,14 @@ const plugin = new Elysia()
       )
       .post(
         "/book/explanation/ratings",
-        async ({ body, store: { bibleService } }) => {
-          const { book_id, chapter_number, user, explanation_id } = body;
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user.id);
+          const { book_id, chapter_number, explanation_id } = body;
 
           const { userRating } = await bibleService.ratingByUser({
             book_id,
             chapter_number,
-            user,
+            user: { id: userId },
             explanation_id,
           });
           const totalUsersWhoRated = await bibleService.totalUsersWhoRated({
@@ -534,11 +536,12 @@ const plugin = new Elysia()
       )
       .post(
         "/book/chapter/save-last-read",
-        async ({ body, store: { bibleService } }) => {
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user_id);
           const saveLastChapterRead = await bibleService.saveLastChapterRead({
             book_id: body.book_id,
             chapter_number: body.chapter_number,
-            id: body.user_id,
+            id: userId,
           });
 
           return { result: saveLastChapterRead };
@@ -557,10 +560,11 @@ const plugin = new Elysia()
       )
       .post(
         "/book/chapter/last-read",
-        async ({ body, store: { bibleService } }) => {
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user_id);
           const lastChapterReadByUser =
             await bibleService.lastChapterReadByUser({
-              id: body.user_id,
+              id: userId,
             });
           return { result: lastChapterReadByUser };
         },
@@ -576,7 +580,8 @@ const plugin = new Elysia()
       )
       .get(
         "/book/bookmarks/:user_id",
-        async ({ params, store: { bibleService } }) => {
+        async ({ params, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, params.user_id);
           console.log("=== GET /book/bookmarks/:user_id ENDPOINT ===");
           console.log("Request params:", params);
           console.log("Environment:", {
@@ -589,7 +594,7 @@ const plugin = new Elysia()
 
           console.log("Attempting to get bookmarks for user:", params.user_id);
           const { favorites } = await bibleService.getBookmarks({
-            id: params.user_id,
+            id: userId,
           });
 
           console.log(
@@ -608,13 +613,14 @@ const plugin = new Elysia()
       )
       .get(
         "/book/notes/:user_id",
-        async ({ params, store: { bibleService } }) => {
+        async ({ params, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, params.user_id);
           console.log("=== GET /book/notes/:user_id ENDPOINT ===");
           console.log("Request params:", params);
 
           console.log("Attempting to get notes for user:", params.user_id);
           const { notes } = await bibleService.getNotes({
-            id: params.user_id,
+            id: userId,
           });
           const serializedNotes = notes.map((n: NoteFromDatabase) => ({
             ...n,
@@ -640,7 +646,8 @@ const plugin = new Elysia()
       )
       .post(
         "/book/note/add",
-        async ({ body, store: { bibleService } }) => {
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user_id);
           console.log("Adding note:", body);
 
           const content =
@@ -660,7 +667,7 @@ const plugin = new Elysia()
             typeof body.verse_id === "number" ? body.verse_id : undefined;
 
           const { note } = await bibleService.addNote({
-            user_id: body.user_id,
+            user_id: userId,
             book_id: body.book_id,
             chapter_number: body.chapter_number,
             verse_id,
@@ -698,7 +705,8 @@ const plugin = new Elysia()
       )
       .put(
         "/book/note/update",
-        async ({ body, store: { bibleService } }) => {
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId);
           console.log("Updating note:", body);
 
           if (!body.note_id || !body.content) {
@@ -709,6 +717,7 @@ const plugin = new Elysia()
           const { success } = await bibleService.updateNote(
             body.note_id,
             body.content,
+            userId,
           );
 
           return { success };
@@ -726,7 +735,8 @@ const plugin = new Elysia()
       )
       .delete(
         "/book/note/remove",
-        async ({ query, store: { bibleService } }) => {
+        async ({ query, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId);
           console.log("Removing note - query params:", query);
 
           if (!query.note_id) {
@@ -734,7 +744,10 @@ const plugin = new Elysia()
             throw new ValidationError("Missing note_id");
           }
 
-          const { success } = await bibleService.deleteNote(query.note_id);
+          const { success } = await bibleService.deleteNote(
+            query.note_id,
+            userId,
+          );
 
           return { success };
         },
@@ -750,7 +763,8 @@ const plugin = new Elysia()
       )
       .post(
         "/book/bookmark/add",
-        async ({ body, store: { bibleService } }) => {
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user_id);
           console.log("Adding bookmark:", body);
 
           if (
@@ -763,7 +777,7 @@ const plugin = new Elysia()
           }
 
           const { success } = await bibleService.addBookmark({
-            user_id: body.user_id,
+            user_id: userId,
             book_id: body.book_id,
             chapter_number: body.chapter_number,
             insight_type: body.insight_type,
@@ -786,10 +800,10 @@ const plugin = new Elysia()
       )
       .delete(
         "/book/bookmark/remove",
-        async ({ query, store: { bibleService } }) => {
+        async ({ query, currentUserId, store: { bibleService } }) => {
+          const user_id = requireCurrentUser(currentUserId, query.user_id);
           console.log("Removing bookmark - query params:", query);
 
-          const user_id = query.user_id;
           const book_id = Number(query.book_id);
           const chapter_number = Number(query.chapter_number);
           const insight_type = query.insight_type;
@@ -829,9 +843,9 @@ const plugin = new Elysia()
       )
       .post(
         "/book/bookmark/remove",
-        async ({ body, request, store: { bibleService } }) => {
+        async ({ body, request, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user_id);
           console.log("POST method for removing bookmark:", body);
-          console.log("Headers:", request.headers);
 
           // Check if this is meant to be a DELETE request
           const methodOverride = request.headers.get("x-http-method-override");
@@ -849,7 +863,7 @@ const plugin = new Elysia()
           }
 
           const { success } = await bibleService.removeBookmark({
-            user_id: body.user_id,
+            user_id: userId,
             book_id: body.book_id,
             chapter_number: body.chapter_number,
             insight_type: body.insight_type,
@@ -873,12 +887,13 @@ const plugin = new Elysia()
       // Highlight endpoints
       .get(
         "/highlights/:user_id",
-        async ({ params, store: { bibleService } }) => {
+        async ({ params, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, params.user_id);
           console.log("=== GET /highlights/:user_id ENDPOINT ===");
           console.log("Getting all highlights for user:", params.user_id);
 
           const { highlights } = await bibleService.getUserHighlights({
-            user_id: params.user_id,
+            user_id: userId,
           });
 
           console.log(
@@ -913,7 +928,8 @@ const plugin = new Elysia()
       )
       .get(
         "/highlights/:user_id/:book_id/:chapter_number",
-        async ({ params, store: { bibleService } }) => {
+        async ({ params, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, params.user_id);
           console.log(
             "=== GET /highlights/:user_id/:book_id/:chapter_number ENDPOINT ===",
           );
@@ -927,7 +943,7 @@ const plugin = new Elysia()
           );
 
           const { highlights } = await bibleService.getChapterHighlights({
-            user_id: params.user_id,
+            user_id: userId,
             book_id: params.book_id,
             chapter_number: params.chapter_number,
           });
@@ -966,7 +982,8 @@ const plugin = new Elysia()
       )
       .post(
         "/highlight/add",
-        async ({ body, store: { bibleService } }) => {
+        async ({ body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user_id);
           console.log("Adding highlight:", body);
 
           if (
@@ -981,7 +998,7 @@ const plugin = new Elysia()
           }
 
           const result = await bibleService.createHighlight({
-            user_id: body.user_id,
+            user_id: userId,
             book_id: body.book_id,
             chapter_number: body.chapter_number,
             start_verse: body.start_verse,
@@ -1037,7 +1054,8 @@ const plugin = new Elysia()
       )
       .put(
         "/highlight/:highlight_id",
-        async ({ params, body, store: { bibleService } }) => {
+        async ({ params, body, currentUserId, store: { bibleService } }) => {
+          const userId = requireCurrentUser(currentUserId, body.user_id);
           console.log(
             "Updating highlight:",
             params.highlight_id,
@@ -1048,7 +1066,7 @@ const plugin = new Elysia()
           const { highlight, success } =
             await bibleService.updateHighlightColor({
               highlight_id: params.highlight_id,
-              user_id: body.user_id,
+              user_id: userId,
               color: body.color,
             });
 
@@ -1077,7 +1095,7 @@ const plugin = new Elysia()
             highlight_id: t.Number(),
           }),
           body: t.Object({
-            user_id: t.String({ format: "uuid" }),
+            user_id: t.Optional(t.String({ format: "uuid" })),
             color: t.Enum(HighlightColorEnum),
           }),
           response: {

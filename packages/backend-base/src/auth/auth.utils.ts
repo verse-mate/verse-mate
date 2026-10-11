@@ -1,5 +1,6 @@
 import type { Context } from "elysia";
 
+import { ForbiddenError, UnauthorizedError } from "../common/errors";
 import cacheConstants from "../shared/cache.constants";
 import type { JWT, cache } from "../shared/shared.plugin";
 
@@ -80,4 +81,17 @@ export const authDerive = async ({
   return {
     currentUserId: validBearer.sub,
   };
+};
+
+export const requireCurrentUser = (
+  currentUserId: string | null,
+  claimedUserId?: string,
+): string => {
+  if (!currentUserId) {
+    throw new UnauthorizedError("Authentication required");
+  }
+  if (claimedUserId !== undefined && claimedUserId !== currentUserId) {
+    throw new ForbiddenError("You can only access your own data");
+  }
+  return currentUserId;
 };

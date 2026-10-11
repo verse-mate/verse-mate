@@ -2,6 +2,7 @@ import { $env } from "frontend-envs";
 import { useCallback, useEffect, useState } from "react";
 import { AnalyticsEvent, analytics } from "../analytics";
 import { userSession } from "../hooks/userSession";
+import { authHeaders } from "../utils/auth-utils";
 
 export interface Bookmark {
   id: string;
@@ -135,7 +136,7 @@ export const useBookmarks = () => {
         // Real API call to add a bookmark
         const response = await fetch(getApiPath("/book/bookmark/add"), {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify(bookmarkData),
         });
 
@@ -224,6 +225,7 @@ export const useBookmarks = () => {
           `${getApiPath("/book/bookmark/remove")}?${queryParams.toString()}`,
           {
             method: "DELETE",
+            headers: authHeaders(),
           },
         );
 
@@ -292,7 +294,12 @@ export const useBookmarks = () => {
 
     try {
       // Real API call to get user bookmarks
-      const response = await fetch(getApiPath("/book/bookmarks/") + session.id);
+      const response = await fetch(
+        getApiPath("/book/bookmarks/") + session.id,
+        {
+          headers: authHeaders(),
+        },
+      );
 
       // For debugging production issues - capture detailed error info
       if (!response.ok) {

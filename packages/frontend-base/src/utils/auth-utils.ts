@@ -1,9 +1,16 @@
 "use client";
 
-import { api } from "backend-api";
+import { api, getAccessToken } from "backend-api";
 import { safePromise } from "./safe-promise";
 
 const isBrowser = typeof window !== "undefined";
+
+export function authHeaders(
+  headers: Record<string, string> = {},
+): Record<string, string> {
+  const token = getAccessToken();
+  return token ? { ...headers, Authorization: `Bearer ${token}` } : headers;
+}
 
 const redirect = (href: string) => {
   if (isBrowser) {

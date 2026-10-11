@@ -1,6 +1,7 @@
 import { $env } from "frontend-envs";
 import { useCallback, useEffect, useState } from "react";
 import { AnalyticsEvent, analytics } from "../analytics";
+import { authHeaders } from "../utils/auth-utils";
 import { userSession } from "./userSession";
 
 export interface Note {
@@ -64,7 +65,12 @@ export const useNotes = () => {
             setIsLoading(false);
             return;
           }
-          const response = await fetch(getApiPath(`/book/notes/${session.id}`));
+          const response = await fetch(
+            getApiPath(`/book/notes/${session.id}`),
+            {
+              headers: authHeaders(),
+            },
+          );
           if (response.ok) {
             const data = await response.json();
             if (Array.isArray(data?.notes)) {
@@ -132,7 +138,7 @@ export const useNotes = () => {
           }
           const response = await fetch(getApiPath("/book/note/add"), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
               user_id: session.id,
               book_id: noteData.bookId,
@@ -229,7 +235,7 @@ export const useNotes = () => {
         if (USE_BACKEND) {
           const response = await fetch(getApiPath("/book/note/update"), {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
               note_id: id,
               content,
@@ -319,6 +325,7 @@ export const useNotes = () => {
             getApiPath(`/book/note/remove?note_id=${id}`),
             {
               method: "DELETE",
+              headers: authHeaders(),
             },
           );
 
