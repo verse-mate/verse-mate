@@ -15,6 +15,7 @@ import {
   markLikelyDuplicate,
   uploadPartKey,
   uploadSessionId,
+  uploadTitle,
 } from "./coach-upload.service";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
@@ -204,6 +205,14 @@ beforeEach(async () => {
 afterEach(async () => {
   delete process.env[COACH_PIPELINE_LIVE];
   await clear();
+});
+
+describe("an upload title carries no control character", () => {
+  it("drops C0 and C1 control characters alike", () => {
+    expect(uploadTitle("Tuesday\u0000 study\u0085 Romans\u009b 8")).toBe(
+      "Tuesday study Romans 8",
+    );
+  });
 });
 
 describe("A Leader Can Upload A Session Video (task 4.13)", () => {

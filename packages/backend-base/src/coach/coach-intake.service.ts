@@ -157,10 +157,7 @@ export class CoachIntakeService {
       // leader-authored, and it reaches an email SUBJECT line (task 6.3b) and
       // the scoring prompt, a CR/LF in a mail header is an injection
       // primitive, and this is the one boundary the title enters by.
-      const title = (t.title ?? "")
-        // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control characters is the point
-        .replace(/[\u0000-\u001f\u007f]+/g, " ")
-        .trim();
+      const title = (t.title ?? "").replace(/\p{Cc}+/gu, " ").trim();
       await sql`
         INSERT INTO coach_intake_sessions
           (source_session_id, coach_id, matched_by, title, host_email,

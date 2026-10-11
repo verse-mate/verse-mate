@@ -6,6 +6,7 @@ import {
   describe,
   expect,
   it,
+  spyOn,
 } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
@@ -16,6 +17,7 @@ import {
   CoachDeliveryService,
   DELIVERY_ATTEMPT_LIMIT,
   isPlaceholderAddress,
+  replyToAddress,
   reportSubject,
 } from "./coach-delivery.service";
 import type { ReportEvidence } from "./coach-governance.service";
@@ -164,6 +166,38 @@ describe("the subject is derived, not invented", () => {
         sessionTitle: "Obadiah\n\tLesson   4  ",
       }),
     ).toBe("Coaching report — 2026-08-22 — Milo Kerr — Obadiah Lesson 4");
+  });
+
+  it("drops every control character the mail sender refuses, C1 ones included", () => {
+    const subject = reportSubject({
+      sessionDate: "2026-08-22",
+      leaderName: "Milo\u0000 Kerr",
+      sessionTitle: "Tuesday study\u0085 Romans\u009b 8",
+    });
+    expect(subject).not.toMatch(/\p{Cc}/u);
+    expect(subject).toBe(
+      "Coaching report — 2026-08-22 — Milo Kerr — Tuesday study Romans 8",
+    );
+  });
+});
+
+describe("the reply-to address is one plain address", () => {
+  it("trims a configured address and keeps it", () => {
+    expect(replyToAddress(" replies@example.test ")).toBe(
+      "replies@example.test",
+    );
+  });
+
+  it("falls back to the coach mailbox when the setting is not one plain address", () => {
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(replyToAddress("VerseMate <replies@example.test>")).toBe(
+        "coach@versemate.app",
+      );
+      expect(logged).toHaveBeenCalledTimes(1);
+    } finally {
+      logged.mockRestore();
+    }
   });
 });
 

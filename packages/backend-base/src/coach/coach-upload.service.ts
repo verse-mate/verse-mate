@@ -713,8 +713,7 @@ export const ALREADY_RECORDED =
 export function uploadTitle(title: string | null | undefined): string | null {
   return (
     (title ?? "")
-      // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control characters is the point
-      .replace(/[\u0000-\u001f\u007f]+/g, " ")
+      .replace(/\p{Cc}+/gu, " ")
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, UPLOAD_TITLE_CHARS) || null
