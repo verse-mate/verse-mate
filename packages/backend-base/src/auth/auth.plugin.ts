@@ -261,14 +261,19 @@ const plugin = new Elysia()
           store: { authService },
           jwt,
           request,
+          server,
         }): Promise<AuthPayload> => {
           const userAgent = request.headers.get("user-agent") || undefined;
-          const ipAddress = extractClientIp(request);
+          const ipAddress = extractClientIp(request, server);
           return authService.login(body, jwt, userAgent, ipAddress);
         },
         {
           body: AuthLoginInput,
-          beforeHandle: authRateLimiters.login,
+          beforeHandle: [
+            authRateLimiters.loginIp,
+            authRateLimiters.loginNetwork,
+            authRateLimiters.login,
+          ],
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,
@@ -374,6 +379,7 @@ const plugin = new Elysia()
           store: { authService },
           jwt,
           request,
+          server,
         }): Promise<AuthPayload> => {
           const { provider, token, platform } = body;
 
@@ -395,7 +401,7 @@ const plugin = new Elysia()
 
           // Get request metadata for session tracking
           const userAgent = request.headers.get("user-agent") || undefined;
-          const ipAddress = extractClientIp(request);
+          const ipAddress = extractClientIp(request, server);
 
           // Login or create user with SSO
           return authService.loginWithSSO(
@@ -460,7 +466,13 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/google/callback",
-        async ({ query, store: { cache, authService }, jwt, request }) => {
+        async ({
+          query,
+          store: { cache, authService },
+          jwt,
+          request,
+          server,
+        }) => {
           const { state, code, error } = query;
 
           // Handle OAuth errors from Google
@@ -530,7 +542,7 @@ const plugin = new Elysia()
 
             // Get request metadata
             const userAgent = request.headers.get("user-agent") || undefined;
-            const ipAddress = extractClientIp(request);
+            const ipAddress = extractClientIp(request, server);
 
             // Login or create user with SSO
             const authPayload = await authService.loginWithSSO(
@@ -612,7 +624,13 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/apple/callback",
-        async ({ query, store: { cache, authService }, jwt, request }) => {
+        async ({
+          query,
+          store: { cache, authService },
+          jwt,
+          request,
+          server,
+        }) => {
           const { state, code, error } = query;
 
           // Handle OAuth errors from Apple
@@ -682,7 +700,7 @@ const plugin = new Elysia()
 
             // Get request metadata
             const userAgent = request.headers.get("user-agent") || undefined;
-            const ipAddress = extractClientIp(request);
+            const ipAddress = extractClientIp(request, server);
 
             // Login or create user with SSO
             const authPayload = await authService.loginWithSSO(
@@ -727,7 +745,13 @@ const plugin = new Elysia()
        */
       .post(
         "/sso/apple/callback",
-        async ({ body, store: { cache, authService }, jwt, request }) => {
+        async ({
+          body,
+          store: { cache, authService },
+          jwt,
+          request,
+          server,
+        }) => {
           const { state, code, error, id_token, user } = body;
 
           // Handle OAuth errors from Apple
@@ -827,7 +851,7 @@ const plugin = new Elysia()
 
             // Get request metadata
             const userAgent = request.headers.get("user-agent") || undefined;
-            const ipAddress = extractClientIp(request);
+            const ipAddress = extractClientIp(request, server);
 
             // Login or create user with SSO
             const authPayload = await authService.loginWithSSO(
