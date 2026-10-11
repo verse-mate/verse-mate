@@ -1,8 +1,37 @@
 import crypto from "node:crypto";
 import { WebClient } from "@slack/web-api";
 import type SupportSenderEnum from "database/src/models/public/SupportSenderEnum";
+import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 import { SupportRepository } from "../repository/support.repository";
+
+const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
+
+const SLACK_SECTION_MAX_LENGTH = 3000;
+
+const escapeSlackText = (value: string) =>
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const decodeSlackText = (value: string) =>
+  value.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+const slackSections = (text: string) => {
+  const chunks = [""];
+  for (const char of text) {
+    const escaped = escapeSlackText(char);
+    if (
+      chunks[chunks.length - 1].length + escaped.length >
+      SLACK_SECTION_MAX_LENGTH
+    ) {
+      chunks.push("");
+    }
+    chunks[chunks.length - 1] += escaped;
+  }
+  return chunks.map((chunk) => ({
+    type: "section" as const,
+    text: { type: "mrkdwn" as const, text: chunk },
+  }));
+};
 
 export class SupportService {
   private slackClient: WebClient;
@@ -13,6 +42,11 @@ export class SupportService {
     this.slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
     this.channelId = process.env.SLACK_SUPPORT_CHANNEL_ID || "";
     this.supportRepository = new SupportRepository(db);
+    if (!process.env.SLACK_SIGNING_SECRET) {
+      console.warn(
+        "SLACK_SIGNING_SECRET is not set: the Slack support webhook will refuse every request",
+      );
+    }
   }
 
   async handleNewConversation(userId: string, text: string, subject?: string) {
@@ -24,30 +58,27 @@ export class SupportService {
       .select(["firstName", "lastName", "email"])
       .executeTakeFirst();
 
-    const userName = user
-      ? `${user.firstName} ${user.lastName}`
-      : "Unknown User";
-    const userEmail = user ? user.email : "Unknown Email";
+    const userName = escapeSlackText(
+      user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+    );
+    const userEmail = escapeSlackText(user ? user.email : "Unknown Email");
+    const subjectLine = subject
+      ? `\n*Subject:* ${escapeSlackText(subject)}`
+      : "";
 
     // 2. Create Slack thread (new top-level message)
     const result = await this.slackClient.chat.postMessage({
       channel: this.channelId,
-      text: `New conversation from *${userName}* (${userEmail})${subject ? `\n*Subject:* ${subject}` : ""}`,
+      text: `New conversation from *${userName}* (${userEmail})${subjectLine}`,
       blocks: [
         {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `*New Support Request*\n*User:* ${userName}\n*Email:* ${userEmail}${subject ? `\n*Subject:* ${subject}` : ""}`,
+            text: `*New Support Request*\n*User:* ${userName}\n*Email:* ${userEmail}${subjectLine}`,
           },
         },
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: text,
-          },
-        },
+        ...slackSections(text),
       ],
     });
 
@@ -78,11 +109,10 @@ export class SupportService {
     conversationId: string,
     text: string,
   ) {
-    // 1. Verify conversation belongs to user
     const conversation =
       await this.supportRepository.getConversationById(conversationId);
     if (!conversation || conversation.user_id !== userId) {
-      throw new Error("Conversation not found");
+      throw new NotFoundError("Conversation not found");
     }
 
     // 2. Save message to DB
@@ -93,11 +123,12 @@ export class SupportService {
       "user" as SupportSenderEnum,
     );
 
-    // 3. Post reply to Slack thread
+    const sections = slackSections(text);
     await this.slackClient.chat.postMessage({
       channel: this.channelId,
       thread_ts: conversation.slack_thread_ts,
-      text: text,
+      text: sections[0].text.text,
+      blocks: sections,
     });
 
     // 4. Update last_message_at
@@ -109,18 +140,34 @@ export class SupportService {
   }
 
   async handleSlackReply(event: any) {
-    // 1. Filter bot messages
     if (event.bot_id || event.subtype === "bot_message") {
       return { success: true, ignored: true };
     }
 
-    // 2. Identify Thread
+    if (event.type !== "message") {
+      return { success: true, ignored: true, reason: "Not a message" };
+    }
+
+    if (event.channel !== this.channelId) {
+      console.warn(
+        `Ignored a Slack message from channel ${String(event.channel).replace(/[^\w-]/g, "")}: support replies are read from the configured support channel only`,
+      );
+      return {
+        success: true,
+        ignored: true,
+        reason: "Not in the support channel",
+      };
+    }
+
+    if (typeof event.text !== "string" || event.text.trim() === "") {
+      return { success: true, ignored: true, reason: "No text" };
+    }
+
     const threadTs = event.thread_ts;
     if (!threadTs) {
       return { success: true, ignored: true, reason: "Not a thread reply" };
     }
 
-    // 3. Match Conversation
     const conversation =
       await this.supportRepository.getConversationBySlackThreadTs(threadTs);
     if (!conversation) {
@@ -131,18 +178,15 @@ export class SupportService {
       };
     }
 
-    // 4. Save message
-    await this.supportRepository.addMessage(
+    const saved = await this.supportRepository.addSlackReply(
       conversation.id,
       conversation.user_id,
-      event.text,
-      "support" as SupportSenderEnum,
+      decodeSlackText(event.text),
+      typeof event.ts === "string" ? event.ts : null,
     );
-
-    // 5. Update last_message_at
-    await this.supportRepository.updateConversationLastMessageAt(
-      conversation.id,
-    );
+    if (!saved) {
+      return { success: true, ignored: true, reason: "Already delivered" };
+    }
 
     // TODO: Send push notification to user
 
@@ -154,11 +198,10 @@ export class SupportService {
   }
 
   async getMessages(conversationId: string, userId: string) {
-    // Verify ownership
     const conversation =
       await this.supportRepository.getConversationById(conversationId);
     if (!conversation || conversation.user_id !== userId) {
-      throw new Error("Conversation not found");
+      throw new NotFoundError("Conversation not found");
     }
 
     const messages =
@@ -174,11 +217,13 @@ export class SupportService {
 
   verifySlackSignature(signature: string, timestamp: string, body: string) {
     const signingSecret = process.env.SLACK_SIGNING_SECRET;
-    if (!signingSecret) {
-      console.warn(
-        "SLACK_SIGNING_SECRET not set, skipping signature verification",
-      );
-      return true;
+    if (!signingSecret || !/^\d+$/.test(timestamp)) {
+      return false;
+    }
+
+    const ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));
+    if (ageSeconds > SLACK_REQUEST_MAX_AGE_SECONDS) {
+      return false;
     }
 
     const baseString = `v0:${timestamp}:${body}`;
@@ -188,13 +233,14 @@ export class SupportService {
       .digest("hex");
     const computedSignature = `v0=${hmac}`;
 
-    const sigBuffer = Buffer.from(signature);
-    const compBuffer = Buffer.from(computedSignature);
+    const encoder = new TextEncoder();
+    const sigBuffer = encoder.encode(signature);
+    const compBuffer = encoder.encode(computedSignature);
 
     if (sigBuffer.length !== compBuffer.length) {
       return false;
     }
 
-    return crypto.timingSafeEqual(sigBuffer as any, compBuffer as any);
+    return crypto.timingSafeEqual(sigBuffer, compBuffer);
   }
 }

@@ -70,6 +70,21 @@ export class AuthService {
     this.userSsoAccountRepository = new UserSsoAccountRepository(db);
   }
 
+  private unmatchedHash?: Promise<string>;
+
+  private async compareWithoutAccount(password: string): Promise<void> {
+    this.unmatchedHash ??= Bun.password
+      .hash(randomUUID(), {
+        algorithm: "bcrypt",
+        cost: this.jwtConstants.hashSalt,
+      })
+      .catch((error) => {
+        this.unmatchedHash = undefined;
+        throw error;
+      });
+    await Bun.password.verify(password, await this.unmatchedHash, "bcrypt");
+  }
+
   private async validateUser(authLoginInput: AuthLoginInput): Promise<User> {
     const user = await this.db
       .getOrCreateConnection()
@@ -78,42 +93,35 @@ export class AuthService {
       .selectAll()
       .executeTakeFirst();
 
-    if (!user) {
-      throw new NotFoundError("User not found");
+    if (!user?.password) {
+      await this.compareWithoutAccount(authLoginInput.password);
+      throw new UnauthorizedError("Invalid credentials");
     }
-
-    // Check if user has no password (SSO-only user)
-    if (user.password === null) {
-      // Get linked SSO providers for personalized error message
-      const linkedProviders = await this.getLinkedSSOProviders(user.id);
-      const providerList =
-        linkedProviders.length > 0 ? linkedProviders.join("/") : "SSO";
-
-      const error = new ValidationError(
-        `This account uses ${providerList} Sign-In. Please use that method, or reset your password to add email/password login.`,
-      );
-      error.code = "SSO_ACCOUNT_NO_PASSWORD";
-      throw error;
-    }
-
-    // if (!user.isActive) {
-    //   throw new Error("INACTIVATED_USER");
-    // }
 
     // TODO: User blacklist
-    const validCredentials =
-      user &&
-      (await Bun.password.verify(
-        authLoginInput.password,
-        user.password,
-        "bcrypt",
-      ));
+    const validCredentials = await Bun.password.verify(
+      authLoginInput.password,
+      user.password,
+      "bcrypt",
+    );
 
     if (!validCredentials) {
       throw new UnauthorizedError("Invalid credentials");
     }
 
     return user;
+  }
+
+  private async ssoOnlyAccountError(userId: string): Promise<ValidationError> {
+    const linkedProviders = await this.getLinkedSSOProviders(userId);
+    const providerList =
+      linkedProviders.length > 0 ? linkedProviders.join("/") : "SSO";
+
+    const error = new ValidationError(
+      `This account uses ${providerList} Sign-In. Please use that method, or reset your password to add email/password login.`,
+    );
+    error.code = "SSO_ACCOUNT_NO_PASSWORD";
+    return error;
   }
 
   private async loginUser(
@@ -688,6 +696,10 @@ export class AuthService {
       throw new UnauthorizedError("Invalid credentials");
     }
 
+    if (user.password === null) {
+      throw await this.ssoOnlyAccountError(user.id);
+    }
+
     const checked = await this.validateUser({
       email: user.email,
       password: authChangePasswordInput.currentPassword,
@@ -726,12 +738,18 @@ export class AuthService {
     const user = await this.db
       .getOrCreateConnection()
       .selectFrom("user")
-      .where("email", "=", authForgotPasswordInput.email)
+      .where(
+        sql`lower(trim(email))`,
+        "=",
+        authForgotPasswordInput.email.trim().toLowerCase(),
+      )
+      .orderBy(sql`email = ${authForgotPasswordInput.email}`, "desc")
+      .orderBy("createdAt")
       .selectAll()
       .executeTakeFirst();
 
     if (!user) {
-      throw new NotFoundError("User not found");
+      return true;
     }
 
     const uuid = randomUUID();

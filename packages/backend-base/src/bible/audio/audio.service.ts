@@ -2,7 +2,15 @@ import type { Queue } from "bullmq";
 import type Database from "database/src/models/Database";
 import type { ExplanationAudios } from "database/src/models/public/ExplanationAudios";
 import type { Transaction } from "kysely";
-import { NotFoundError, UnauthorizedError } from "../../common/errors";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../common/errors";
+import {
+  BCP47_REGEX,
+  resolveLanguageCode,
+} from "../../shared/i18n/resolve-language-code";
 import type { db } from "../../shared/shared.plugin";
 import type { ObjectStorageService } from "../../shared/storage/storage.service";
 import { createTtsProvider } from "../../shared/tts/tts-provider.factory";
@@ -19,17 +27,44 @@ import {
   contentHashOf,
   storageKeyFor,
 } from "./audio.repository";
+import { isGuestAudioChapter } from "./guest-scope";
 
 const ESTIMATED_READY_SECONDS = 8;
-const GUEST_ALLOWED_BOOK_ID = 1; // Genesis (br-audio-013)
-const GUEST_ALLOWED_CHAPTER_NUMBER = 1;
-const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy"; // br-audio-009
+export const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy";
 
 export type KyselyTransaction = Transaction<Database>;
+
+const JOB_ID = /^audio-gen:([1-9]\d{0,9}):[^:]+:[^:]+$/;
+export const MAX_EXPLANATION_ID = 2_147_483_647;
+
+function explanationIdOfJob(jobId: string): number | null {
+  const match = JOB_ID.exec(jobId);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return id <= MAX_EXPLANATION_ID ? id : null;
+}
+
+function languageForms(code: string): string[] {
+  try {
+    return resolveLanguageCode(code);
+  } catch {
+    return [code];
+  }
+}
 
 export interface AudioVariant {
   voice: string;
   language_code: string;
+}
+
+export function isProductVariant(
+  explanationLanguage: string,
+  variant: AudioVariant,
+): boolean {
+  return (
+    variant.voice === DEFAULT_VOICE_EN &&
+    languageForms(explanationLanguage).includes(variant.language_code)
+  );
 }
 
 /**
@@ -105,25 +140,25 @@ export class AudioService {
     voice?: string;
     language?: string;
     currentUserId: string | null;
+    beforeSynthesis?: () => Promise<void>;
   }): Promise<AudioReadResult> {
     const explanation = await this.loadExplanation(params.explanation_id);
     if (!explanation) {
       throw new NotFoundError(`Explanation ${params.explanation_id} not found`);
     }
 
-    // br-audio-008: language follows explanation unless caller overrides.
-    const language = params.language ?? explanation.language_code;
-    const voice = params.voice ?? DEFAULT_VOICE_EN;
-
-    // br-audio-013: guest scope
     if (!params.currentUserId) {
-      const isGuestAllowed = await this.isGuestAllowed(explanation.chapter_id);
-      if (!isGuestAllowed) {
-        throw new UnauthorizedError(
-          "GUEST_SCOPE_EXCEEDED: guest users can only access audio on Genesis 1",
-        );
-      }
+      await this.assertGuestAllowed(explanation.chapter_id);
     }
+
+    if (params.voice !== undefined && params.voice !== DEFAULT_VOICE_EN) {
+      throw new ValidationError("This voice is not offered for audio");
+    }
+    const voice = DEFAULT_VOICE_EN;
+    const language = await this.servedLanguage(
+      params.language,
+      explanation.language_code,
+    );
 
     const variantKey: AudioVariantKey = {
       explanation_id: explanation.explanation_id,
@@ -133,12 +168,18 @@ export class AudioService {
 
     // Cache hit (br-audio-002 canonical variant; br-audio-003 lazy)
     const current = await this.repository.findCurrent(variantKey);
-    if (current && !current.is_stale) {
+    if (current && (!current.is_stale || !explanation.is_active)) {
       return { kind: "ready", audio: await this.toDto(current) };
+    }
+    if (!explanation.is_active) {
+      throw new NotFoundError(
+        `Explanation ${params.explanation_id} has no audio`,
+      );
     }
 
     // br-audio-007: stub short-circuit — bypass queue, synthesize inline.
     if (this.provider.name === "stub") {
+      await params.beforeSynthesis?.();
       const row = await this.synthesizeAndStore(
         explanation.explanation,
         variantKey,
@@ -158,21 +199,17 @@ export class AudioService {
     // (e.g., transient OpenAI 5xx) clears. Observed on prod for Genesis
     // 1 (explanation 10170) on 2026-04-28: any guest hitting the chip
     // saw "Audio unavailable" for hours.
-    //
-    // Remove the failed job before re-enqueue so the new request gets a
-    // fresh attempt. Completed jobs remain dedup'd as before; in-flight
-    // jobs (waiting/active/delayed) still short-circuit.
     const data: AudioGenerationJobData = variantKey;
     const jobId = audioGenerationJobId(data);
     const existing = await this.queue.getJob(jobId);
-    if (existing && (await existing.isFailed())) {
+    const finished =
+      existing &&
+      ((await existing.isCompleted()) || (await existing.isFailed()));
+    if (finished) {
       await existing.remove();
     }
-    const stillInFlight =
-      existing &&
-      !(await existing.isCompleted()) &&
-      !(await existing.isFailed());
-    if (!stillInFlight) {
+    if (!existing || finished) {
+      await params.beforeSynthesis?.();
       await this.queue.add(AUDIO_GENERATION_QUEUE, data, {
         jobId,
         removeOnComplete: { count: 100 },
@@ -185,10 +222,24 @@ export class AudioService {
     };
   }
 
-  async getJobStatus(jobId: string): Promise<AudioJobStatusDto> {
+  async getJobStatus(
+    jobId: string,
+    currentUserId: string | null,
+  ): Promise<AudioJobStatusDto> {
+    const explanationId = explanationIdOfJob(jobId);
+    if (explanationId === null) {
+      throw new NotFoundError("Job not found");
+    }
+    if (!currentUserId) {
+      const explanation = await this.loadExplanation(explanationId);
+      if (!explanation) {
+        throw new NotFoundError("Job not found");
+      }
+      await this.assertGuestAllowed(explanation.chapter_id);
+    }
     const job = await this.queue.getJob(jobId);
     if (!job) {
-      throw new NotFoundError(`Job ${jobId} not found`);
+      throw new NotFoundError("Job not found");
     }
     const state = await job.getState();
     if (state === "completed") {
@@ -285,6 +336,23 @@ export class AudioService {
     return enqueued;
   }
 
+  async synthesizeQueuedJob(
+    data: AudioGenerationJobData,
+  ): Promise<ExplanationAudios> {
+    const explanation = await this.loadExplanation(data.explanation_id);
+    if (!explanation?.is_active) {
+      throw new NotFoundError(`Explanation ${data.explanation_id} not found`);
+    }
+    if (!isProductVariant(explanation.language_code, data)) {
+      throw new ValidationError("This audio variant is not offered");
+    }
+    const row = await this.synthesizeAndStore(explanation.explanation, data);
+    const after = await this.loadExplanation(data.explanation_id);
+    if (after?.is_active) return row;
+    await this.repository.markStale(data.explanation_id);
+    return { ...row, is_stale: true };
+  }
+
   async synthesizeAndStore(
     text: string,
     variant: AudioVariantKey,
@@ -320,9 +388,52 @@ export class AudioService {
     return this.db
       .getOrCreateConnection()
       .selectFrom("explanations")
-      .select(["explanation_id", "explanation", "chapter_id", "language_code"])
+      .select([
+        "explanation_id",
+        "explanation",
+        "chapter_id",
+        "language_code",
+        "is_active",
+      ])
       .where("explanation_id", "=", explanationId)
       .executeTakeFirst();
+  }
+
+  private async servedLanguage(
+    requested: string | undefined,
+    explanationLanguage: string,
+  ): Promise<string> {
+    if (requested === undefined) return explanationLanguage;
+    if (languageForms(explanationLanguage).includes(requested)) {
+      return requested;
+    }
+    if (
+      BCP47_REGEX.test(requested) &&
+      (await this.isOfferedLanguage(requested))
+    ) {
+      return explanationLanguage;
+    }
+    throw new ValidationError("This language is not offered for audio");
+  }
+
+  private async isOfferedLanguage(language: string): Promise<boolean> {
+    const offered = await this.db
+      .getOrCreateConnection()
+      .selectFrom("explanation_languages")
+      .select("language_code")
+      .where("is_enabled", "=", true)
+      .execute();
+    return offered.some((row) =>
+      languageForms(row.language_code).includes(language),
+    );
+  }
+
+  private async assertGuestAllowed(chapterId: number): Promise<void> {
+    if (!(await this.isGuestAllowed(chapterId))) {
+      throw new UnauthorizedError(
+        "GUEST_SCOPE_EXCEEDED: guest users can only access audio on Genesis 1",
+      );
+    }
   }
 
   private async isGuestAllowed(chapterId: number): Promise<boolean> {
@@ -332,10 +443,7 @@ export class AudioService {
       .select(["book_id", "chapter_number"])
       .where("chapter_id", "=", chapterId)
       .executeTakeFirst();
-    return (
-      chapter?.book_id === GUEST_ALLOWED_BOOK_ID &&
-      chapter?.chapter_number === GUEST_ALLOWED_CHAPTER_NUMBER
-    );
+    return isGuestAudioChapter(chapter?.book_id, chapter?.chapter_number);
   }
 
   /**

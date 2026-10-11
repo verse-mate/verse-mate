@@ -14,6 +14,7 @@ import {
 import { StandardErrorResponses } from "../common/response-schemas";
 import { DailyVerseService } from "../daily-verse/services/daily-verse.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
+import { assertLanguageCode } from "../shared/i18n/language-code";
 import shared from "../shared/shared.plugin";
 import { TopicService } from "../topics/services/topic.service";
 import adminAudioPlugin from "./admin-audio.plugin";
@@ -94,6 +95,9 @@ const plugin = new Elysia()
         app.patch(
           "/preferences",
           async ({ body, currentUserId, store: { db } }) => {
+            if (body.preferred_language !== undefined) {
+              assertLanguageCode(body.preferred_language);
+            }
             const result = await db
               .getOrCreateConnection()
               .updateTable("user")
@@ -352,7 +356,7 @@ const plugin = new Elysia()
               "/batch-topic-references",
               async ({ body, currentUserId, store }) => {
                 if (!currentUserId) {
-                  throw new Error("Unauthorized");
+                  throw new UnauthorizedError("Unauthorized");
                 }
                 const batchOperationService = store.getBatchOperationService();
                 return await batchOperationService.generateTopicReferencesBatch(
@@ -384,7 +388,7 @@ const plugin = new Elysia()
               "/batch-topic-discovery",
               async ({ body, currentUserId, store }) => {
                 if (!currentUserId) {
-                  throw new Error("Unauthorized");
+                  throw new UnauthorizedError("Unauthorized");
                 }
                 const batchOperationService = store.getBatchOperationService();
                 return await batchOperationService.generateTopicDiscoveryBatch(
@@ -453,29 +457,19 @@ const plugin = new Elysia()
                   set.status = 401;
                   return { error: "Unauthorized" };
                 }
-                try {
-                  const batchOperationService =
-                    store.getBatchOperationService();
-                  return await batchOperationService.generateTopicExplanationsBatch(
-                    body.model,
-                    currentUserId,
-                    body.languageCode,
-                    body.explanationTypes,
-                    body.effort || "medium",
-                    body.category,
-                    body.topicId,
-                    body.includeReferencesInSummary || false,
-                    body.includeReferencesInDetailed || false,
-                    body.skipExisting ?? true, // Default to true to maintain behavior
-                  );
-                } catch (error: any) {
-                  console.error(
-                    "[PLUGIN] Caught error from BatchOperationService:",
-                    error.message,
-                  );
-                  set.status = 400;
-                  return { error: error.message };
-                }
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.generateTopicExplanationsBatch(
+                  body.model,
+                  currentUserId,
+                  body.languageCode,
+                  body.explanationTypes,
+                  body.effort || "medium",
+                  body.category,
+                  body.topicId,
+                  body.includeReferencesInSummary || false,
+                  body.includeReferencesInDetailed || false,
+                  body.skipExisting ?? true,
+                );
               },
               {
                 body: t.Object({

@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 
+import { adminGuard } from "../auth/admin.utils";
 import { authDerive, authGuard } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
 import {
@@ -30,22 +31,24 @@ const plugin = new Elysia()
   .guard(authGuard, (app) => {
     return app.resolve({ as: "scoped" }, authDerive).group("/user", (app) => {
       return app
-        .get(
-          "",
-          async ({ store: { userService } }) => {
-            return await userService.findAll();
-          },
-          {
-            detail: {
-              summary: "Get all users",
-              description: "Retrieve a list of all registered users",
-              tags: ["User"],
+        .guard(adminGuard, (app) =>
+          app.get(
+            "",
+            async ({ store: { userService } }) => {
+              return await userService.findAll();
             },
-            response: {
-              200: UsersArraySchema,
-              ...StandardErrorResponses,
+            {
+              detail: {
+                summary: "Get all users",
+                description: "Retrieve a list of all registered users",
+                tags: ["User"],
+              },
+              response: {
+                200: UsersArraySchema,
+                ...StandardErrorResponses,
+              },
             },
-          },
+          ),
         )
         .get(
           "/me",
