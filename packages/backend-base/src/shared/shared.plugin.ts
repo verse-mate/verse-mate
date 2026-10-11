@@ -4,32 +4,26 @@ import { db as Database } from "database";
 import { Elysia } from "elysia";
 import { UserService } from "../user/user.service";
 
+import {
+  isUnexpectedError,
+  unexpectedErrorResponse,
+} from "../common/error-handler";
+import { ApiError } from "../common/errors";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
 import bullmqRedisConnection from "./bullmq-redis";
 import { type Logger, PosthogService } from "./posthog.service";
 import redisClient from "./redis-client";
+import { signingSecret } from "./signing-secret";
 
 export type cache = typeof redisClient;
 
 export type db = typeof Database;
 
-// Security (audit #2): never sign sessions with a hardcoded or publicly-known
-// secret — either lets any attacker forge a valid JWT for any user. Fail closed
-// at startup when the secret is unset OR still the historical default that was
-// shipped in .env.example on a public repo (so setting it to that known value
-// does not sneak past this guard).
-const authTokenSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
-if (!authTokenSecret || authTokenSecret === "my-super-secret") {
-  throw new Error(
-    "AUTH_ACCESS_TOKEN_SECRET is unset or the known-public default — refusing to start; set a unique secret",
-  );
-}
-
 const jwt = ElysiaJwt({
   name: "jwt",
-  secret: authTokenSecret,
+  secret: signingSecret(),
   // Per spec feat-auth-platform br-auth-001 (D-005): access token IS the
   // persistent session token; refresh tokens eliminated. Backend Redis cache
   // validates every token so server-side logout immediately revokes regardless
@@ -85,6 +79,18 @@ async function maybeCurrentUserId({
 
 // const storage = new ObjectStorageService();
 
+const answeredErrors = new Elysia({ name: "answered-errors" }).onError(
+  { as: "global" },
+  ({ code, error, path, set }) => {
+    if (error instanceof ApiError) {
+      set.status = error.status;
+      return error.toResponse();
+    }
+    if (isUnexpectedError(code, error))
+      return unexpectedErrorResponse(path, error, set);
+  },
+);
+
 const setup = new Elysia({ name: "shared" })
   .use(bearer())
   .use(jwt)
@@ -124,6 +130,7 @@ const setup = new Elysia({ name: "shared" })
       });
     },
   )
+  .use(answeredErrors as unknown as Elysia)
   .derive(async ({ jwt, cookie: { auth }, store }) => {
     let payload: any;
     try {
