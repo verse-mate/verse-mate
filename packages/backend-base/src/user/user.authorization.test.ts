@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
 import { createTestUser } from "../shared/test-helpers";
@@ -7,7 +8,7 @@ import Backend from "./user.plugin";
 type TestUser = Awaited<ReturnType<typeof createTestUser>>;
 
 describe("GET /user lists every account to admins only", () => {
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   let admin: TestUser;
   let regular: TestUser;
 

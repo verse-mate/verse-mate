@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it } from "bun:test";
+import { Elysia } from "elysia";
 import authPlugin from "../auth/auth.plugin";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./daily-verse.plugin";
@@ -10,7 +11,7 @@ import Backend from "./daily-verse.plugin";
  * The validation (400) paths are deterministic regardless of data.
  */
 describe("Daily Verse Plugin (integration)", () => {
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - Combined plugin types
   const testClient = getTestClient<typeof plugin>(plugin);
 
