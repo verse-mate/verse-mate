@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
+import { createHash } from "node:crypto";
 import { faker } from "@faker-js/faker";
 import { db as Database } from "database";
 
@@ -323,12 +324,16 @@ describe("Auth - Rate Limiting", () => {
   const client = getTestClient<AuthPlugin>(Backend);
   const cacheService = Backend.store.cache;
 
+  const emailKey = (email: string) =>
+    createHash("sha256").update(email).digest("base64url");
+
   const savedHops = process.env.TRUSTED_PROXY_HOPS;
   beforeAll(async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     await cacheService.delete("rate-limit:login-ip:unknown");
   });
-  afterAll(() => {
+  afterAll(async () => {
+    await cacheService.delete("rate-limit:login-ip:unknown");
     if (savedHops === undefined)
       Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
     else process.env.TRUSTED_PROXY_HOPS = savedHops;
@@ -415,7 +420,9 @@ describe("Auth - Rate Limiting", () => {
     expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(60);
 
     // Clean up rate limit cache key
-    await cacheService.delete(`rate-limit:login:${loginEmail}:unknown`);
+    await cacheService.delete(
+      `rate-limit:login:${emailKey(loginEmail)}:unknown`,
+    );
   });
 
   it("login rate limit - guessing an account from one address does not lock its owner out", async () => {
@@ -434,31 +441,36 @@ describe("Auth - Rate Limiting", () => {
       })
       .execute();
 
-    for (let i = 0; i < 5; i++) {
-      const { error } = await client.auth.login.post(
-        { email, password: `wrong-${i}` },
+    try {
+      for (let i = 0; i < 5; i++) {
+        const { error } = await client.auth.login.post(
+          { email, password: `wrong-${i}` },
+          attacker,
+        );
+        expect((error as any)?.status).toBe(401);
+      }
+      const blocked = await client.auth.login.post(
+        { email, password },
         attacker,
       );
-      expect((error as any)?.status).toBe(401);
-    }
-    const blocked = await client.auth.login.post({ email, password }, attacker);
-    expect((blocked.error as any)?.status).toBe(429);
+      expect((blocked.error as any)?.status).toBe(429);
 
-    const { data, error } = await client.auth.login.post(
-      { email, password },
-      owner,
-    );
-    expect(error).toBeNull();
-    expect(data?.accessToken).toBeDefined();
-
-    for (const ip of ["198.51.100.66", "198.51.100.77"]) {
-      await cacheService.delete(`rate-limit:login:${email}:${ip}`);
-      await cacheService.delete(`rate-limit:login-ip:${ip}`);
+      const { data, error } = await client.auth.login.post(
+        { email, password },
+        owner,
+      );
+      expect(error).toBeNull();
+      expect(data?.accessToken).toBeDefined();
+    } finally {
+      for (const ip of ["198.51.100.66", "198.51.100.77"]) {
+        await cacheService.delete(`rate-limit:login:${emailKey(email)}:${ip}`);
+        await cacheService.delete(`rate-limit:login-ip:${ip}`);
+      }
+      await Database.getOrCreateConnection()
+        .deleteFrom("user")
+        .where("email", "=", email)
+        .execute();
     }
-    await Database.getOrCreateConnection()
-      .deleteFrom("user")
-      .where("email", "=", email)
-      .execute();
   });
 
   it("login rate limit - spraying many accounts from one address is throttled", async () => {
@@ -476,7 +488,9 @@ describe("Auth - Rate Limiting", () => {
     }
     await cacheService.delete("rate-limit:login-ip:198.51.100.88");
     for (const email of emails)
-      await cacheService.delete(`rate-limit:login:${email}:198.51.100.88`);
+      await cacheService.delete(
+        `rate-limit:login:${emailKey(email)}:198.51.100.88`,
+      );
     expect(statuses.slice(0, 30).every((s) => s !== 429)).toBe(true);
     expect(statuses[30]).toBe(429);
   });
@@ -527,7 +541,9 @@ describe("Auth - Rate Limiting", () => {
     expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(3600);
 
     // Clean up rate limit cache key
-    await cacheService.delete(`rate-limit:forgot-password:${testEmail}`);
+    await cacheService.delete(
+      `rate-limit:forgot-password:${emailKey(testEmail)}`,
+    );
   });
 
   it("should still return 401 for unauthorized errors", async () => {
