@@ -99,6 +99,7 @@ describe("Offline Plugin", () => {
     for (const spy of Object.values(repositorySpies)) spy.mockRestore();
     const { default: offlinePlugin } = await import("../offline.plugin");
     await offlinePlugin.store.cache.delete(`accessToken:${SIGNED_IN_USER}`);
+    await offlinePlugin.store.cache.delete("offline:manifest");
   });
 
   beforeEach(() => {

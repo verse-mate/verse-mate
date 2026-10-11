@@ -192,11 +192,8 @@ describe("Auth", () => {
       },
     });
     if (error) throw error;
-    if (data instanceof Error) return;
-    expect(data?.id).toBeTruthy();
-    if (!data?.id) {
-      return;
-    }
+    expect(data).not.toBeInstanceOf(Error);
+    if (!data?.id) throw new Error("the signed-in user has no id");
 
     const { data: secondSession, error: secondSessionError } =
       await client.auth.login.post({
@@ -210,6 +207,7 @@ describe("Auth", () => {
       [];
     expect(tokens).toContain(loginAuthPayload?.accessToken ?? "");
     expect(tokens).toContain(secondSession.accessToken);
+    expect(signupAuthPayload?.accessToken).toBeString();
     expect(tokens).not.toContain(signupAuthPayload?.accessToken);
 
     const { data: logoutLogin, error: logoutLoginError } =
@@ -265,11 +263,8 @@ describe("Auth", () => {
       },
     });
     if (error) throw error;
-    if (data instanceof Error) return;
-    expect(data?.id).toBeTruthy();
-    if (!data?.id) {
-      return;
-    }
+    expect(data).not.toBeInstanceOf(Error);
+    if (!data?.id) throw new Error("the signed-in user has no id");
 
     let tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
