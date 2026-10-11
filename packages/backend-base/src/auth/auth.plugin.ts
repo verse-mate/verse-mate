@@ -65,9 +65,9 @@ async function takeStateReturnOrigin(
   state: string | undefined,
 ): Promise<string | undefined> {
   if (!state) return undefined;
-  const storedState = await cache.take<{ returnOrigin?: string }>(
-    cacheConstants.ssoState(state),
-  );
+  const storedState = await cache
+    .take<{ returnOrigin?: string }>(cacheConstants.ssoState(state))
+    .catch(() => null);
   return storedState?.returnOrigin;
 }
 
