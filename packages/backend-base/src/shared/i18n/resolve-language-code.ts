@@ -29,7 +29,7 @@ const DEFAULT_REGIONS: Record<string, string> = {
   // Add more as needed (zh, fr, es) — currently mobile sends en-US only.
 };
 
-const BCP47_REGEX = /^[a-z]{2}(-[A-Z]{2})?$/;
+export const BCP47_REGEX = /^[a-z]{2}(-[A-Z]{2})?$/;
 
 /**
  * Resolves a language code into the list of equivalent forms to look up.
