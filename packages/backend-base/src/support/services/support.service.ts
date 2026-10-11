@@ -109,7 +109,6 @@ export class SupportService {
     conversationId: string,
     text: string,
   ) {
-    // 1. Verify conversation belongs to user
     const conversation =
       await this.supportRepository.getConversationById(conversationId);
     if (!conversation || conversation.user_id !== userId) {
@@ -199,7 +198,6 @@ export class SupportService {
   }
 
   async getMessages(conversationId: string, userId: string) {
-    // Verify ownership
     const conversation =
       await this.supportRepository.getConversationById(conversationId);
     if (!conversation || conversation.user_id !== userId) {
