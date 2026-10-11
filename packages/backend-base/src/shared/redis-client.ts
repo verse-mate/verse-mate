@@ -51,12 +51,6 @@ if raw then redis.call("DEL", KEYS[1]) end
 return raw
 `;
 
-const INCREMENT = `
-local count = redis.call("INCR", KEYS[1])
-if count == 1 then redis.call("PEXPIRE", KEYS[1], ARGV[1]) end
-return count
-`;
-
 function parseTtl(ttl: string): number {
   const ttlMs = ms(ttl);
   if (typeof ttlMs !== "number" || !Number.isFinite(ttlMs) || ttlMs <= 0)
@@ -200,21 +194,6 @@ class RedisClient {
       return typeof value === "string" ? JSON.parse(value) : null;
     } catch (error) {
       console.error("Error taking key from Redis:", error);
-      throw error;
-    }
-  }
-
-  async increment(key: string, ttl: string): Promise<number> {
-    await this.connect();
-    try {
-      return Number(
-        await this.client.eval(INCREMENT, {
-          keys: [key],
-          arguments: [String(parseTtl(ttl))],
-        }),
-      );
-    } catch (error) {
-      console.error("Error incrementing a Redis counter:", error);
       throw error;
     }
   }
