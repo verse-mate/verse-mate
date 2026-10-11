@@ -10,7 +10,7 @@ import Backend from "./admin.plugin";
 type TestUser = Awaited<ReturnType<typeof createTestUser>>;
 
 describe("Routes that read other users stay behind the admin check", () => {
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   let admin: TestUser;
   let regular: TestUser;
   let target: TestUser;
