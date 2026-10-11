@@ -190,25 +190,18 @@ describe("Auth", () => {
       return;
     }
 
+    const { data: secondSession, error: secondSessionError } =
+      await client.auth.login.post({
+        email: authSignupInput.email,
+        password: changePasswordValue,
+      });
+    if (secondSessionError) throw secondSessionError;
+
     let tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
       [];
     expect(tokens).toContain(loginAuthPayload?.accessToken ?? "");
-    expect(tokens).not.toContain(signupAuthPayload?.accessToken);
-
-    const { data: logoutSignup } = await client.auth.logout.post(
-      {},
-      {
-        headers: {
-          authorization: `Bearer ${signupAuthPayload?.accessToken}`,
-        },
-      },
-    );
-    expect(logoutSignup).toBeTruthy();
-
-    tokens =
-      (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
-      [];
+    expect(tokens).toContain(secondSession.accessToken);
     expect(tokens).not.toContain(signupAuthPayload?.accessToken);
 
     const { data: logoutLogin, error: logoutLoginError } =
@@ -226,8 +219,25 @@ describe("Auth", () => {
     tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
       [];
-    expect(tokens).not.toContain(signupAuthPayload?.accessToken);
     expect(tokens).not.toContain(loginAuthPayload?.accessToken);
+    expect(tokens).toContain(secondSession.accessToken);
+
+    const { data: logoutSecond, error: logoutSecondError } =
+      await client.auth.logout.post(
+        {},
+        {
+          headers: {
+            authorization: `Bearer ${secondSession.accessToken}`,
+          },
+        },
+      );
+    expect(logoutSecondError).toBeFalsy();
+    expect(logoutSecond).toBeTruthy();
+
+    tokens =
+      (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
+      [];
+    expect(tokens).not.toContain(secondSession.accessToken);
   });
 
   it("logout all", async () => {
