@@ -324,11 +324,28 @@ run() {
   q "$roster_sql" | sort -u >"$WORK/roster.txt"
   off_roster="$(comm -23 "$WORK/changed-addresses.txt" "$WORK/roster.txt" | wc -l | tr -d ' ')"
   turned_on="$(grep -c 'f -> t' "$OUT/confirmation-changes.tsv" || true)"
-  local turned_off recorded
-  turned_off="$(grep -c 't -> f' "$OUT/confirmation-changes.tsv" || true)"
+  local turned_off recorded unrecorded
+  join -t $'\t' "$WORK/users-before.tsv" "$WORK/users-after.tsv" \
+    | awk -F'\t' '$3 == "t" && $5 == "f" { print $1 }' | sort >"$WORK/cleared-ids.txt"
+  turned_off="$(wc -l <"$WORK/cleared-ids.txt" | tr -d ' ')"
   q "SELECT source, lower(trim(email)), jsonb_array_length(removed_links) FROM coach_confirmation_clears
     ORDER BY 2, 1" >"$OUT/confirmation-clears.tsv"
-  recorded="$(q "SELECT count(DISTINCT user_id) FROM coach_confirmation_clears")"
+  q "SELECT DISTINCT user_id FROM coach_confirmation_clears" | sort >"$WORK/recorded-ids.txt"
+  recorded="$(wc -l <"$WORK/recorded-ids.txt" | tr -d ' ')"
+  unrecorded="$(comm -3 "$WORK/cleared-ids.txt" "$WORK/recorded-ids.txt" | wc -l | tr -d ' ')"
+
+  log "the sweep rolled back, then applied again"
+  local links_before removed_links links_restored still_cleared records_left recleared
+  links_before="$(q "SELECT count(*) FROM user_sso_accounts")"
+  removed_links="$(q "SELECT coalesce(sum(jsonb_array_length(removed_links)), 0) FROM coach_confirmation_clears")"
+  in_image -e COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1 "$BRANCH_IMAGE" bun run ./dist/migrator.js migrate-down \
+    >"$OUT/sweep-down.log" 2>&1 || { cat "$OUT/sweep-down.log" >&2; die "the sweep's down failed (sweep-down.log)"; }
+  links_restored="$(( $(q "SELECT count(*) FROM user_sso_accounts") - links_before ))"
+  still_cleared="$(q "SELECT id FROM \"user\" WHERE NOT \"emailVerified\"" | sort | comm -12 - "$WORK/cleared-ids.txt" | wc -l | tr -d ' ')"
+  records_left="$(q "SELECT count(*) FROM coach_confirmation_clears")"
+  in_image "$BRANCH_IMAGE" bun run ./dist/migrator.js migrate-deploy >"$OUT/sweep-up.log" 2>&1 \
+    || { cat "$OUT/sweep-up.log" >&2; die "the sweep did not apply again (sweep-up.log)"; }
+  recleared="$(q "SELECT DISTINCT user_id FROM coach_confirmation_clears" | sort | comm -3 - "$WORK/cleared-ids.txt" | wc -l | tr -d ' ')"
 
   log "a leader signs in, is asked to confirm, confirms, and reaches the portal"
   local hash leader member r token key leader_account="its existing account, password set for the rehearsal"
@@ -402,7 +419,8 @@ run() {
     sed 's/^/  - /' "$OUT/coach-deploy.log"
     echo "- Roster leaders: $leaders; admins: $admins; legacy reports: $legacy"
     echo "- Accounts whose confirmation changed: $changed (confirmation-changes.tsv)"
-    echo "- Recorded clears (the sweep's and the roster triggers'): $(wc -l <"$OUT/confirmation-clears.tsv" | tr -d ' ') for $recorded account(s) (confirmation-clears.tsv: source, address, provider links removed)"
+    echo "- Recorded clears (the sweep's and the roster triggers'): $(wc -l <"$OUT/confirmation-clears.tsv" | tr -d ' ') for $recorded account(s), against $turned_off confirmation(s) turned off (confirmation-clears.tsv: source, address, provider links removed)"
+    echo "- The sweep rolled back with COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1 (sweep-down.log), then applied again (sweep-up.log)"
     echo "- Accounts on roster or admin addresses that kept a confirmation without the new stamp (bind on their next Google or Apple sign-in, or the link): $kept_unstamped"
     echo
     echo "## Flows"
@@ -417,7 +435,11 @@ run() {
     check "the deploy backfill logged no failure" "$(grep -c 'failed\|skipped' "$OUT/coach-deploy.log" || true)" 0
     check "only roster or admin addresses changed confirmation" "$off_roster" 0
     check "no confirmation was turned on" "$turned_on" 0
-    check "every cleared confirmation is recorded" "$recorded" "$turned_off"
+    check "every cleared confirmation is recorded, and nothing else" "$unrecorded" 0
+    check "the sweep's down confirms every cleared account again" "$still_cleared" 0
+    check "the sweep's down restores every removed link" "$links_restored" "$removed_links"
+    check "the sweep's down leaves no record" "$records_left" 0
+    check "the sweep applied again clears the same accounts" "$recleared" 0
     check "two containers started together, both healthy" "$api_ok $api2_ok" "yes yes"
     check "starting again with the same bundle changed no coach row" "$digest_second" "$digest_first"
     check "leader sign-in" "$leader_login" 200

@@ -1,10 +1,27 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
 import { refuseToDrop } from "./20261011010000-coach-reports-and-roster";
-import {
-  BOT_MATCHED_BY,
-  BOT_STATES,
-} from "./20261011020000-coach-session-pipeline";
+
+const BOT_STATES = [
+  "observed",
+  "held",
+  "retrieval_failed",
+  "retained",
+  "scored",
+  "delivered",
+  "scoring_failed",
+  "delivery_pending",
+  "delivering",
+  "delivery_failed",
+];
+
+const BOT_MATCHED_BY = [
+  "title_match",
+  "name",
+  "alt_email",
+  "unresolved",
+  "admin",
+];
 
 const listed = (values: string[]) => sql.join(values.map((v) => sql.lit(v)));
 
