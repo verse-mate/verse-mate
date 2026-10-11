@@ -111,7 +111,13 @@ const setup = new Elysia({ name: "shared" })
         query: query as { accessToken?: string },
         jwt: jwtVerifier,
       });
-      posthogService.captureException(error, distinctId ?? "anonymous", {
+      const reported =
+        code === "VALIDATION"
+          ? new Error(
+              `validation failed on ${(error as { type?: string }).type ?? "request"}`,
+            )
+          : error;
+      posthogService.captureException(reported, distinctId ?? "anonymous", {
         code,
         $current_url: path,
       });
