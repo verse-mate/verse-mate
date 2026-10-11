@@ -20,9 +20,44 @@ import {
 } from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
+import bullmqRedisConnection from "backend-base/src/shared/bullmq-redis";
 import { db } from "database";
 import { Elysia } from "elysia";
 import redis from "./lib/redis";
+
+const REDIS_PING_TIMEOUT_MS = 10_000;
+
+function redisHost(): string {
+  return new URL(process.env.REDIS_URL ?? "redis://localhost:6379").host;
+}
+
+async function pingQueueRedis(): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("Redis ping timeout")),
+      REDIS_PING_TIMEOUT_MS,
+    );
+  });
+  try {
+    await Promise.race([bullmqRedisConnection.ping(), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function verifyRedisOrExit(): Promise<void> {
+  try {
+    await redis.connect();
+    await pingQueueRedis();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error(
+      `Redis at ${redisHost()} failed the startup check: ${reason}`,
+    );
+    process.exit(1);
+  }
+}
 
 const MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024;
 
@@ -73,9 +108,7 @@ app.listen(process.env.PORT || 3000, async () => {
     `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
   );
 
-  redis.connect().catch((err) => {
-    console.error("❌ Redis connect failed on startup:", err);
-  });
+  await verifyRedisOrExit();
 
   // Asynchronously refresh language stats on startup (fire-and-forget with timeout)
   console.log("🚀 Triggering initial language stats refresh on startup...");
