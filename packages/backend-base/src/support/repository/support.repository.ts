@@ -82,6 +82,29 @@ export class SupportRepository {
       .executeTakeFirstOrThrow();
   }
 
+  async addSlackReply(
+    conversationId: string,
+    userId: string,
+    text: string,
+    slackTs: string | null,
+  ) {
+    return await this.db
+      .getOrCreateConnection()
+      .insertInto("support_messages")
+      .values({
+        conversation_id: conversationId,
+        user_id: userId,
+        text,
+        sender: "support" as SupportSenderEnum,
+        slack_ts: slackTs,
+      })
+      .onConflict((oc) =>
+        oc.columns(["conversation_id", "slack_ts"]).doNothing(),
+      )
+      .returningAll()
+      .executeTakeFirst();
+  }
+
   async getMessagesByConversationId(conversationId: string) {
     return await this.db
       .getOrCreateConnection()
