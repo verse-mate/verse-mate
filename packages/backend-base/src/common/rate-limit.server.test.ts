@@ -183,8 +183,27 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     expect(keys).toEqual([]);
     const fits = sized(250);
     emails.push(fits);
-    for (const [path, body] of bodies(fits))
-      expect((await post(path, body)).status).not.toBe(422);
+    let accessToken = "";
+    for (const [path, body] of bodies(fits)) {
+      const response = await post(path, body);
+      expect(response.status).not.toBe(422);
+      if (path === "/auth/signup")
+        accessToken = ((await response.json()) as { accessToken: string })
+          .accessToken;
+    }
+    const profile = (email: string) =>
+      fetch(`${base()}/auth/profile`, {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+    expect((await profile(sized(251))).status).toBe(422);
+    const renamed = sized(250).replace(/^a/, "b");
+    emails.push(renamed);
+    expect((await profile(renamed)).status).not.toBe(422);
   });
 
   it("the login handler passes the socket address on as the session address", async () => {
