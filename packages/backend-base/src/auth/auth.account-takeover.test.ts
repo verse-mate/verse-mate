@@ -299,12 +299,14 @@ describe("a provider sign-in that adopts an existing account", () => {
   it("revokes the previous holder's sessions and password when the account was unconfirmed", async () => {
     const { id, email } = await account({ password: true });
     await service().login({ email, password: PASSWORD }, jwt as never);
-    expect(await cache.get(cacheConstants.accessToken(id))).toHaveLength(1);
+    expect(
+      await cache.get<string[]>(cacheConstants.accessToken(id)),
+    ).toHaveLength(1);
 
     await google(`owner-${id}`, email);
 
     expect((await row(id)).password).toBeNull();
-    expect(await cache.get(cacheConstants.accessToken(id))).toEqual([
+    expect(await cache.get<string[]>(cacheConstants.accessToken(id))).toEqual([
       `token-${id}`,
     ]);
   });
