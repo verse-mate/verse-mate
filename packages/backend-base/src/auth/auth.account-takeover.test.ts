@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 
-import { ConflictError, ValidationError } from "../common/errors";
+import {
+  ConflictError,
+  UnauthorizedError,
+  ValidationError,
+} from "../common/errors";
 import { authRateLimiters } from "../common/rate-limit.middleware";
 import cacheConstants from "../shared/cache.constants";
 import shared from "../shared/shared.plugin";
@@ -66,6 +70,30 @@ const google = (providerUserId: string, email: string) =>
     { providerUserId, email, emailVerified: true, name: "T A" },
     jwt as never,
   );
+
+async function legacyAccount(values: { password?: boolean } = {}) {
+  const legacy = await account({
+    emailVerified: true,
+    password: values.password ?? true,
+  });
+  await conn
+    .updateTable("user")
+    .set({ email_verified_at: null })
+    .where("id", "=", legacy.id)
+    .execute();
+  return legacy;
+}
+
+const sessionsOf = (id: string) =>
+  cache.get<string[]>(cacheConstants.accessToken(id));
+
+async function seedSession(id: string, session: string) {
+  await cache.set(
+    cacheConstants.accessToken(id),
+    [...((await sessionsOf(id)) ?? []), session],
+    "1h",
+  );
+}
 
 beforeEach(() => {
   mails = [];
@@ -212,26 +240,21 @@ describe("email confirmation", () => {
 });
 
 describe("email confirmation through the route", () => {
-  it("keeps the caller's session, signs out the account's other sessions and drops links made for another address", async () => {
+  it("only stamps: the account keeps its other sessions and every sign-in link", async () => {
     const client = getTestClient<AuthPlugin>(Backend);
     const { id, email } = await account({ password: true });
     await links.create({
       user_id: id,
       provider: SsoProviderEnum.google,
-      provider_user_id: `elsewhere-${id}`,
-      email: address("elsewhere"),
+      provider_user_id: `before-${id}`,
+      email: address("before"),
     });
     const { data } = await client.auth.login.post({
       email,
       password: PASSWORD,
     });
     const caller = data?.accessToken ?? "";
-    const sessions = await cache.get<string[]>(cacheConstants.accessToken(id));
-    await cache.set(
-      cacheConstants.accessToken(id),
-      [...(sessions ?? []), "another-device"],
-      "1h",
-    );
+    await seedSession(id, "another-device");
     await service().sendVerifyEmail(id);
 
     const confirmed = await client.auth["verify-email"].post(
@@ -241,15 +264,44 @@ describe("email confirmation through the route", () => {
 
     expect(confirmed.error).toBeNull();
     expect((await row(id)).email_verified_at).not.toBeNull();
-    const after = await cache.get<string[]>(cacheConstants.accessToken(id));
+    const after = await sessionsOf(id);
     expect(after).toContain(caller);
-    expect(after).not.toContain("another-device");
+    expect(after).toContain("another-device");
     expect(
       await links.findByProviderAndProviderId(
         SsoProviderEnum.google,
-        `elsewhere-${id}`,
+        `before-${id}`,
       ),
-    ).toBeFalsy();
+    ).toBeTruthy();
+  });
+
+  it("after a change of address, the provider account the user signed up with still reaches the same account", async () => {
+    const original = address("signed-up");
+    await google(`signed-up-${original}`, original);
+    const { id } = await conn
+      .selectFrom("user")
+      .select("id")
+      .where("email", "=", original)
+      .executeTakeFirstOrThrow();
+    created.push(id);
+    const next = address("next");
+    await service().updateProfile(id, { email: next });
+    await service().verifyEmail({
+      token: keySentTo(next),
+      jwt: jwt as never,
+      currentUserId: id,
+    });
+
+    const again = await google(`signed-up-${original}`, original);
+
+    expect(again.accessToken).toBe(`token-${id}`);
+    expect(
+      await conn
+        .selectFrom("user")
+        .select("id")
+        .where("email", "=", original)
+        .executeTakeFirst(),
+    ).toBeUndefined();
   });
 });
 
@@ -470,15 +522,7 @@ describe("a provider sign-in that adopts an existing account", () => {
   });
 
   it("on an account confirmed before the stamp existed keeps the password and its own links, drops links made for another address, signs out other sessions, and stamps it", async () => {
-    const { id, email } = await account({
-      emailVerified: true,
-      password: true,
-    });
-    await conn
-      .updateTable("user")
-      .set({ email_verified_at: null })
-      .where("id", "=", id)
-      .execute();
+    const { id, email } = await legacyAccount();
     await links.create({
       user_id: id,
       provider: SsoProviderEnum.apple,
@@ -491,7 +535,7 @@ describe("a provider sign-in that adopts an existing account", () => {
       provider_user_id: `elsewhere-${id}`,
       email: address("elsewhere"),
     });
-    await service().login({ email, password: PASSWORD }, jwt as never);
+    await seedSession(id, "device-a");
 
     await google(`owner-${id}`, email);
 
@@ -509,12 +553,20 @@ describe("a provider sign-in that adopts an existing account", () => {
         `elsewhere-${id}`,
       ),
     ).toBeFalsy();
-    expect(await cache.get<string[]>(cacheConstants.accessToken(id))).toEqual([
-      `token-${id}`,
-    ]);
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
   });
 
-  it("keeps a confirmed account's password and other links", async () => {
+  it("on an account confirmed before the stamp existed with no link for another address, stamps it and keeps its other sessions", async () => {
+    const { id, email } = await legacyAccount();
+    await seedSession(id, "device-a");
+
+    await google(`owner-${id}`, email);
+
+    expect((await row(id)).email_verified_at).not.toBeNull();
+    expect(await sessionsOf(id)).toEqual(["device-a", `token-${id}`]);
+  });
+
+  it("keeps a confirmed account's password, other links, sessions and stamp", async () => {
     const { id, email } = await account({
       emailVerified: true,
       password: true,
@@ -525,50 +577,23 @@ describe("a provider sign-in that adopts an existing account", () => {
       provider_user_id: `apple-${id}`,
       email,
     });
-
-    await google(`google-${id}`, email);
-
-    expect((await row(id)).password).not.toBeNull();
-    expect(
-      await links.findByProviderAndProviderId(
-        SsoProviderEnum.apple,
-        `apple-${id}`,
-      ),
-    ).toBeTruthy();
-  });
-
-  it("through an identity already linked, stamps an account confirmed before the stamp existed, keeps that identity and drops other links made for another address", async () => {
-    const { id, email } = await account({
-      emailVerified: true,
-      password: true,
-    });
-    await conn
-      .updateTable("user")
-      .set({ email_verified_at: null })
-      .where("id", "=", id)
-      .execute();
-    await links.create({
-      user_id: id,
-      provider: SsoProviderEnum.google,
-      provider_user_id: `owner-${id}`,
-      email: address("before"),
-    });
     await links.create({
       user_id: id,
       provider: SsoProviderEnum.apple,
       provider_user_id: `elsewhere-${id}`,
       email: address("elsewhere"),
     });
-    await service().login({ email, password: PASSWORD }, jwt as never);
+    await seedSession(id, "device-a");
+    const stamp = (await row(id)).email_verified_at;
 
-    await google(`owner-${id}`, email);
+    await google(`google-${id}`, email);
 
-    expect((await row(id)).email_verified_at).not.toBeNull();
     expect((await row(id)).password).not.toBeNull();
+    expect((await row(id)).email_verified_at).toEqual(stamp);
     expect(
       await links.findByProviderAndProviderId(
-        SsoProviderEnum.google,
-        `owner-${id}`,
+        SsoProviderEnum.apple,
+        `apple-${id}`,
       ),
     ).toBeTruthy();
     expect(
@@ -576,10 +601,8 @@ describe("a provider sign-in that adopts an existing account", () => {
         SsoProviderEnum.apple,
         `elsewhere-${id}`,
       ),
-    ).toBeFalsy();
-    expect(await cache.get<string[]>(cacheConstants.accessToken(id))).toEqual([
-      `token-${id}`,
-    ]);
+    ).toBeTruthy();
+    expect(await sessionsOf(id)).toEqual(["device-a", `token-${id}`]);
   });
 
   it("refuses when the provider identity is already linked to another account", async () => {
@@ -627,6 +650,261 @@ describe("a provider sign-in that adopts an existing account", () => {
       emailVerified: false,
       email_verified_at: null,
     });
+  });
+});
+
+describe("a sign-in through an identity already linked", () => {
+  it("on an account confirmed before the stamp existed, stamps it, keeps that identity and drops other links made for another address, signing out other sessions", async () => {
+    const { id, email } = await legacyAccount();
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `owner-${id}`,
+      email: address("before"),
+    });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    await seedSession(id, "device-a");
+
+    await google(`owner-${id}`, email);
+
+    expect((await row(id)).email_verified_at).not.toBeNull();
+    expect((await row(id)).password).not.toBeNull();
+    expect(
+      (
+        await links.findByProviderAndProviderId(
+          SsoProviderEnum.google,
+          `owner-${id}`,
+        )
+      )?.email,
+    ).toBe(email);
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `elsewhere-${id}`,
+      ),
+    ).toBeFalsy();
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
+  });
+
+  it("on an account confirmed before the stamp existed with no link for another address, stamps it and keeps its other sessions", async () => {
+    const { id, email } = await legacyAccount();
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `owner-${id}`,
+      email,
+    });
+    await seedSession(id, "device-a");
+
+    await google(`owner-${id}`, email);
+
+    expect((await row(id)).email_verified_at).not.toBeNull();
+    expect(await sessionsOf(id)).toEqual(["device-a", `token-${id}`]);
+  });
+
+  it("on an unconfirmed account, keeps that identity, drops links made for another address and signs out other sessions", async () => {
+    const { id, email } = await account({ password: true });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `owner-${id}`,
+      email: address("before"),
+    });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    await seedSession(id, "device-a");
+
+    await google(`owner-${id}`, email);
+
+    expect((await row(id)).email_verified_at).not.toBeNull();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `owner-${id}`,
+      ),
+    ).toBeTruthy();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `elsewhere-${id}`,
+      ),
+    ).toBeFalsy();
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
+  });
+
+  it("on a confirmed account, keeps its other sessions, its other links and its stamp, and takes the new picture", async () => {
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `owner-${id}`,
+      email,
+    });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    await seedSession(id, "device-a");
+    const stamp = (await row(id)).email_verified_at;
+
+    await service().loginWithSSO(
+      SsoProviderEnum.google,
+      {
+        providerUserId: `owner-${id}`,
+        email,
+        emailVerified: true,
+        picture: "https://example.test/new.png",
+      },
+      jwt as never,
+    );
+
+    expect((await row(id)).email_verified_at).toEqual(stamp);
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `elsewhere-${id}`,
+      ),
+    ).toBeTruthy();
+    expect(await sessionsOf(id)).toEqual(["device-a", `token-${id}`]);
+    expect(
+      await conn
+        .selectFrom("user")
+        .select(["imageSrc", "picture_source"])
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({
+      imageSrc: "https://example.test/new.png",
+      picture_source: SsoProviderEnum.google as never,
+    });
+  });
+});
+
+describe("a sign-in that lands while the address owner takes the account back", () => {
+  it("through a link the owner's reset drops gets no session", async () => {
+    const { id, email } = await legacyAccount({ password: true });
+    const holder = address("holder");
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `holder-${id}`,
+      email: holder,
+    });
+    await service().forgotPassword({ email });
+    const key = keySentTo(email);
+    const lookup =
+      UserSsoAccountRepository.prototype.findByProviderAndProviderId;
+    const race = spyOn(
+      UserSsoAccountRepository.prototype,
+      "findByProviderAndProviderId",
+    ).mockImplementation(async function (
+      this: UserSsoAccountRepository,
+      provider,
+      providerUserId,
+    ) {
+      const found = await lookup.call(this, provider, providerUserId);
+      race.mockRestore();
+      await service().resetPassword({ key, password: "the-owners-choice" });
+      return found;
+    });
+
+    try {
+      await expect(google(`holder-${id}`, holder)).rejects.toBeInstanceOf(
+        ConflictError,
+      );
+    } finally {
+      race.mockRestore();
+    }
+    expect(await sessionsOf(id)).toBeNull();
+  });
+
+  it("with the password the reset replaces gets no session", async () => {
+    const { id, email } = await legacyAccount({ password: true });
+    await service().forgotPassword({ email });
+    const key = keySentTo(email);
+    const verify = Bun.password.verify;
+    const race = spyOn(Bun.password, "verify").mockImplementation(
+      async (...args: Parameters<typeof Bun.password.verify>) => {
+        const valid = await verify(...args);
+        race.mockRestore();
+        await service().resetPassword({ key, password: "the-owners-choice" });
+        return valid;
+      },
+    );
+
+    try {
+      await expect(
+        service().login({ email, password: PASSWORD }, jwt as never),
+      ).rejects.toBeInstanceOf(UnauthorizedError);
+    } finally {
+      race.mockRestore();
+    }
+    expect(await sessionsOf(id)).toBeNull();
+  });
+});
+
+describe("the session list", () => {
+  it("keeps every session when many sign-ins land at once", async () => {
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    let issued = 0;
+    const distinct = {
+      sign: async (p: { sub: string }) => {
+        issued += 1;
+        return `token-${p.sub}-${issued}`;
+      },
+    };
+
+    await Promise.all(
+      Array.from({ length: 20 }, () =>
+        service().login({ email, password: PASSWORD }, distinct as never),
+      ),
+    );
+
+    expect(new Set(await sessionsOf(id)).size).toBe(20);
+  });
+
+  it("written in the existing format is still read, extended and trimmed", async () => {
+    const client = getTestClient<AuthPlugin>(Backend);
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    const first = await client.auth.login.post({ email, password: PASSWORD });
+    const earlier = first.data?.accessToken ?? "";
+    await cache.set(cacheConstants.accessToken(id), [earlier], "90d");
+    await Bun.sleep(1100);
+
+    const second = await client.auth.login.post({
+      email,
+      password: PASSWORD,
+    });
+    const later = second.data?.accessToken ?? "";
+    const session = await client.auth.session.get({
+      headers: { authorization: `Bearer ${earlier}` },
+    });
+    await client.auth.logout.post(undefined, {
+      headers: { authorization: `Bearer ${earlier}` },
+    });
+
+    expect(session.error).toBeNull();
+    expect(await sessionsOf(id)).toEqual([later]);
+    expect(await cache.ttl(cacheConstants.accessToken(id))).toBeGreaterThan(0);
   });
 });
 
