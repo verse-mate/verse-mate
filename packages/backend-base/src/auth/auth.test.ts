@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { createHash } from "node:crypto";
 import { faker } from "@faker-js/faker";
 import { db as Database } from "database";
+import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 
 import cacheConstants from "../shared/cache.constants";
 import { getTestClient } from "../shared/test-client";
@@ -145,7 +146,11 @@ describe("Auth", () => {
       },
     );
 
-    expect(error).toBeTruthy();
+    expect((error as any)?.status).toBe(401);
+    expect((error as any)?.value).toEqual({
+      error: "UNAUTHORIZED",
+      message: "Invalid credentials",
+    });
 
     const { data: dataChange, error: erroChange } = await client.auth[
       "change-password"
@@ -504,53 +509,55 @@ describe("Auth - Rate Limiting", () => {
   it("forgot-password rate limit - returns 429 after 3 attempts", async () => {
     const testEmail = faker.internet.email().toLocaleLowerCase();
 
-    // Mock sendEmail for all attempts
-    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve({ delivered: true }),
-    );
+    const sendEmail = spyOn(
+      Backend.store.notification,
+      "sendEmail",
+    ).mockImplementation(() => Promise.resolve({ delivered: true }));
+    try {
+      // First, create a user so forgot-password can find them
+      const { error: signupError } = await client.auth.signup.post({
+        email: testEmail,
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
+        password: faker.internet.password(),
+      });
+      if (signupError) throw signupError;
 
-    // First, create a user so forgot-password can find them
-    const { error: signupError } = await client.auth.signup.post({
-      email: testEmail,
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      password: faker.internet.password(),
-    });
-    if (signupError) throw signupError;
+      // Make 3 forgot password attempts (rate limit max)
+      for (let i = 0; i < 3; i++) {
+        const { data, error } = await client.auth["forgot-password"].post({
+          email: testEmail,
+        });
+        // These should succeed
+        if (error) throw error;
+        expect(data?.success).toBe(true);
+      }
 
-    // Make 3 forgot password attempts (rate limit max)
-    for (let i = 0; i < 3; i++) {
+      // 4th attempt should hit rate limit
       const { data, error } = await client.auth["forgot-password"].post({
         email: testEmail,
       });
-      // These should succeed
-      if (error) throw error;
-      expect(data?.success).toBe(true);
+
+      expect(data).toBeNull();
+      expect(error).toBeTruthy();
+      expect((error as any)?.status).toBe(429);
+      expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
+      expect((error as any)?.value?.message).toBe(
+        "Too many password reset requests, please try again later",
+      );
+      expect((error as any)?.value?.retryAfter).toBeDefined();
+      expect((error as any)?.value?.retryAfter).toBeGreaterThan(0);
+      expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(3600);
+    } finally {
+      sendEmail.mockRestore();
+      await cacheService.delete(
+        `rate-limit:forgot-password:${emailKey(testEmail)}:unknown`,
+      );
+      await cacheService.delete(
+        `rate-limit:forgot-password-email:${emailKey(testEmail)}`,
+      );
+      await cacheService.delete("rate-limit:forgot-password-ip:unknown");
     }
-
-    // 4th attempt should hit rate limit
-    const { data, error } = await client.auth["forgot-password"].post({
-      email: testEmail,
-    });
-
-    expect(data).toBeNull();
-    expect(error).toBeTruthy();
-    expect((error as any)?.status).toBe(429);
-    expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
-    expect((error as any)?.value?.message).toBe(
-      "Too many password reset requests, please try again later",
-    );
-    expect((error as any)?.value?.retryAfter).toBeDefined();
-    expect((error as any)?.value?.retryAfter).toBeGreaterThan(0);
-    expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(3600);
-
-    await cacheService.delete(
-      `rate-limit:forgot-password:${emailKey(testEmail)}:unknown`,
-    );
-    await cacheService.delete(
-      `rate-limit:forgot-password-email:${emailKey(testEmail)}`,
-    );
-    await cacheService.delete("rate-limit:forgot-password-ip:unknown");
   });
 
   it("should still return 401 for unauthorized errors", async () => {
@@ -868,6 +875,31 @@ describe("the sign-in answer does not tell whether an account exists", () => {
     expect(data?.accessToken).toBeString();
   });
 
+  it("a password reset typed in another case reaches the account", async () => {
+    let sent = 0;
+    const sendEmail = spyOn(
+      Backend.store.notification,
+      "sendEmail",
+    ).mockImplementation(() => {
+      sent += 1;
+      return Promise.resolve({ delivered: true });
+    });
+    try {
+      const known = await account(faker.internet.password());
+      const { data } = await client.auth["forgot-password"].post(
+        { email: known.toUpperCase() },
+        { headers: { "x-forwarded-for": "192.0.2.78" } },
+      );
+      expect(data).toEqual({ success: true });
+      expect(sent).toBe(1);
+    } finally {
+      sendEmail.mockRestore();
+      await Backend.store.cache.delete(
+        "rate-limit:forgot-password-ip:192.0.2.78",
+      );
+    }
+  });
+
   it("a password reset for an unknown email answers as for a known one and sends nothing", async () => {
     let sent = 0;
     const sendEmail = spyOn(
@@ -899,6 +931,59 @@ describe("the sign-in answer does not tell whether an account exists", () => {
         "rate-limit:forgot-password-ip:192.0.2.77",
       );
     }
+  });
+});
+
+describe("signed-in accounts without a password", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  const connection = () => Backend.store.db.getOrCreateConnection();
+  const email = faker.internet.email().toLocaleLowerCase();
+  const password = faker.internet.password({ length: 12 });
+
+  afterAll(async () => {
+    await connection().deleteFrom("user").where("email", "=", email).execute();
+  });
+
+  it("change-password still names the providers the account signs in with", async () => {
+    await connection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+      })
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const user = await connection()
+      .updateTable("user")
+      .set({ password: null })
+      .where("email", "=", email)
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await connection()
+      .insertInto("user_sso_accounts")
+      .values({
+        user_id: user.id,
+        provider: SsoProviderEnum.google,
+        provider_user_id: `google-${user.id}`,
+        email,
+      })
+      .execute();
+
+    const { error } = await client.auth["change-password"].post(
+      { currentPassword: "anything1", password: "NewPassw0rd!" },
+      { headers: { authorization: `Bearer ${data?.accessToken}` } },
+    );
+    expect((error as any)?.status).toBe(400);
+    expect((error as any)?.value).toEqual({
+      error: "SSO_ACCOUNT_NO_PASSWORD",
+      message:
+        "This account uses Google Sign-In. Please use that method, or reset your password to add email/password login.",
+    });
   });
 });
 
