@@ -32,7 +32,7 @@ describe("one deliverable email address, nothing more", () => {
 });
 
 describe("the sender's guard lets one address through and nothing that adds a second", () => {
-  it.each(["o'brien@example.org", "leader@example.org"])(
+  it.each(["o'brien@example.org", "leader@example.org", "user@bücher.de"])(
     "passes %p",
     (address) => {
       expect(isSingleRecipient(address)).toBe(true);
@@ -47,6 +47,13 @@ describe("the sender's guard lets one address through and nothing that adds a se
     "a@b@example.org",
     "first,second@example.org",
     "first@example.org,",
+    "a@example.org\r\nBcc: b@example.org",
+    "a@example.org\u0000",
+    "a@example.org ",
+    "(comment)a@example.org",
+    "a@[192.0.2.1]",
+    "a\\b@example.org",
+    "group:a@example.org",
   ])("stops %p", (address) => {
     expect(isSingleRecipient(address)).toBe(false);
   });
