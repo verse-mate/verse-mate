@@ -21,6 +21,11 @@ export const StandardErrorResponses = {
   500: ErrorResponse,
 };
 
+export const AuthErrorResponses = {
+  401: ErrorResponse,
+  403: ErrorResponse,
+};
+
 /**
  * Boolean response schema for simple true/false returns
  */
