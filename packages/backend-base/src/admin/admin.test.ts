@@ -368,4 +368,40 @@ describe("Admin Plugin", () => {
       expect([403, 422]).toContain(status);
     });
   });
+
+  describe("User preferences", () => {
+    const storedLanguage = async (userId: string) =>
+      (
+        await Backend.store.db
+          .getOrCreateConnection()
+          .selectFrom("user")
+          .where("id", "=", userId)
+          .select("preferred_language")
+          .executeTakeFirstOrThrow()
+      ).preferred_language;
+
+    it("PATCH /user/preferences stores a well-formed language code", async () => {
+      const { error, status } = await testClient.user.preferences.patch(
+        { preferred_language: "pt-BR" },
+        { headers: { authorization: `Bearer ${regularUser.accessToken}` } },
+      );
+
+      expect(error).toBeFalsy();
+      expect(status).toBe(200);
+      expect(await storedLanguage(regularUser.userId)).toBe("pt-BR");
+    });
+
+    it.each(["pt-BR'", "en OR 1", "", "x"])(
+      "PATCH /user/preferences refuses %p with 400 and keeps the stored code",
+      async (code) => {
+        const { status } = await testClient.user.preferences.patch(
+          { preferred_language: code },
+          { headers: { authorization: `Bearer ${regularUser.accessToken}` } },
+        );
+
+        expect(status).toBe(400);
+        expect(await storedLanguage(regularUser.userId)).toBe("pt-BR");
+      },
+    );
+  });
 });

@@ -3,6 +3,7 @@ import { type Static, t } from "elysia";
 export const AuthLoginInput = t.Object({
   email: t.String({
     format: "email",
+    maxLength: 250,
     default: "",
   }),
   password: t.String({
