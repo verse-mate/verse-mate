@@ -12,6 +12,6 @@
     "@elysiajs/openapi": "1.4.11",
     "backend-base": "workspace:*",
     "database": "workspace:*",
-    "elysia": "1.4.9"
+    "elysia": "1.4.29"
   }
 }
