@@ -1,0 +1,461 @@
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { faker } from "@faker-js/faker";
+
+import authPlugin from "../auth/auth.plugin";
+import { createTestUser } from "../shared/test-helpers";
+import Backend from "./bible.plugin";
+
+type TestUser = Awaited<ReturnType<typeof createTestUser>>;
+
+describe("Bible Plugin - user-scoped routes answer only the signed-in user", () => {
+  const plugin = Backend.use(authPlugin);
+  let owner: TestUser;
+  let other: TestUser;
+  let explanationId: number;
+  let ownerNoteId: string;
+  let ownerHighlightId: number;
+  const ownerNoteContent = faker.lorem.sentence();
+
+  const call = async (
+    method: string,
+    path: string,
+    options: { token?: string; body?: unknown } = {},
+  ) => {
+    const headers: Record<string, string> = {};
+    if (options.token) headers.authorization = `Bearer ${options.token}`;
+    if (options.body !== undefined)
+      headers["content-type"] = "application/json";
+    const response = await plugin.handle(
+      new Request(`http://localhost${path}`, {
+        method,
+        headers,
+        body:
+          options.body === undefined ? undefined : JSON.stringify(options.body),
+      }),
+    );
+    const text = await response.text();
+    let json: any = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = text;
+    }
+    return { status: response.status, json };
+  };
+
+  const ownerNotes = async () => {
+    const { json } = await call("GET", `/bible/book/notes/${owner.userId}`, {
+      token: owner.accessToken,
+    });
+    return json.notes as Array<{ note_id: string; content: string }>;
+  };
+
+  const ownerFavorites = async () => {
+    const { json } = await call(
+      "GET",
+      `/bible/book/bookmarks/${owner.userId}`,
+      { token: owner.accessToken },
+    );
+    return json.favorites as Array<{ book_id: number; chapter_number: number }>;
+  };
+
+  const ownerHighlight = async () => {
+    const { json } = await call("GET", `/bible/highlights/${owner.userId}`, {
+      token: owner.accessToken,
+    });
+    return (
+      json.highlights as Array<{ highlight_id: number; color: string }>
+    ).find((h) => h.highlight_id === ownerHighlightId);
+  };
+
+  beforeAll(async () => {
+    owner = await createTestUser();
+    other = await createTestUser();
+
+    const explanation = await plugin.store.db
+      .getOrCreateConnection()
+      .selectFrom("explanations")
+      .select("explanation_id")
+      .executeTakeFirstOrThrow();
+    explanationId = explanation.explanation_id;
+
+    const note = await call("POST", "/bible/book/note/add", {
+      token: owner.accessToken,
+      body: {
+        user_id: owner.userId,
+        book_id: 1,
+        chapter_number: 2,
+        content: ownerNoteContent,
+      },
+    });
+    ownerNoteId = note.json.note.note_id;
+
+    await call("POST", "/bible/book/bookmark/add", {
+      token: owner.accessToken,
+      body: { user_id: owner.userId, book_id: 1, chapter_number: 3 },
+    });
+
+    const highlight = await call("POST", "/bible/highlight/add", {
+      token: owner.accessToken,
+      body: {
+        user_id: owner.userId,
+        book_id: 2,
+        chapter_number: 4,
+        start_verse: 5,
+        end_verse: 5,
+        color: "yellow",
+      },
+    });
+    ownerHighlightId = highlight.json.highlight.highlight_id;
+
+    await call("POST", "/bible/book/chapter/save-last-read", {
+      token: owner.accessToken,
+      body: { user_id: owner.userId, book_id: 1, chapter_number: 2 },
+    });
+
+    await call("POST", "/bible/book/explanation/save-rating", {
+      token: owner.accessToken,
+      body: {
+        user: { id: owner.userId },
+        book_id: 1,
+        chapter_number: 1,
+        explanation_id: explanationId,
+        rating: 4,
+      },
+    });
+  });
+
+  afterAll(() => {
+    Backend.store.db.closeConnection();
+    Backend.store.cache.disconnect();
+  });
+
+  describe("reads", () => {
+    const readRoutes = () => [
+      { method: "GET", path: `/bible/book/notes/${owner.userId}` },
+      { method: "GET", path: `/bible/book/bookmarks/${owner.userId}` },
+      { method: "GET", path: `/bible/highlights/${owner.userId}` },
+      { method: "GET", path: `/bible/highlights/${owner.userId}/2/4` },
+      {
+        method: "POST",
+        path: "/bible/book/chapter/last-read",
+        body: { user_id: owner.userId },
+      },
+      {
+        method: "POST",
+        path: "/bible/book/explanation/ratings",
+        body: {
+          user: { id: owner.userId },
+          book_id: 1,
+          chapter_number: 1,
+          explanation_id: explanationId,
+        },
+      },
+    ];
+
+    it("refuse a caller with no token", async () => {
+      for (const route of readRoutes()) {
+        const res = await call(route.method, route.path, { body: route.body });
+        expect({ route: route.path, status: res.status }).toEqual({
+          route: route.path,
+          status: 401,
+        });
+      }
+    });
+
+    it("refuse a caller with a revoked token", async () => {
+      const revoked = await createTestUser();
+      await call("POST", "/auth/logout", { token: revoked.accessToken });
+      const res = await call("GET", `/bible/book/notes/${revoked.userId}`, {
+        token: revoked.accessToken,
+      });
+      expect(res.status).toBe(401);
+    });
+
+    it("refuse another signed-in user asking for the owner's data", async () => {
+      for (const route of readRoutes()) {
+        const res = await call(route.method, route.path, {
+          token: other.accessToken,
+          body: route.body,
+        });
+        expect({ route: route.path, status: res.status }).toEqual({
+          route: route.path,
+          status: 403,
+        });
+        expect(JSON.stringify(res.json)).not.toContain(ownerNoteContent);
+      }
+    });
+
+    it("answer the owner with their own data", async () => {
+      const notes = await ownerNotes();
+      expect(notes.map((n) => n.note_id)).toContain(ownerNoteId);
+
+      const favorites = await ownerFavorites();
+      expect(
+        favorites.some((f) => f.book_id === 1 && f.chapter_number === 3),
+      ).toBe(true);
+
+      expect(await ownerHighlight()).toBeDefined();
+
+      const chapter = await call(
+        "GET",
+        `/bible/highlights/${owner.userId}/2/4`,
+        {
+          token: owner.accessToken,
+        },
+      );
+      expect(chapter.status).toBe(200);
+      expect(
+        chapter.json.highlights.some(
+          (h: { highlight_id: number }) => h.highlight_id === ownerHighlightId,
+        ),
+      ).toBe(true);
+
+      const lastRead = await call("POST", "/bible/book/chapter/last-read", {
+        token: owner.accessToken,
+        body: { user_id: owner.userId },
+      });
+      expect(lastRead.status).toBe(200);
+      expect(lastRead.json.result).toBeTruthy();
+
+      const ratings = await call("POST", "/bible/book/explanation/ratings", {
+        token: owner.accessToken,
+        body: {
+          user: { id: owner.userId },
+          book_id: 1,
+          chapter_number: 1,
+          explanation_id: explanationId,
+        },
+      });
+      expect(ratings.status).toBe(200);
+      expect(ratings.json.userRating).toBe(4);
+    });
+  });
+
+  describe("writes that name a user", () => {
+    const writeRoutes = () => [
+      {
+        method: "POST",
+        path: "/bible/book/note/add",
+        body: {
+          user_id: owner.userId,
+          book_id: 1,
+          chapter_number: 5,
+          content: faker.lorem.sentence(),
+        },
+      },
+      {
+        method: "POST",
+        path: "/bible/book/bookmark/add",
+        body: { user_id: owner.userId, book_id: 1, chapter_number: 6 },
+      },
+      {
+        method: "POST",
+        path: "/bible/book/bookmark/remove",
+        body: { user_id: owner.userId, book_id: 1, chapter_number: 3 },
+      },
+      {
+        method: "DELETE",
+        path: `/bible/book/bookmark/remove?user_id=${owner.userId}&book_id=1&chapter_number=3`,
+      },
+      {
+        method: "POST",
+        path: "/bible/highlight/add",
+        body: {
+          user_id: owner.userId,
+          book_id: 2,
+          chapter_number: 7,
+          start_verse: 1,
+          end_verse: 1,
+          color: "green",
+        },
+      },
+      {
+        method: "PUT",
+        path: `/bible/highlight/${ownerHighlightId}`,
+        body: { user_id: owner.userId, color: "blue" },
+      },
+      {
+        method: "POST",
+        path: "/bible/book/chapter/save-last-read",
+        body: { user_id: owner.userId, book_id: 9, chapter_number: 9 },
+      },
+      {
+        method: "POST",
+        path: "/bible/book/explanation/save-rating",
+        body: {
+          user: { id: owner.userId },
+          book_id: 1,
+          chapter_number: 1,
+          explanation_id: explanationId,
+          rating: 1,
+        },
+      },
+      {
+        method: "PUT",
+        path: "/bible/book/explanation/update-rating",
+        body: {
+          user: { id: owner.userId },
+          book_id: 1,
+          chapter_number: 1,
+          explanation_id: explanationId,
+          rating: 1,
+        },
+      },
+    ];
+
+    const expectOwnerDataUntouched = async () => {
+      const notes = await ownerNotes();
+      expect(notes.length).toBe(1);
+      expect(notes[0].content).toBe(ownerNoteContent);
+
+      const favorites = await ownerFavorites();
+      expect(favorites.length).toBe(1);
+      expect(favorites[0]).toMatchObject({ book_id: 1, chapter_number: 3 });
+
+      expect((await ownerHighlight())?.color).toBe("yellow");
+
+      const lastRead = await call("POST", "/bible/book/chapter/last-read", {
+        token: owner.accessToken,
+        body: { user_id: owner.userId },
+      });
+      expect(lastRead.json.result.book_id).toBe(1);
+
+      const ratings = await call("POST", "/bible/book/explanation/ratings", {
+        token: owner.accessToken,
+        body: {
+          user: { id: owner.userId },
+          book_id: 1,
+          chapter_number: 1,
+          explanation_id: explanationId,
+        },
+      });
+      expect(ratings.json.userRating).toBe(4);
+    };
+
+    it("refuse a caller with no token and change nothing", async () => {
+      for (const route of writeRoutes()) {
+        const res = await call(route.method, route.path, { body: route.body });
+        expect({ route: route.path, status: res.status }).toEqual({
+          route: route.path,
+          status: 401,
+        });
+      }
+      await expectOwnerDataUntouched();
+    });
+
+    it("refuse another signed-in user writing as the owner and change nothing", async () => {
+      for (const route of writeRoutes()) {
+        const res = await call(route.method, route.path, {
+          token: other.accessToken,
+          body: route.body,
+        });
+        expect({ route: route.path, status: res.status }).toEqual({
+          route: route.path,
+          status: 403,
+        });
+      }
+      await expectOwnerDataUntouched();
+    });
+  });
+
+  describe("writes that name a note or highlight by id", () => {
+    it("refuse a caller with no token and change nothing", async () => {
+      const update = await call("PUT", "/bible/book/note/update", {
+        body: { note_id: ownerNoteId, content: faker.lorem.sentence() },
+      });
+      expect(update.status).toBe(401);
+
+      const remove = await call(
+        "DELETE",
+        `/bible/book/note/remove?note_id=${ownerNoteId}`,
+      );
+      expect(remove.status).toBe(401);
+
+      const color = await call("PUT", `/bible/highlight/${ownerHighlightId}`, {
+        body: { color: "red" },
+      });
+      expect(color.status).toBe(401);
+
+      const notes = await ownerNotes();
+      expect(notes.find((n) => n.note_id === ownerNoteId)?.content).toBe(
+        ownerNoteContent,
+      );
+      expect((await ownerHighlight())?.color).toBe("yellow");
+    });
+
+    it("do not let another user change or delete the owner's note or highlight", async () => {
+      const update = await call("PUT", "/bible/book/note/update", {
+        token: other.accessToken,
+        body: { note_id: ownerNoteId, content: faker.lorem.sentence() },
+      });
+      expect(update.status).toBe(200);
+      expect(update.json.success).toBe(false);
+
+      const remove = await call(
+        "DELETE",
+        `/bible/book/note/remove?note_id=${ownerNoteId}`,
+        { token: other.accessToken },
+      );
+      expect(remove.status).toBe(200);
+      expect(remove.json.success).toBe(false);
+
+      const color = await call("PUT", `/bible/highlight/${ownerHighlightId}`, {
+        token: other.accessToken,
+        body: { color: "red" },
+      });
+      expect(color.status).toBe(200);
+      expect(color.json.success).toBe(false);
+
+      const notes = await ownerNotes();
+      expect(notes.find((n) => n.note_id === ownerNoteId)?.content).toBe(
+        ownerNoteContent,
+      );
+      expect((await ownerHighlight())?.color).toBe("yellow");
+    });
+
+    it("let the owner change their own highlight with or without user_id in the body", async () => {
+      const withId = await call("PUT", `/bible/highlight/${ownerHighlightId}`, {
+        token: owner.accessToken,
+        body: { user_id: owner.userId, color: "green" },
+      });
+      expect(withId.status).toBe(200);
+      expect(withId.json.success).toBe(true);
+
+      const withoutId = await call(
+        "PUT",
+        `/bible/highlight/${ownerHighlightId}`,
+        { token: owner.accessToken, body: { color: "yellow" } },
+      );
+      expect(withoutId.status).toBe(200);
+      expect(withoutId.json.success).toBe(true);
+      expect((await ownerHighlight())?.color).toBe("yellow");
+    });
+
+    it("let the owner update and delete their own note", async () => {
+      const added = await call("POST", "/bible/book/note/add", {
+        token: owner.accessToken,
+        body: {
+          user_id: owner.userId,
+          book_id: 3,
+          chapter_number: 1,
+          content: faker.lorem.sentence(),
+        },
+      });
+      const noteId = added.json.note.note_id;
+
+      const update = await call("PUT", "/bible/book/note/update", {
+        token: owner.accessToken,
+        body: { note_id: noteId, content: faker.lorem.sentence() },
+      });
+      expect(update.json.success).toBe(true);
+
+      const remove = await call(
+        "DELETE",
+        `/bible/book/note/remove?note_id=${noteId}`,
+        { token: owner.accessToken },
+      );
+      expect(remove.json.success).toBe(true);
+    });
+  });
+});
