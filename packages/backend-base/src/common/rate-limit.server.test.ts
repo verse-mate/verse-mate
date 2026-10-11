@@ -157,25 +157,23 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
   });
 
   it("an email longer than the column is refused before any limiter or lookup, and the report carries no body", async () => {
-    const long = `${"a".repeat(239)}@example.test`;
-    expect(long).toHaveLength(252);
+    process.env.TRUSTED_PROXY_HOPS = "1";
+    const sized = (length: number) =>
+      `${"a".repeat(length - "@example.test".length)}@example.test`;
+    const bodies = (email: string) =>
+      [
+        ["/auth/login", { email, password: "x" }],
+        ["/auth/forgot-password", { email }],
+        [
+          "/auth/signup",
+          { email, firstName: "A", lastName: "B", password: "Passw0rd!x" },
+        ],
+      ] as const;
     keys.length = 0;
     const errors = spyOn(console, "error").mockImplementation(() => {});
     let reported = "";
     try {
-      for (const [path, body] of [
-        ["/auth/login", { email: long, password: "x" }],
-        ["/auth/forgot-password", { email: long }],
-        [
-          "/auth/signup",
-          {
-            email: long,
-            firstName: "A",
-            lastName: "B",
-            password: "Passw0rd!x",
-          },
-        ],
-      ] as const)
+      for (const [path, body] of bodies(sized(251)))
         expect((await post(path, body)).status).toBe(422);
       reported = errors.mock.calls.map((call) => Bun.inspect(call)).join("\n");
     } finally {
@@ -185,10 +183,24 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     expect(reported).not.toContain("example.test");
     expect(reported).not.toContain("Passw0rd");
     expect(keys).toEqual([]);
-    const fits = `${"a".repeat(237)}@example.test`;
-    expect(fits).toHaveLength(250);
-    expect(
-      (await post("/auth/login", { email: fits, password: "x" })).status,
-    ).not.toBe(422);
+    const fits = sized(250);
+    emails.push(fits);
+    for (const [path, body] of bodies(fits))
+      expect((await post(path, body)).status).not.toBe(422);
+  });
+
+  it("the login handler passes the socket address on as the session address", async () => {
+    process.env.TRUSTED_PROXY_HOPS = "0";
+    const login = spyOn(authPlugin.store.authService, "login");
+    try {
+      await post(
+        "/auth/login",
+        { email: `nobody-${crypto.randomUUID()}@example.test`, password: "x" },
+        FORWARDED,
+      );
+      expect(login.mock.calls[0]?.[3]).toMatch(/^(127\.0\.0\.1|::1)$/);
+    } finally {
+      login.mockRestore();
+    }
   });
 });

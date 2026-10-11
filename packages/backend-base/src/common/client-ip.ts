@@ -64,10 +64,8 @@ function canonicalIpv6(value: string): string | undefined {
 
 function address(entry: string | null | undefined): string | undefined {
   const value = (entry ?? "")
-    .trim()
     .replace(/^\[(.*)\](:\d+)?$/, "$1")
     .replace(/^(\d+\.\d+\.\d+\.\d+):\d+$/, "$1");
-  if (value.length > 64) return undefined;
   const family = isIP(value);
   if (family === 4) return value;
   if (family !== 6 || value.includes("%")) return undefined;
@@ -115,10 +113,7 @@ function prefix(ip: string, bits: 48 | 64): string {
     tail === undefined
       ? front
       : [...front, ...Array(8 - front.length - back.length).fill("0"), ...back];
-  return `${full
-    .slice(0, bits / 16)
-    .map((g) => Number.parseInt(g, 16).toString(16))
-    .join(":")}::/${bits}`;
+  return `${full.slice(0, bits / 16).join(":")}::/${bits}`;
 }
 
 function network(

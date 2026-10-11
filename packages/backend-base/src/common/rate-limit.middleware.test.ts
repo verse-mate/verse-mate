@@ -365,11 +365,14 @@ describe("an unreadable proxy count is not a confirmed one", () => {
 
 function recordingCache() {
   const keys: string[] = [];
+  const windows: Record<string, number> = {};
   const inner = memoryCache();
   return {
     keys,
-    increment: (k: string) => {
+    windows,
+    increment: (k: string, windowSeconds: number) => {
       keys.push(k);
+      windows[k.split(":")[1]] = windowSeconds;
       return inner.increment(k);
     },
     ttl: inner.ttl,
@@ -419,6 +422,21 @@ describe("with TRUSTED_PROXY_HOPS unset, every limiter reads the client as main 
   const cases: [string, Headers, Partial<ReturnType<typeof main>>][] = [
     ["a single forwarded address", { "x-forwarded-for": CLIENT }, {}],
     ["a forwarded chain", { "x-forwarded-for": `${CLIENT}, ${PROXY}` }, {}],
+    [
+      "a port on the address: dropped, where main kept it in every key",
+      { "x-forwarded-for": `${CLIENT}:51234` },
+      { signup: CLIENT, sso: CLIENT, session: CLIENT, perRoute: CLIENT },
+    ],
+    [
+      "a blank first entry: skipped, where main's signup kept it and its per-route key was empty",
+      { "x-forwarded-for": `, ${CLIENT}` },
+      { signup: CLIENT, perRoute: CLIENT },
+    ],
+    [
+      "a proxy's literal unknown: never a key, where main used it",
+      { "x-forwarded-for": `unknown, ${CLIENT}` },
+      { signup: CLIENT, sso: PROXY, session: PROXY, perRoute: PROXY },
+    ],
     [
       "X-Forwarded-For and X-Real-IP together",
       { "x-forwarded-for": CLIENT, "x-real-ip": "192.0.2.9" },
@@ -589,6 +607,7 @@ describe("a limiter key is always an address, whatever the header holds", () => 
     expect(read({ "x-forwarded-for": "[2001:db8::7]:443" })).toBe(
       "2001:db8::7",
     );
+    expect(read({ "x-forwarded-for": "[2001:db8::7]" })).toBe("2001:db8::7");
     expect(read({}, `::ffff:${PROXY}`)).toBe(PROXY);
   });
 
@@ -828,6 +847,36 @@ describe("a proxy count higher than the chain is reported", () => {
     } finally {
       errors.mockRestore();
     }
+  });
+});
+
+describe("each limiter keeps the window its policy names", () => {
+  it("sign-in and SSO a minute, signup and password reset an hour", async () => {
+    hops("1");
+    const cache = recordingCache();
+    for (const limiter of [
+      authRateLimiters.login,
+      authRateLimiters.loginIp,
+      authRateLimiters.loginNetwork,
+      authRateLimiters.sso,
+      authRateLimiters.signup,
+      authRateLimiters.forgotPassword,
+    ])
+      await hit(
+        limiter,
+        cache as never,
+        CLIENT,
+        {},
+        { email: "a@example.test" },
+      );
+    expect(cache.windows).toEqual({
+      login: 60,
+      "login-ip": 60,
+      "login-net": 60,
+      sso: 60,
+      signup: 3600,
+      "forgot-password": 3600,
+    });
   });
 });
 
