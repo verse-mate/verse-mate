@@ -199,21 +199,16 @@ export class AudioService {
     // (e.g., transient OpenAI 5xx) clears. Observed on prod for Genesis
     // 1 (explanation 10170) on 2026-04-28: any guest hitting the chip
     // saw "Audio unavailable" for hours.
-    //
-    // Remove the failed job before re-enqueue so the new request gets a
-    // fresh attempt. Completed jobs remain dedup'd as before; in-flight
-    // jobs (waiting/active/delayed) still short-circuit.
     const data: AudioGenerationJobData = variantKey;
     const jobId = audioGenerationJobId(data);
     const existing = await this.queue.getJob(jobId);
-    if (existing && (await existing.isFailed())) {
+    const finished =
+      existing &&
+      ((await existing.isCompleted()) || (await existing.isFailed()));
+    if (finished) {
       await existing.remove();
     }
-    const stillInFlight =
-      existing &&
-      !(await existing.isCompleted()) &&
-      !(await existing.isFailed());
-    if (!stillInFlight) {
+    if (!existing || finished) {
       await params.beforeSynthesis?.();
       await this.queue.add(AUDIO_GENERATION_QUEUE, data, {
         jobId,
@@ -351,7 +346,11 @@ export class AudioService {
     if (!isProductVariant(explanation.language_code, data)) {
       throw new ValidationError("This audio variant is not offered");
     }
-    return this.synthesizeAndStore(explanation.explanation, data);
+    const row = await this.synthesizeAndStore(explanation.explanation, data);
+    const after = await this.loadExplanation(data.explanation_id);
+    if (after?.is_active) return row;
+    await this.repository.markStale(data.explanation_id);
+    return { ...row, is_stale: true };
   }
 
   async synthesizeAndStore(
