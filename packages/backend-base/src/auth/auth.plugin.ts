@@ -135,6 +135,7 @@ const plugin = new Elysia()
               return undefined;
             },
             {
+              beforeHandle: authRateLimiters.sendEmailVerification,
               response: {
                 204: t.Undefined(),
                 ...StandardErrorResponses,
