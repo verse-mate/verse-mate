@@ -228,18 +228,18 @@ export class AudioService {
   ): Promise<AudioJobStatusDto> {
     const explanationId = explanationIdOfJob(jobId);
     if (explanationId === null) {
-      throw new NotFoundError(`Job ${jobId} not found`);
+      throw new NotFoundError("Job not found");
     }
     if (!currentUserId) {
       const explanation = await this.loadExplanation(explanationId);
       if (!explanation) {
-        throw new NotFoundError(`Job ${jobId} not found`);
+        throw new NotFoundError("Job not found");
       }
       await this.assertGuestAllowed(explanation.chapter_id);
     }
     const job = await this.queue.getJob(jobId);
     if (!job) {
-      throw new NotFoundError(`Job ${jobId} not found`);
+      throw new NotFoundError("Job not found");
     }
     const state = await job.getState();
     if (state === "completed") {
@@ -413,10 +413,8 @@ export class AudioService {
       .select("language_code")
       .where("is_enabled", "=", true)
       .execute();
-    return offered.some(
-      (row) =>
-        BCP47_REGEX.test(row.language_code) &&
-        languageForms(row.language_code).includes(language),
+    return offered.some((row) =>
+      languageForms(row.language_code).includes(language),
     );
   }
 

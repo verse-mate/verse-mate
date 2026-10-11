@@ -19,7 +19,7 @@ import {
   contentHashOf,
   storageKeyFor,
 } from "./audio.repository";
-import { AudioService } from "./audio.service";
+import { AudioService, isProductVariant } from "./audio.service";
 
 const DEFAULT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
 
@@ -870,4 +870,23 @@ describe("AudioService", () => {
       expect(a).toHaveLength(64);
     });
   });
+});
+
+describe("isProductVariant", () => {
+  it.each([
+    ["en", DEFAULT_VOICE, "en", true],
+    ["en", DEFAULT_VOICE, "en-US", true],
+    ["en-US", DEFAULT_VOICE, "en", true],
+    ["pt", DEFAULT_VOICE, "pt-BR", true],
+    ["en", DEFAULT_VOICE, "en-GB", false],
+    ["en", DEFAULT_VOICE, "pt-BR", false],
+    ["en", `${DEFAULT_VOICE}-x`, "en", false],
+  ] as const)(
+    "explanation in %p, variant %p/%p offered: %p",
+    (explanationLanguage, voice, language_code, expected) => {
+      expect(
+        isProductVariant(explanationLanguage, { voice, language_code }),
+      ).toBe(expected);
+    },
+  );
 });

@@ -17,6 +17,7 @@ import {
   audioGenerationQueue,
 } from "./audio-generation.queue";
 import plugin, { SYNTHESIS_LIMIT } from "./audio.plugin";
+import { MAX_EXPLANATION_ID as MAX_ID } from "./audio.service";
 
 const previousEnv = {
   TTS_PROVIDER: process.env.TTS_PROVIDER,
@@ -263,6 +264,11 @@ describe("GET /bible/explanation/audio/:explanationId offered languages", () => 
 
   it("serves an enabled language that has no explanations yet", async () => {
     const id = await explanation(genesis1ChapterId);
+    const { explanation_count: originalCount } = await conn
+      .selectFrom("explanation_languages")
+      .select("explanation_count")
+      .where("language_code", "=", OFFERED_LANGUAGE)
+      .executeTakeFirstOrThrow();
     await conn
       .updateTable("explanation_languages")
       .set({ explanation_count: 0 })
@@ -278,7 +284,7 @@ describe("GET /bible/explanation/audio/:explanationId offered languages", () => 
     } finally {
       await conn
         .updateTable("explanation_languages")
-        .set({ explanation_count: 1 })
+        .set({ explanation_count: originalCount })
         .where("language_code", "=", OFFERED_LANGUAGE)
         .execute();
     }
@@ -332,9 +338,11 @@ describe("GET /bible/explanation/audio/jobs/:jobId", () => {
     expect(response.status).toBe(404);
   });
 
-  it("answers 404 for a malformed job id", async () => {
-    const response = await getJob("bull:audio-generation:1");
+  it("answers 404 for a malformed job id without echoing it", async () => {
+    const jobId = "bull:audio-generation:1";
+    const response = await getJob(jobId);
     expect(response.status).toBe(404);
+    expect(await response.text()).not.toContain(jobId);
   });
 
   it("answers 404 to a guest for a job id beyond the id range", async () => {
@@ -371,22 +379,39 @@ describe("explanation id range", () => {
   it.each(["99999999999", "2147483648", "0", "1.5"])(
     "refuses the explanation id %p before any lookup",
     async (explanationId) => {
+      const user = await signedInUser();
+      const auth = { authorization: `Bearer ${user.token}` };
+      const base = `http://localhost/bible/explanation/audio/${explanationId}`;
       const responses = await Promise.all([
         plugin.handle(
-          new Request(
-            `http://localhost/bible/explanation/audio/${explanationId}`,
-            { headers: { "x-forwarded-for": guestAddress() } },
-          ),
+          new Request(base, { headers: { "x-forwarded-for": guestAddress() } }),
+        ),
+        plugin.handle(new Request(`${base}/progress`, { headers: auth })),
+        plugin.handle(
+          new Request(`${base}/progress`, {
+            method: "POST",
+            headers: { ...auth, "content-type": "application/json" },
+            body: JSON.stringify({
+              position_seconds: 1,
+              duration_seconds: 10,
+              reason: "pause",
+            }),
+          }),
         ),
         plugin.handle(
-          new Request(
-            `http://localhost/bible/explanation/audio/${explanationId}/progress`,
-          ),
+          new Request(`${base}/progress`, { method: "DELETE", headers: auth }),
         ),
       ]);
-      expect(responses.map((r) => r.status)).toEqual([422, 422]);
+      expect(responses.map((r) => r.status)).toEqual([422, 422, 422, 422]);
     },
   );
+
+  it("looks up the largest explanation id instead of refusing it", async () => {
+    const response = await getAudio(MAX_ID, {
+      headers: { "x-forwarded-for": guestAddress() },
+    });
+    expect(response.status).toBe(404);
+  });
 });
 
 describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
@@ -460,18 +485,32 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
     expect(guest.status).toBe(200);
   }, 30_000);
 
-  it("does not spend a slot on a refused language", async () => {
-    const ip = guestAddress();
-    const id = await explanation(genesis1ChapterId);
-    const refused = await getAudio(id, {
-      query: { language: "zz-ZZ" },
-      headers: { "x-forwarded-for": ip },
-    });
-    expect(refused.status).toBe(400);
-    expect(await cache.ttl(`rate-limit:audio-synthesis:ip:${ip}`)).toBeLessThan(
-      0,
-    );
-  });
+  it.each([
+    ["a language nobody offers", 400, { language: "zz-ZZ" }, 1],
+    ["a voice nobody offers", 400, { voice: "nova-x" }, 1],
+    ["a chapter outside the guest scope", 401, {}, 2],
+    ["an explanation that does not exist", 404, {}, 0],
+  ] as const)(
+    "does not spend a slot on %s",
+    async (_case, status, query, chapterNumber) => {
+      const ip = guestAddress();
+      const id =
+        chapterNumber === 0
+          ? MAX_ID
+          : await explanation(
+              chapterNumber === 1 ? genesis1ChapterId : genesis2ChapterId,
+            );
+      const refused = await getAudio(id, {
+        query: { ...query },
+        headers: { "x-forwarded-for": ip },
+      });
+      expect(refused.status).toBe(status);
+      expect(
+        await cache.ttl(`rate-limit:audio-synthesis:ip:${ip}`),
+      ).toBeLessThan(0);
+      expect(await cache.ttl(OVERALL_KEY)).toBeLessThan(0);
+    },
+  );
 
   it("keys a guest on the address the trusted proxy appended", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
