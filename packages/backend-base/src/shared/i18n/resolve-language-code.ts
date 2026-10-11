@@ -1,3 +1,5 @@
+import { ValidationError } from "../../common/errors";
+
 /**
  * resolveLanguageCode — alias resolver for BCP-47 language tags.
  *
@@ -38,7 +40,7 @@ export const BCP47_REGEX = /^[a-z]{2}(-[A-Z]{2})?$/;
  */
 export function resolveLanguageCode(input: string): string[] {
   if (!BCP47_REGEX.test(input)) {
-    throw new Error(
+    throw new ValidationError(
       `Invalid language code "${input}". Expected BCP-47 format: "en" or "en-US".`,
     );
   }
@@ -67,7 +69,7 @@ export function resolveLanguageCode(input: string): string[] {
  */
 export function canonicalizeLanguageCode(input: string): string {
   if (!BCP47_REGEX.test(input)) {
-    throw new Error(
+    throw new ValidationError(
       `Invalid language code "${input}". Expected BCP-47 format: "en" or "en-US".`,
     );
   }
