@@ -39,23 +39,12 @@ export const createErrorHandler = (pluginName: string) => {
         ) {
           set.status = 429;
 
-          let retryAfter: number | undefined;
-          const cacheKey = (error as any).cacheKey;
-          if (typeof cacheKey === "string") {
-            try {
-              const cache = context?.store?.cache;
-              if (cache && typeof cache.ttl === "function") {
-                const ttlSeconds = await cache.ttl(cacheKey);
-                if (typeof ttlSeconds === "number" && ttlSeconds > 0) {
-                  // Clamp to a max of 24h to avoid unreasonable values
-                  const MAX_RETRY_AFTER = 24 * 60 * 60;
-                  retryAfter = Math.min(ttlSeconds, MAX_RETRY_AFTER);
-                }
-              }
-            } catch {
-              // swallow TTL errors
-            }
-          }
+          const MAX_RETRY_AFTER = 24 * 60 * 60;
+          const retryAfter =
+            typeof (error as any).retryAfter === "number" &&
+            (error as any).retryAfter > 0
+              ? Math.min((error as any).retryAfter, MAX_RETRY_AFTER)
+              : undefined;
 
           if (process.env.NODE_ENV !== "production") {
             const msg =
