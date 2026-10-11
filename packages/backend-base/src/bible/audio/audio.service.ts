@@ -32,6 +32,14 @@ const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy"; // br-audio-009
 
 export type KyselyTransaction = Transaction<Database>;
 
+const BCP47 = /^[a-z]{2}(-[A-Z]{2})?$/;
+const JOB_ID = /^audio-gen:(\d+):[^:]+:[^:]+$/;
+
+function explanationIdOfJob(jobId: string): number | null {
+  const match = JOB_ID.exec(jobId);
+  return match ? Number(match[1]) : null;
+}
+
 function languageForms(code: string): string[] {
   try {
     return resolveLanguageCode(code);
@@ -125,32 +133,18 @@ export class AudioService {
       throw new NotFoundError(`Explanation ${params.explanation_id} not found`);
     }
 
-    // br-audio-008: language follows explanation unless caller overrides.
-    const language = params.language ?? explanation.language_code;
-    const voice = params.voice ?? DEFAULT_VOICE_EN;
-
-    // br-audio-013: guest scope
     if (!params.currentUserId) {
-      const isGuestAllowed = await this.isGuestAllowed(explanation.chapter_id);
-      if (!isGuestAllowed) {
-        throw new UnauthorizedError(
-          "GUEST_SCOPE_EXCEEDED: guest users can only access audio on Genesis 1",
-        );
-      }
+      await this.assertGuestAllowed(explanation.chapter_id);
     }
 
-    if (
-      params.language !== undefined &&
-      !(await this.isOfferedLanguage(language, explanation.language_code))
-    ) {
-      throw new ValidationError("This language is not offered for audio");
-    }
-    if (
-      params.voice !== undefined &&
-      !(await this.isOfferedVoice(voice, language))
-    ) {
+    if (params.voice !== undefined && params.voice !== DEFAULT_VOICE_EN) {
       throw new ValidationError("This voice is not offered for audio");
     }
+    const voice = DEFAULT_VOICE_EN;
+    const language = await this.servedLanguage(
+      params.language,
+      explanation.language_code,
+    );
 
     const variantKey: AudioVariantKey = {
       explanation_id: explanation.explanation_id,
@@ -214,7 +208,21 @@ export class AudioService {
     };
   }
 
-  async getJobStatus(jobId: string): Promise<AudioJobStatusDto> {
+  async getJobStatus(
+    jobId: string,
+    currentUserId: string | null,
+  ): Promise<AudioJobStatusDto> {
+    const explanationId = explanationIdOfJob(jobId);
+    if (explanationId === null) {
+      throw new NotFoundError(`Job ${jobId} not found`);
+    }
+    if (!currentUserId) {
+      const explanation = await this.loadExplanation(explanationId);
+      if (!explanation) {
+        throw new NotFoundError(`Job ${jobId} not found`);
+      }
+      await this.assertGuestAllowed(explanation.chapter_id);
+    }
     const job = await this.queue.getJob(jobId);
     if (!job) {
       throw new NotFoundError(`Job ${jobId} not found`);
@@ -354,29 +362,41 @@ export class AudioService {
       .executeTakeFirst();
   }
 
-  private async isOfferedLanguage(
-    language: string,
+  private async servedLanguage(
+    requested: string | undefined,
     explanationLanguage: string,
-  ): Promise<boolean> {
-    if (languageForms(explanationLanguage).includes(language)) return true;
-    const enabled = await this.db
+  ): Promise<string> {
+    if (requested === undefined) return explanationLanguage;
+    if (languageForms(explanationLanguage).includes(requested)) {
+      return requested;
+    }
+    if (BCP47.test(requested) && (await this.isOfferedLanguage(requested))) {
+      return explanationLanguage;
+    }
+    throw new ValidationError("This language is not offered for audio");
+  }
+
+  private async isOfferedLanguage(language: string): Promise<boolean> {
+    const offered = await this.db
       .getOrCreateConnection()
       .selectFrom("explanation_languages")
       .select("language_code")
       .where("is_enabled", "=", true)
+      .where("explanation_count", ">", 0)
       .execute();
-    return enabled.some((row) =>
-      languageForms(row.language_code).includes(language),
+    return offered.some(
+      (row) =>
+        BCP47.test(row.language_code) &&
+        languageForms(row.language_code).includes(language),
     );
   }
 
-  private async isOfferedVoice(
-    voice: string,
-    language: string,
-  ): Promise<boolean> {
-    if (voice === DEFAULT_VOICE_EN) return true;
-    const voices = await this.provider.listVoices(language.split("-")[0]);
-    return voices.some((v) => v.id === voice);
+  private async assertGuestAllowed(chapterId: number): Promise<void> {
+    if (!(await this.isGuestAllowed(chapterId))) {
+      throw new UnauthorizedError(
+        "GUEST_SCOPE_EXCEEDED: guest users can only access audio on Genesis 1",
+      );
+    }
   }
 
   private async isGuestAllowed(chapterId: number): Promise<boolean> {
