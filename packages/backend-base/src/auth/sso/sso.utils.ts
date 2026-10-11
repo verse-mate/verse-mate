@@ -5,6 +5,8 @@
  * and configuration management.
  */
 
+import { clientIp } from "../../common/client-ip";
+
 // OAuth state TTL in seconds (10 minutes)
 export const SSO_STATE_TTL = 600;
 
@@ -111,15 +113,6 @@ export function buildFrontendCallbackUrl(
 }
 
 /**
- * Extract client IP address from request headers
- *
- * Safely parses x-forwarded-for (which may be comma-separated) and falls back
- * to x-real-ip. Returns undefined if no IP can be determined.
- *
- * @param request - The incoming HTTP request
- * @returns The client IP address or undefined
- */
-/**
  * Create a redirect Response object
  *
  * @param url - The URL to redirect to
@@ -132,16 +125,10 @@ export function createRedirectResponse(url: string): Response {
   });
 }
 
-export function extractClientIp(request: Request): string | undefined {
-  const xff = request.headers.get("x-forwarded-for") || "";
-  const xri = request.headers.get("x-real-ip") || "";
-
-  // x-forwarded-for may contain multiple IPs (client, proxies...)
-  // Take the first one which is the original client
-  const parsedXff = xff
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)[0];
-
-  return parsedXff || xri || undefined;
+export function extractClientIp(
+  request: Request,
+  server?: Parameters<typeof clientIp>[1],
+): string | undefined {
+  const ip = clientIp(request, server);
+  return ip === "unknown" ? undefined : ip;
 }

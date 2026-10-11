@@ -1,4 +1,5 @@
 import type { cache } from "../shared/shared.plugin";
+import { clientIp, trustedProxyHops } from "./client-ip";
 
 interface RateLimitOptions {
   /**
@@ -32,61 +33,55 @@ export const createRateLimit = (options: RateLimitOptions) => {
     const key = keyGenerator(context);
     const cacheKey = `rate-limit:${key}`;
 
-    // Get current count
-    const cached = await cache.get<{ count: number }>(cacheKey);
-    const current = cached?.count || 0;
+    const count = await cache.increment(cacheKey, windowSeconds);
 
-    if (current >= max) {
+    if (count > max) {
       context.set.status = 429;
       const stableMessage =
         typeof message === "string" ? message : "Too many requests";
       // Include cacheKey to allow TTL lookup for retryAfter
       throw { status: 429, message: stableMessage, cacheKey };
     }
-
-    // Increment counter with fixed window TTL
-    const newCount = current + 1;
-    if (current === 0) {
-      // First request in window - set full TTL
-      await cache.set(cacheKey, { count: newCount }, `${windowSeconds}s`);
-    } else {
-      // Preserve remaining TTL to avoid extending window on each hit (sliding window bug)
-      const ttlSeconds = await cache.ttl(cacheKey).catch(() => -1);
-      if (ttlSeconds > 0) {
-        await cache.set(cacheKey, { count: newCount }, `${ttlSeconds}s`);
-      } else {
-        // If TTL missing or expired, reset a fresh window
-        await cache.set(cacheKey, { count: newCount }, `${windowSeconds}s`);
-      }
-    }
   };
 };
 
+const normalizedEmail = (value: unknown): string =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+const onceProxyHopsAreSet =
+  (limit: (context: any) => Promise<void>) => async (context: any) => {
+    if (trustedProxyHops() !== null) await limit(context);
+  };
+
 // Predefined rate limiters
 export const authRateLimiters = {
-  /**
-   * Login rate limiter: 10000 attempts per email per minute (TEMPORARILY INCREASED)
-   */
-  login: createRateLimit({
-    windowSeconds: 60,
-    max: 10000,
-    keyGenerator: (context) => `login:${context.body.email}`,
-    message: "Too many login attempts, please try again in a minute",
-  }),
+  login: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 60,
+      max: 5,
+      keyGenerator: (context) =>
+        `login:${normalizedEmail(context.body?.email)}:${clientIp(context.request, context.server)}`,
+      message: "Too many login attempts, please try again in a minute",
+    }),
+  ),
 
-  /**
-   * Signup rate limiter: 3 signups per IP per hour
-   */
+  loginIp: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 60,
+      max: 30,
+      keyGenerator: (context) =>
+        `login-ip:${clientIp(context.request, context.server)}`,
+      message: "Too many login attempts, please try again in a minute",
+    }),
+  ),
+
   signup: createRateLimit({
     windowSeconds: 3600,
     max: 3,
-    keyGenerator: (context) => {
-      const ip =
-        context.request.headers.get("x-forwarded-for") ||
-        context.request.headers.get("x-real-ip") ||
-        "unknown";
-      return `signup:${ip}`;
-    },
+    keyGenerator: (context) =>
+      `signup:${clientIp(context.request, context.server)}`,
     message: "Too many signup attempts, please try again later",
   }),
 
@@ -102,26 +97,20 @@ export const authRateLimiters = {
 
   // refresh limiter removed per D-005 — /auth/refresh endpoint deleted.
 
-  /**
-   * SSO rate limiter: 10 SSO attempts per IP per minute
-   * More lenient than login since SSO flows can have legitimate retries
-   * (e.g., user cancels OAuth flow and tries again)
-   */
   sso: createRateLimit({
     windowSeconds: 60,
     max: 10,
-    keyGenerator: (context) => {
-      // Parse first IP from x-forwarded-for (may be comma-separated) to prevent spoofing
-      const xff = context.request.headers.get("x-forwarded-for") || "";
-      const xri = context.request.headers.get("x-real-ip") || "";
-      const firstXff = xff
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean)[0];
-      const ip = firstXff || xri || "unknown";
-      return `sso:${ip}`;
-    },
+    keyGenerator: (context) =>
+      `sso:${clientIp(context.request, context.server)}`,
     message: "Too many SSO attempts, please try again in a minute",
+  }),
+
+  sendEmailVerification: createRateLimit({
+    windowSeconds: 3600,
+    max: 5,
+    keyGenerator: (context) =>
+      `send-email-verification:${context.currentUserId || "unknown"}`,
+    message: "Too many confirmation emails, please try again later",
   }),
 
   /**

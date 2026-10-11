@@ -1,6 +1,14 @@
 import ms from "ms";
 import { type RedisClientType, createClient } from "redis";
 
+const COUNT_WITHIN_WINDOW = `
+local current = redis.call('GET', KEYS[1])
+if current and not tonumber(current) then redis.call('DEL', KEYS[1]) end
+local count = redis.call('INCR', KEYS[1])
+if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+return count
+`;
+
 // Check if URL uses SSL (rediss://)
 const isSSLUrl = (url: string) => url.startsWith("rediss://");
 
@@ -154,6 +162,16 @@ class RedisClient {
       console.error("Error deleting key from Redis:", error);
       throw error;
     }
+  }
+
+  async increment(key: string, windowSeconds: number): Promise<number> {
+    await this.connect();
+    return Number(
+      await this.client.eval(COUNT_WITHIN_WINDOW, {
+        keys: [key],
+        arguments: [String(windowSeconds)],
+      }),
+    );
   }
 
   async ttl(key: string): Promise<number> {

@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it, spyOn } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
+import { db as Database } from "database";
 
 import cacheConstants from "../shared/cache.constants";
 import { getTestClient } from "../shared/test-client";
@@ -38,7 +39,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -283,7 +284,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -322,6 +323,17 @@ describe("Auth - Rate Limiting", () => {
   const client = getTestClient<AuthPlugin>(Backend);
   const cacheService = Backend.store.cache;
 
+  const savedHops = process.env.TRUSTED_PROXY_HOPS;
+  beforeAll(async () => {
+    process.env.TRUSTED_PROXY_HOPS = "1";
+    await cacheService.delete("rate-limit:login-ip:unknown");
+  });
+  afterAll(() => {
+    if (savedHops === undefined)
+      Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
+    else process.env.TRUSTED_PROXY_HOPS = savedHops;
+  });
+
   it("signup rate limit - returns 429 after 3 attempts", async () => {
     const signupInput = {
       email: faker.internet.email().toLocaleLowerCase(),
@@ -335,7 +347,7 @@ describe("Auth - Rate Limiting", () => {
 
     // Mock sendEmail for all signup attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // Make 3 successful signup attempts (rate limit max)
@@ -403,17 +415,80 @@ describe("Auth - Rate Limiting", () => {
     expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(60);
 
     // Clean up rate limit cache key
-    await cacheService.delete(`rate-limit:login:${loginEmail}`);
+    await cacheService.delete(`rate-limit:login:${loginEmail}:unknown`);
   });
 
-  // refresh rate-limit test removed per D-005 — /auth/refresh endpoint deleted.
+  it("login rate limit - guessing an account from one address does not lock its owner out", async () => {
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = "correct-horse-1";
+    const attacker = { headers: { "x-forwarded-for": "198.51.100.66" } };
+    const owner = { headers: { "x-forwarded-for": "198.51.100.77" } };
+    await Database.getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "Guessed",
+        lastName: "Account",
+        password: await Bun.password.hash(password, "bcrypt"),
+        emailVerified: true,
+      })
+      .execute();
+
+    for (let i = 0; i < 5; i++) {
+      const { error } = await client.auth.login.post(
+        { email, password: `wrong-${i}` },
+        attacker,
+      );
+      expect((error as any)?.status).toBe(401);
+    }
+    const blocked = await client.auth.login.post({ email, password }, attacker);
+    expect((blocked.error as any)?.status).toBe(429);
+
+    const { data, error } = await client.auth.login.post(
+      { email, password },
+      owner,
+    );
+    expect(error).toBeNull();
+    expect(data?.accessToken).toBeDefined();
+
+    for (const ip of ["198.51.100.66", "198.51.100.77"]) {
+      await cacheService.delete(`rate-limit:login:${email}:${ip}`);
+      await cacheService.delete(`rate-limit:login-ip:${ip}`);
+    }
+    await Database.getOrCreateConnection()
+      .deleteFrom("user")
+      .where("email", "=", email)
+      .execute();
+  });
+
+  it("login rate limit - spraying many accounts from one address is throttled", async () => {
+    const sprayer = { headers: { "x-forwarded-for": "198.51.100.88" } };
+    const statuses: number[] = [];
+    const emails: string[] = [];
+    for (let i = 0; i < 31; i++) {
+      const email = faker.internet.email().toLocaleLowerCase();
+      emails.push(email);
+      const { error } = await client.auth.login.post(
+        { email, password: "guess" },
+        sprayer,
+      );
+      statuses.push((error as any)?.status);
+    }
+    await cacheService.delete("rate-limit:login-ip:198.51.100.88");
+    for (const email of emails)
+      await cacheService.delete(`rate-limit:login:${email}:198.51.100.88`);
+    expect(statuses.slice(0, 30).every((s) => s !== 429)).toBe(true);
+    expect(statuses[30]).toBe(429);
+  });
+
+  // refresh rate-limit test removed per D-005, /auth/refresh endpoint deleted.
 
   it("forgot-password rate limit - returns 429 after 3 attempts", async () => {
     const testEmail = faker.internet.email().toLocaleLowerCase();
 
     // Mock sendEmail for all attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // First, create a user so forgot-password can find them
@@ -495,7 +570,7 @@ describe("Auth - Security (audit fixes)", () => {
         if (message.text.includes("?key=")) {
           lastVerifyToken = message.text.split("?key=").at(-1) ?? "";
         }
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
     await Backend.store.cache.delete("rate-limit:signup:unknown");
@@ -503,11 +578,11 @@ describe("Auth - Security (audit fixes)", () => {
 
   // Audit #3: a verification token is bound to the account it was minted for.
   // Before the fix, verifyEmail's guard compared user.id to the id it selected
-  // by — always true — so any valid token, including one issued for a DIFFERENT
+  // by, always true, so any valid token, including one issued for a DIFFERENT
   // account, verified the caller. That forged the "verified" badge on a victim's
   // pre-registered email. This proves the token→account binding is enforced.
   it("verify-email rejects a token minted for a different account (audit #3)", async () => {
-    // Account A — the attacker's session, unverified, on a victim's address.
+    // Account A, the attacker's session, unverified, on a victim's address.
     const aEmail = faker.internet.email().toLocaleLowerCase();
     const { data: aData, error: aErr } = await client.auth.signup.post({
       email: aEmail,
@@ -518,7 +593,7 @@ describe("Auth - Security (audit fixes)", () => {
     if (aErr) throw aErr;
     expect(aData?.accessToken).toBeDefined();
 
-    // Account B — a second account the attacker controls; capture its valid
+    // Account B, a second account the attacker controls; capture its valid
     // verification token (still sitting in the cache).
     await client.auth.signup.post({
       email: faker.internet.email().toLocaleLowerCase(),
@@ -539,7 +614,7 @@ describe("Auth - Security (audit fixes)", () => {
       (data as { accessToken?: string } | null)?.accessToken,
     ).toBeUndefined();
 
-    // A must remain unverified — the cross-account token did nothing.
+    // A must remain unverified, the cross-account token did nothing.
     const aUser = await Backend.store.db
       .getOrCreateConnection()
       .selectFrom("user")
@@ -547,5 +622,153 @@ describe("Auth - Security (audit fixes)", () => {
       .select("emailVerified")
       .executeTakeFirstOrThrow();
     expect(aUser.emailVerified).toBe(false);
+  });
+});
+
+describe("the answers the portal's email confirmation reads", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  it("a bad key answers 400, and a used one 409 'User already verified'", async () => {
+    let key = "";
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(
+      (message) => {
+        if (message.text.includes("?key="))
+          key = message.text.split("?key=").at(-1) ?? "";
+        return Promise.resolve({ delivered: true });
+      },
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    await Backend.store.db
+      .getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: false,
+      })
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    await client.auth["send-email-verification"].post(undefined, { headers });
+    const me = async () =>
+      (
+        await Backend.store.db
+          .getOrCreateConnection()
+          .selectFrom("user")
+          .select("emailVerified")
+          .where("email", "=", email)
+          .executeTakeFirstOrThrow()
+      ).emailVerified;
+    expect(await me()).toBe(false);
+    const bad = await client.auth["verify-email"].post(
+      { token: "not-a-key" },
+      { headers },
+    );
+    expect(bad.error?.status).toBe(400);
+    expect((bad.error?.value as { message?: string }).message).toBe(
+      "Invalid verification token",
+    );
+    const good = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(good.error).toBeNull();
+    const again = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(again.error?.status as number).toBe(409);
+    expect((again.error?.value as { message?: string }).message).toBe(
+      "User already verified",
+    );
+    expect(await me()).toBe(true);
+  });
+
+  it("an account confirmed before the confirmation was stamped can confirm again", async () => {
+    let key = "";
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(
+      (message) => {
+        if (message.text.includes("?key="))
+          key = message.text.split("?key=").at(-1) ?? "";
+        return Promise.resolve({ delivered: true });
+      },
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    const conn = Backend.store.db.getOrCreateConnection();
+    const { id } = await conn
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: true,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    await client.auth["send-email-verification"].post(undefined, { headers });
+    const confirmed = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(confirmed.error).toBeNull();
+    const after = await conn
+      .selectFrom("user")
+      .select("email_verified_at")
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+    expect(after.email_verified_at).not.toBeNull();
+  });
+});
+
+describe("the confirmation email limit through the route", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  it("a sixth confirmation email within the hour is refused for that account", async () => {
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
+      Promise.resolve({ delivered: true }),
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    await Backend.store.db
+      .getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: false,
+      })
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      const res = await client.auth["send-email-verification"].post(undefined, {
+        headers,
+      });
+      statuses.push(res.status);
+    }
+    expect(statuses.slice(0, 5).every((s) => s === 204)).toBe(true);
+    expect(statuses[5]).toBe(429);
   });
 });

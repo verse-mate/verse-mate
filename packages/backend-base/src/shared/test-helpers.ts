@@ -36,7 +36,7 @@ export async function createTestUser(options?: {
 
   // Mock email sending
   spyOn(plugin.store.notification, "sendEmail").mockImplementation(() =>
-    Promise.resolve(),
+    Promise.resolve({ delivered: true }),
   );
 
   // Create user via signup

@@ -13,7 +13,7 @@ import {
 export interface CoachNoteProps {
   /** Leader's display name (falls back to a generic greeting when empty). */
   name?: string;
-  /** The session this note is about, e.g. "James, Lesson 9 — July 18, 2026". */
+  /** The session this note is about, e.g. "James, Lesson 9, July 18, 2026". */
   sessionLabel: string;
   /** The note body (plain text; paragraphs split on blank lines). */
   body: string;

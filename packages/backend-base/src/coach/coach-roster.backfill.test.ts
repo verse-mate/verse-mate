@@ -1,0 +1,383 @@
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { db as Database } from "database";
+
+import { leaderSlug } from "./coach-attribution";
+import history from "./coach-bundle-history.fixture.json";
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import leaderMapJson from "./coach-leader-map.json";
+import { backfillCoachRoster } from "./coach-roster.backfill";
+import { isolateTable } from "./coach-test-tables";
+import coachDataJson from "./coach.data.json";
+
+const conn = Database.getOrCreateConnection();
+
+type Bundle = {
+  coaches: Array<{
+    id: string;
+    email: string;
+    name: string;
+    coachName: string;
+  }>;
+  admins?: string[];
+  monthlyNarratives?: Record<string, unknown>;
+  monthlyLeaderSummaries?: Record<string, Record<string, unknown>>;
+};
+const bundle = coachDataJson as unknown as Bundle;
+
+// EVERY figure derived from the bundle this run reads. The host republishes
+// hourly while the port is in flight, and the leader count moved 16 -> 17
+// mid-review; a literal is stale on arrival.
+const EXPECTED_LEADERS = bundle.coaches.length;
+const EXPECTED_NARRATIVE_MONTHS = Object.keys(
+  bundle.monthlyNarratives ?? {},
+).length;
+const EXPECTED_LEADER_SUMMARIES = Object.values(
+  bundle.monthlyLeaderSummaries ?? {},
+).reduce((n, byMonth) => n + Object.keys(byMonth).length, 0);
+const BUNDLE_EMAILS = bundle.coaches.map((c) => c.email);
+const BUNDLE_SLUGS = bundle.coaches.map((c) => c.id);
+const HISTORY_COACHES = Object.values(history).flatMap((h) => h.coaches);
+const TOUCHED_EMAILS = [
+  ...new Set([...BUNDLE_EMAILS, ...HISTORY_COACHES.map((c) => c.email)]),
+];
+const TOUCHED_SLUGS = [
+  ...new Set([...BUNDLE_SLUGS, ...HISTORY_COACHES.map((c) => c.id)]),
+];
+
+type MapEntry = {
+  leader: string;
+  email: string;
+  alt_emails?: string[];
+  title_match?: string[];
+};
+const MAP_ENTRIES = (leaderMapJson as { coaches: MapEntry[] }).coaches;
+const addressesOf = (m: MapEntry) =>
+  [m.email, ...(m.alt_emails ?? [])]
+    .filter(Boolean)
+    .map((e) => e.toLowerCase());
+const BENCHMARK = bundle.coaches.find((c) =>
+  bundle.coaches.some((other) => other.coachName === c.name),
+);
+const NO_EMAIL_ENTRIES = MAP_ENTRIES.filter((m) => !m.email);
+const ALT_ADDRESS_ENTRY = MAP_ENTRIES.find((m) =>
+  (m.alt_emails ?? []).some((e) => BUNDLE_EMAILS.includes(e)),
+);
+const ALT_ADDRESS_LEADER = bundle.coaches.find((c) =>
+  ALT_ADDRESS_ENTRY?.alt_emails?.includes(c.email),
+);
+const TWO_NAME_LEADER = bundle.coaches.find((c) => c.name.includes("&"));
+const TWO_NAME_ENTRY = MAP_ENTRIES.find(
+  (m) => leaderSlug(m.leader) === TWO_NAME_LEADER?.id,
+);
+
+async function clear() {
+  await conn
+    .deleteFrom("coach_leaders")
+    .where((eb) =>
+      eb.or([
+        eb("email", "in", TOUCHED_EMAILS),
+        eb("slug", "in", TOUCHED_SLUGS),
+      ]),
+    )
+    .execute();
+  await conn
+    .deleteFrom("coach_monthly_leader_summaries")
+    .where("coach_id", "in", TOUCHED_SLUGS)
+    .execute();
+  await conn
+    .deleteFrom("coach_monthly_narratives")
+    .where(
+      "month",
+      "in",
+      Object.keys(bundle.monthlyNarratives ?? { __none: 1 }),
+    )
+    .execute();
+}
+
+describe("roster and monthly backfill (DB)", () => {
+  beforeAll(clear);
+  afterAll(clear);
+
+  it("loads every leader on the deployed roster, counted from the bundle it read", async () => {
+    const result = await backfillCoachRoster();
+    expect(result.leaders).toBe(EXPECTED_LEADERS);
+
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["slug", "email", "name"])
+      .where("email", "in", BUNDLE_EMAILS)
+      .execute();
+    expect(rows.length).toBe(EXPECTED_LEADERS);
+    // the slug is what coach_reports joins on, a null one is a broken roster
+    expect(rows.every((r) => Boolean(r.slug))).toBe(true);
+    expect(new Set(rows.map((r) => r.slug))).toEqual(new Set(BUNDLE_SLUGS));
+  });
+
+  it("marks exactly one benchmark leader", async () => {
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select("slug")
+      .where("is_benchmark", "=", true)
+      .execute();
+    expect(BENCHMARK).toBeDefined();
+    expect(rows.length).toBe(1);
+    expect(rows[0].slug).toBe(BENCHMARK?.id ?? "");
+  });
+
+  it("carries the intake attribution keywords across from the leader map", async () => {
+    const mapped = (
+      leaderMapJson as {
+        coaches: Array<{ email: string; title_match?: string[] }>;
+      }
+    ).coaches.find((c) => (c.title_match ?? []).length > 0 && c.email);
+    expect(mapped).toBeTruthy();
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("title_match")
+      .where("email", "=", (mapped as { email: string }).email)
+      .executeTakeFirst();
+    expect(row?.title_match).toEqual(
+      (mapped as { title_match: string[] }).title_match,
+    );
+  });
+
+  it("every roster leader gets keywords, or is listed by name as having none", async () => {
+    const result = await backfillCoachRoster();
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["name", "title_match"])
+      .where("email", "in", BUNDLE_EMAILS)
+      .execute();
+    const bare = rows
+      .filter((r) => r.title_match.length === 0)
+      .map((r) => r.name)
+      .sort();
+    expect(result.leadersWithoutKeywords).toEqual(bare);
+    const mapped = new Set(MAP_ENTRIES.flatMap(addressesOf));
+    const mappedSlugs = new Set(MAP_ENTRIES.map((m) => leaderSlug(m.leader)));
+    const unmapped = bundle.coaches
+      .filter(
+        (c) => !mapped.has(c.email.toLowerCase()) && !mappedSlugs.has(c.id),
+      )
+      .map((c) => c.name)
+      .sort();
+    expect(unmapped.length).toBeGreaterThan(0);
+    expect(bare).toEqual(unmapped);
+  });
+
+  it("a map entry with no email reaches its leader through the map's leader name", async () => {
+    const expected = NO_EMAIL_ENTRIES.map((m) => ({
+      slug: leaderSlug(m.leader),
+      title_match: m.title_match ?? [],
+    })).sort((a, b) => a.slug.localeCompare(b.slug));
+    expect(expected.length).toBeGreaterThan(0);
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["slug", "title_match"])
+      .where(
+        "slug",
+        "in",
+        expected.map((e) => e.slug),
+      )
+      .execute();
+    expect(
+      rows.sort((a, b) => (a.slug ?? "").localeCompare(b.slug ?? "")),
+    ).toEqual(expected);
+  });
+
+  it("a map entry whose alternate address is the roster address reaches its leader, and its own address becomes an alternate", async () => {
+    expect(ALT_ADDRESS_LEADER).toBeDefined();
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select(["title_match", "alt_emails"])
+      .where("slug", "=", ALT_ADDRESS_LEADER?.id ?? "")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      title_match: ALT_ADDRESS_ENTRY?.title_match ?? [],
+      alt_emails: [ALT_ADDRESS_ENTRY?.email.toLowerCase() ?? ""],
+    });
+  });
+
+  it("a map entry is joined on its alternate address even when its leader name is not the roster's", async () => {
+    await clear();
+    await backfillCoachRoster(coachDataJson, {
+      coaches: [
+        {
+          leader: "Folder_Renamed",
+          email: "elsewhere@example.test",
+          alt_emails: [ALT_ADDRESS_LEADER?.email],
+          title_match: ["renamed"],
+        },
+      ],
+    });
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select(["title_match", "alt_emails"])
+      .where("slug", "=", ALT_ADDRESS_LEADER?.id ?? "")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      title_match: ["renamed"],
+      alt_emails: ["elsewhere@example.test"],
+    });
+    await clear();
+    await backfillCoachRoster();
+  });
+
+  it("a two-name leader's seed is the leader map's, unchanged", async () => {
+    expect(TWO_NAME_ENTRY).toBeDefined();
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("title_match")
+      .where("slug", "=", TWO_NAME_LEADER?.id ?? "")
+      .executeTakeFirstOrThrow();
+    expect(row.title_match).toEqual(TWO_NAME_ENTRY?.title_match ?? []);
+  });
+
+  it("loads every monthly narrative and every leader-month summary, counted from the bundle", async () => {
+    const narratives = await conn
+      .selectFrom("coach_monthly_narratives")
+      .select((eb) => eb.fn.countAll<string>().as("n"))
+      .executeTakeFirstOrThrow();
+    expect(Number(narratives.n)).toBe(EXPECTED_NARRATIVE_MONTHS);
+
+    const summaries = await conn
+      .selectFrom("coach_monthly_leader_summaries")
+      .select((eb) => eb.fn.countAll<string>().as("n"))
+      .where("coach_id", "in", BUNDLE_SLUGS)
+      .executeTakeFirstOrThrow();
+    expect(Number(summaries.n)).toBe(EXPECTED_LEADER_SUMMARIES);
+  });
+
+  it("is idempotent, and a re-run does NOT overwrite an admin's edited keywords", async () => {
+    const target = bundle.coaches[0];
+    await conn
+      .updateTable("coach_leaders")
+      .set({ title_match: ["admin edited this"] })
+      .where("email", "=", target.email)
+      .execute();
+
+    const again = await backfillCoachRoster();
+    expect(again.leaders).toBe(EXPECTED_LEADERS);
+
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["title_match"])
+      .where("email", "=", target.email)
+      .execute();
+    expect(rows.length).toBe(1);
+    // The database is authoritative after the seed (open question 6).
+    expect(rows[0].title_match).toEqual(["admin edited this"]);
+  });
+
+  it("a re-run after an admin corrected a leader's address keeps the corrected address", async () => {
+    await backfillCoachRoster();
+    const target = bundle.coaches[1];
+    const corrected = "roster-corrected@example.test";
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: corrected, name: "stale name" })
+      .where("slug", "=", target.id)
+      .execute();
+
+    const again = await backfillCoachRoster();
+    expect(again.leaders).toBe(EXPECTED_LEADERS);
+
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["email", "name"])
+      .where("slug", "=", target.id)
+      .execute();
+    expect(rows).toEqual([{ email: corrected, name: target.name }]);
+  });
+
+  it("a row added before leaders had slugs is adopted by its address, not duplicated", async () => {
+    await clear();
+    const target = bundle.coaches[2];
+    await conn
+      .insertInto("coach_leaders")
+      .values({ email: target.email, name: "added before slugs" })
+      .execute();
+
+    await backfillCoachRoster();
+
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["slug", "name"])
+      .where("email", "=", target.email)
+      .execute();
+    expect(rows).toEqual([{ slug: target.id, name: target.name }]);
+  });
+
+  it("after cutover the roster backfill still runs, and the bundle it reloads changes no leader", async () => {
+    await clear();
+    await backfillCoachRoster();
+    const before = await conn
+      .selectFrom("coach_leaders")
+      .selectAll()
+      .where("email", "in", BUNDLE_EMAILS)
+      .orderBy("slug")
+      .execute();
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    try {
+      await backfillCoachRoster();
+    } finally {
+      delete process.env[COACH_PIPELINE_LIVE];
+    }
+    expect(
+      await conn
+        .selectFrom("coach_leaders")
+        .selectAll()
+        .where("email", "in", BUNDLE_EMAILS)
+        .orderBy("slug")
+        .execute(),
+    ).toEqual(before);
+  });
+
+  it("A bundle missing reports is refused: the roster backfill of the stale dd28af72 publish writes nothing", async () => {
+    await clear();
+    await backfillCoachRoster(history.full_171d626d, { coaches: [] });
+    const summaries = async () =>
+      conn
+        .selectFrom("coach_monthly_leader_summaries")
+        .selectAll()
+        .where("coach_id", "in", TOUCHED_SLUGS)
+        .orderBy(["coach_id", "month"])
+        .execute();
+    const leaders = async () =>
+      conn
+        .selectFrom("coach_leaders")
+        .selectAll()
+        .where("email", "in", TOUCHED_EMAILS)
+        .orderBy("slug")
+        .execute();
+    const before = { summaries: await summaries(), leaders: await leaders() };
+
+    await expect(
+      backfillCoachRoster(history.stale_dd28af72, { coaches: [] }),
+    ).rejects.toThrow(
+      "desmond-ortiz: 2 leader-month summaries in the bundle, 5 in the store",
+    );
+    expect({ summaries: await summaries(), leaders: await leaders() }).toEqual(
+      before,
+    );
+  });
+});
+
+describe("the backfill never restores an admin someone removed", () => {
+  isolateTable("coach_admins");
+  beforeAll(clear);
+  afterAll(clear);
+
+  it("bundle admins are seeded only into an empty admin list", async () => {
+    await conn
+      .insertInto("coach_admins")
+      .values({ email: "kept-admin@example.test" })
+      .execute();
+    await backfillCoachRoster();
+    expect(
+      (await conn.selectFrom("coach_admins").select("email").execute()).map(
+        (a) => a.email,
+      ),
+    ).toEqual(["kept-admin@example.test"]);
+  });
+});

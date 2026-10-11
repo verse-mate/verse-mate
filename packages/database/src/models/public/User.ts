@@ -13,6 +13,12 @@ export default interface UserTable {
 
   emailVerified: ColumnType<boolean, boolean | undefined, boolean>;
 
+  email_verified_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
+
   password: ColumnType<string | null, string | null, string | null>;
 
   firstName: ColumnType<string, string, string>;
