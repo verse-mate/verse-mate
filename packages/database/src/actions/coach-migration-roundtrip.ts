@@ -364,6 +364,7 @@ async function roundTrip(): Promise<boolean> {
       throw new Error("no coach migration block to round-trip");
     const block = names.slice(lastOther + 1, lastCoach + 1);
     const beforeBlock = names[lastOther];
+    const trailing = names.slice(lastCoach + 1);
     console.log(
       `coach block: ${block.length} migrations, ${block[0]} .. ${block.at(-1)}`,
     );
@@ -392,7 +393,11 @@ async function roundTrip(): Promise<boolean> {
       );
       return false;
     }
-    return failures.length === 0;
+    if (trailing.length > 0)
+      console.error(
+        `${trailing.join(", ")} sort after the coach block: Kysely refuses to deploy the block on a database that ran them, so rename the coach migrations after them first`,
+      );
+    return failures.length === 0 && trailing.length === 0;
   } finally {
     await db.destroy();
     await sql`DROP DATABASE IF EXISTS ${sql.id(throwaway)} WITH (FORCE)`.execute(

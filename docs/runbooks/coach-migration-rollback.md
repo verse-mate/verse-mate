@@ -19,7 +19,8 @@ day, keeping their order, after the newest migration on `main` and after
 `user.email_verified_at`). The imports between them (`20261011010000-coach-reports-and-roster`
 is imported by the later four and by the round trip) and the two coach tests that import a
 migration move with the names. The round trip finds each migration by the part of its name
-after the date.
+after the date, and fails while any migration from `main` sorts after the block: production has
+run it, so the migrator would refuse the block and the API would not start.
 
 ## A database that ran the branch's earlier migrations
 
