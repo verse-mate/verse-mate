@@ -56,7 +56,7 @@ export const createRateLimit = (options: RateLimitOptions) => {
   };
 };
 
-const emailDigest = (value: unknown): string =>
+const digest = (value: unknown): string =>
   createHash("sha256")
     .update(String(value ?? ""))
     .digest("base64url");
@@ -78,7 +78,7 @@ export const authRateLimiters = {
       windowSeconds: 60,
       max: 5,
       keyGenerator: (context) =>
-        `login:${emailDigest(normalizedEmail(context.body?.email))}:${clientBucket(context.request, context.server)}`,
+        `login:${digest(normalizedEmail(context.body?.email))}:${clientBucket(context.request, context.server)}`,
       message: "Too many login attempts, please try again in a minute",
     }),
   ),
@@ -107,7 +107,7 @@ export const authRateLimiters = {
     windowSeconds: 3600,
     max: 3,
     keyGenerator: (context) =>
-      `signup:${clientChain(context.request, context.server)}`,
+      `signup:${digest(clientChain(context.request, context.server))}`,
     message: "Too many signup attempts, please try again later",
   }),
 
@@ -117,8 +117,7 @@ export const authRateLimiters = {
   forgotPassword: createRateLimit({
     windowSeconds: 3600,
     max: 3,
-    keyGenerator: (context) =>
-      `forgot-password:${emailDigest(context.body.email)}`,
+    keyGenerator: (context) => `forgot-password:${digest(context.body.email)}`,
     message: "Too many password reset requests, please try again later",
   }),
 

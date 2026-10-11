@@ -265,8 +265,8 @@ const plugin = new Elysia()
         {
           body: AuthLoginInput,
           beforeHandle: [
-            authRateLimiters.loginNetwork,
             authRateLimiters.loginIp,
+            authRateLimiters.loginNetwork,
             authRateLimiters.login,
           ],
           response: {
