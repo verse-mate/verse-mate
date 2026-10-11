@@ -82,6 +82,12 @@ class FakeRepository extends AudioRepository {
     this.rows.push(created);
     return created;
   }
+
+  async markStale(explanationId: number): Promise<void> {
+    this.rows = this.rows.map((r) =>
+      r.explanation_id === explanationId ? { ...r, is_stale: true } : r,
+    );
+  }
 }
 
 class FakeStorage {
@@ -528,6 +534,36 @@ describe("AudioService", () => {
       expect(status.audio?.duration_seconds).toBe(10);
     });
 
+    it("replaces a completed job when its audio has since gone stale", async () => {
+      const service = makeService();
+      const first = await service.getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+      });
+      if (first.kind !== "queued") throw new Error("expected queued");
+      queue.jobs.get(first.job.job_id)?.complete("old-audio");
+      await repo.upsert({
+        explanation_id: 42,
+        voice: DEFAULT_VOICE,
+        language_code: "en",
+        storage_key: `explanation-audio/42/${DEFAULT_VOICE}/en/hash.mp3`,
+        duration_seconds: 10,
+        character_count: 50,
+        content_hash: "hash",
+        tts_provider: "openai",
+        tts_model: "tts-1-hd",
+        is_stale: true,
+      });
+
+      const again = await service.getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+      });
+      expect(again.kind).toBe("queued");
+      expect(queue.addCalls.length).toBe(2);
+      expect(await queue.jobs.get(first.job.job_id)?.isCompleted()).toBe(false);
+    });
+
     it("returns failed + error_code when job failed", async () => {
       const service = makeService();
       const first = await service.getOrQueueAudio({
@@ -852,6 +888,26 @@ describe("AudioService", () => {
         }),
       ).rejects.toBeInstanceOf(NotFoundError);
     });
+    it("marks its audio stale when the version is replaced during synthesis", async () => {
+      const racing: ExplanationRow = { ...explanation };
+      const provider = new FakeOpenAiProvider();
+      const synthesize = provider.synthesize.bind(provider);
+      provider.synthesize = async (input) => {
+        racing.is_active = false;
+        return synthesize(input);
+      };
+      const row = await makeService(
+        provider,
+        [genesis1],
+        [racing],
+      ).synthesizeQueuedJob({
+        explanation_id: 42,
+        voice: DEFAULT_VOICE,
+        language_code: "en",
+      });
+      expect(row.is_stale).toBe(true);
+    });
+
     it("refuses an explanation version that was replaced", async () => {
       await expect(
         jobService({ ...explanation, is_active: false }).synthesizeQueuedJob({
