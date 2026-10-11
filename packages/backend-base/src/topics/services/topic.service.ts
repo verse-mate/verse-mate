@@ -2,6 +2,7 @@ import type { Static } from "elysia";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { SubtitleService } from "../../bible/services/subtitle.service";
+import { ApiError, NotFoundError, ValidationError } from "../../common/errors";
 import { type AiProvider, getAiProvider } from "../../shared/ai";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
@@ -33,6 +34,7 @@ export class TopicService {
     try {
       return await this.topicRepository.getCategories();
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error("Error fetching categories:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -47,6 +49,7 @@ export class TopicService {
         languageCode,
       );
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(`Error fetching topics for category ${category}:`, error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -60,6 +63,7 @@ export class TopicService {
     try {
       return await this.topicRepository.getAllTopics();
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error("Error fetching all topics:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -71,6 +75,7 @@ export class TopicService {
     try {
       return await this.topicRepository.getTopic(topicId, languageCode);
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(`Error fetching topic ${topicId}:`, error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -90,7 +95,7 @@ export class TopicService {
     const category = getCategoryFromSlug(categorySlug);
 
     if (!category) {
-      throw new Error(`Invalid category slug: ${categorySlug}`);
+      throw new ValidationError(`Invalid category slug: ${categorySlug}`);
     }
 
     const topic = await this.topicRepository.getTopicBySlug(
@@ -100,7 +105,7 @@ export class TopicService {
     );
 
     if (!topic) {
-      throw new Error(`Topic not found: ${categorySlug}/${topicSlug}`);
+      throw new NotFoundError(`Topic not found: ${categorySlug}/${topicSlug}`);
     }
 
     return topic;
@@ -111,13 +116,14 @@ export class TopicService {
       // Validate that category is one of the allowed values
       const validCategories = ["EVENT", "PROPHECY", "PARABLE", "THEME"];
       if (!validCategories.includes(topic.category)) {
-        throw new Error(
+        throw new ValidationError(
           `Invalid category: ${topic.category}. Must be one of: ${validCategories.join(", ")}`,
         );
       }
 
       return await this.topicRepository.createTopic(topic);
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error("Error creating topic:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -131,7 +137,7 @@ export class TopicService {
       if (topic.category) {
         const validCategories = ["EVENT", "PROPHECY", "PARABLE", "THEME"];
         if (!validCategories.includes(topic.category)) {
-          throw new Error(
+          throw new ValidationError(
             `Invalid category: ${topic.category}. Must be one of: ${validCategories.join(", ")}`,
           );
         }
@@ -140,11 +146,12 @@ export class TopicService {
       // Check if topic exists before updating
       const existingTopic = await this.getTopic(topicId);
       if (!existingTopic) {
-        throw new Error(`Topic with ID ${topicId} not found`);
+        throw new NotFoundError(`Topic with ID ${topicId} not found`);
       }
 
       return await this.topicRepository.updateTopic(topicId, topic);
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(`Error updating topic ${topicId}:`, error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -157,11 +164,12 @@ export class TopicService {
       // Check if topic exists before deleting
       const existingTopic = await this.getTopic(topicId);
       if (!existingTopic) {
-        throw new Error(`Topic with ID ${topicId} not found`);
+        throw new NotFoundError(`Topic with ID ${topicId} not found`);
       }
 
       return await this.topicRepository.deleteTopic(topicId);
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(`Error deleting topic ${topicId}:`, error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -173,6 +181,7 @@ export class TopicService {
     try {
       return await this.topicRepository.getTopicReferences(topicId);
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(
         `Error fetching topic references for topic ${topicId}:`,
         error,
@@ -190,16 +199,17 @@ export class TopicService {
       // Validate that topic exists
       const existingTopic = await this.getTopic(topicId);
       if (!existingTopic) {
-        throw new Error(`Topic with ID ${topicId} not found`);
+        throw new NotFoundError(`Topic with ID ${topicId} not found`);
       }
 
       // Validate content is not empty
       if (!content || content.trim().length === 0) {
-        throw new Error("Content cannot be empty");
+        throw new ValidationError("Content cannot be empty");
       }
 
       return await this.topicRepository.saveTopicReferences(topicId, content);
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(
         `Error saving topic references for topic ${topicId}:`,
         error,
@@ -220,18 +230,18 @@ export class TopicService {
     try {
       // Validate parameters
       if (!topicId) {
-        throw new Error("Topic ID is required");
+        throw new ValidationError("Topic ID is required");
       }
       if (!languageCode) {
-        throw new Error("Language code is required");
+        throw new ValidationError("Language code is required");
       }
       if (!type) {
-        throw new Error("Explanation type is required");
+        throw new ValidationError("Explanation type is required");
       }
 
       const validTypes = ["summary", "byline", "detailed"];
       if (!validTypes.includes(type)) {
-        throw new Error(
+        throw new ValidationError(
           `Invalid explanation type: ${type}. Must be one of: ${validTypes.join(", ")}`,
         );
       }
@@ -254,6 +264,7 @@ export class TopicService {
 
       return explanation;
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(
         `Error fetching topic explanation for topic ${topicId}, language ${languageCode}, type ${type}:`,
         error,
@@ -275,21 +286,21 @@ export class TopicService {
     try {
       // Validate parameters
       if (!topicId) {
-        throw new Error("Topic ID is required");
+        throw new ValidationError("Topic ID is required");
       }
       if (!languageCode) {
-        throw new Error("Language code is required");
+        throw new ValidationError("Language code is required");
       }
       if (!type) {
-        throw new Error("Explanation type is required");
+        throw new ValidationError("Explanation type is required");
       }
       if (!explanation || explanation.trim().length === 0) {
-        throw new Error("Explanation content cannot be empty");
+        throw new ValidationError("Explanation content cannot be empty");
       }
 
       const validTypes = ["summary", "byline", "detailed"];
       if (!validTypes.includes(type)) {
-        throw new Error(
+        throw new ValidationError(
           `Invalid explanation type: ${type}. Must be one of: ${validTypes.join(", ")}`,
         );
       }
@@ -297,7 +308,7 @@ export class TopicService {
       // Validate that topic exists
       const existingTopic = await this.getTopic(topicId);
       if (!existingTopic) {
-        throw new Error(`Topic with ID ${topicId} not found`);
+        throw new NotFoundError(`Topic with ID ${topicId} not found`);
       }
 
       return await this.topicRepository.saveTopicExplanation(
@@ -307,6 +318,7 @@ export class TopicService {
         type,
       );
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(
         `Error saving topic explanation for topic ${topicId}, language ${languageCode}, type ${type}:`,
         error,
@@ -323,7 +335,7 @@ export class TopicService {
     try {
       const version = await this.bibleRepository.getVersionBykey(bibleVersion);
       if (!version) {
-        throw new Error(`Invalid bible version: ${bibleVersion}`);
+        throw new ValidationError(`Invalid bible version: ${bibleVersion}`);
       }
 
       let parsedContent =
@@ -339,6 +351,7 @@ export class TopicService {
       );
       return parsedContent;
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error("Error parsing topic references:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -419,6 +432,7 @@ export class TopicService {
         sortedCount: sortedTopicNames.length,
       };
     } catch (error: unknown) {
+      if (error instanceof ApiError) throw error;
       console.error(`Error sorting topics for category ${category}:`, error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);

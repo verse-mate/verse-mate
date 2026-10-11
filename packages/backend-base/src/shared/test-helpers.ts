@@ -2,8 +2,8 @@ import { spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 import authPlugin from "../auth/auth.plugin";
 import biblePlugin from "../bible/bible.plugin";
+import { signupPassword } from "./signup-password";
 import { getTestClient } from "./test-client";
-import { signupCompliantPassword } from "./test-password";
 
 /**
  * Test helper to create authenticated users with optional admin role
@@ -22,7 +22,7 @@ export async function createTestUser(options?: {
     email: email || faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: signupCompliantPassword(),
+    password: signupPassword(),
   };
 
   // Clear rate limit cache to allow signup (other tests may have used up the limit)

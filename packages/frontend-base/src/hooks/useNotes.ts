@@ -1,3 +1,4 @@
+import { authFetch } from "backend-api";
 import { $env } from "frontend-envs";
 import { useCallback, useEffect, useState } from "react";
 import { AnalyticsEvent, analytics } from "../analytics";
@@ -64,7 +65,9 @@ export const useNotes = () => {
             setIsLoading(false);
             return;
           }
-          const response = await fetch(getApiPath(`/book/notes/${session.id}`));
+          const response = await authFetch(
+            getApiPath(`/book/notes/${session.id}`),
+          );
           if (response.ok) {
             const data = await response.json();
             if (Array.isArray(data?.notes)) {
@@ -130,7 +133,7 @@ export const useNotes = () => {
           if (!session?.id) {
             throw new Error("User not authenticated");
           }
-          const response = await fetch(getApiPath("/book/note/add"), {
+          const response = await authFetch(getApiPath("/book/note/add"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -227,7 +230,7 @@ export const useNotes = () => {
 
       try {
         if (USE_BACKEND) {
-          const response = await fetch(getApiPath("/book/note/update"), {
+          const response = await authFetch(getApiPath("/book/note/update"), {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -315,7 +318,7 @@ export const useNotes = () => {
 
       try {
         if (USE_BACKEND) {
-          const response = await fetch(
+          const response = await authFetch(
             getApiPath(`/book/note/remove?note_id=${id}`),
             {
               method: "DELETE",

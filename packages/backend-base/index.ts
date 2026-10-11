@@ -10,6 +10,7 @@ import biblePlugin from "./src/bible/bible.plugin";
 import type { BiblePlugin } from "./src/bible/bible.plugin";
 import coachPlugin from "./src/coach/coach.plugin";
 import type { CoachPlugin } from "./src/coach/coach.plugin";
+import corsPlugin from "./src/cors/cors.plugin";
 import healthCheckPlugin from "./src/healthcheck/healthcheck.plugin";
 import type { HealthCheckPlugin } from "./src/healthcheck/healthcheck.plugin";
 import userPlugin from "./src/user/user.plugin";
@@ -58,6 +59,7 @@ export {
   biblePlugin,
   type CoachPlugin,
   coachPlugin,
+  corsPlugin,
   type AudioPlugin,
   audioPlugin,
   type BibleBrainPlugin,
