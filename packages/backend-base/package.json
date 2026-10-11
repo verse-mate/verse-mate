@@ -14,7 +14,6 @@
     "jesus:review": "bun ./src/jesus/scripts/review-jesus-content.ts"
   },
   "dependencies": {
-    "@elysiajs/bearer": "1.2.0",
     "@elysiajs/jwt": "1.4.0",
     "@slack/web-api": "^7.13.0",
     "bullmq": "^5.7.0",

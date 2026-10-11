@@ -1,4 +1,3 @@
-import { bearer } from "@elysiajs/bearer";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
@@ -61,15 +60,12 @@ const posthogService = new PosthogService({ logger });
  * Used in global error handler to add user context to exceptions
  */
 async function maybeCurrentUserId({
-  bearer: bearerToken,
-  query,
+  bearer: token,
   jwt: jwtVerifier,
 }: {
   bearer: string | undefined;
-  query: { accessToken?: string };
   jwt: JWT;
 }): Promise<string | null> {
-  const token = bearerToken ?? query?.accessToken;
   if (!token) return null;
 
   try {
@@ -85,8 +81,14 @@ async function maybeCurrentUserId({
 
 // const storage = new ObjectStorageService();
 
+const BEARER_PREFIX = "Bearer ";
+
 const setup = new Elysia({ name: "shared" })
-  .use(bearer())
+  .derive({ as: "global" }, ({ headers: { authorization } }) => ({
+    bearer: authorization?.startsWith(BEARER_PREFIX)
+      ? authorization.slice(BEARER_PREFIX.length)
+      : undefined,
+  }))
   .use(jwt)
   .state("db", Database)
   .state("cache", redisClient)
@@ -95,20 +97,12 @@ const setup = new Elysia({ name: "shared" })
   .decorate("posthog", posthogService)
   .onError(
     { as: "global" },
-    async ({
-      bearer: bearerToken,
-      query,
-      jwt: jwtVerifier,
-      error,
-      code,
-      path,
-    }) => {
+    async ({ bearer: bearerToken, jwt: jwtVerifier, error, code, path }) => {
       // NOT_FOUND is expected HTTP behavior (404s), not an application exception
       if (code === "NOT_FOUND") return;
 
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,
-        query: query as { accessToken?: string },
         jwt: jwtVerifier,
       });
       posthogService.captureException(error, distinctId ?? "anonymous", {
