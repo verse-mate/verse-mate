@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "database";
+import type Database from "database/src/models/Database";
 import type SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 import type { User } from "database/src/models/public/User";
+import type { Transaction } from "kysely";
 
 import { VerifyEmail, render } from "../../../emails";
 import ResetPassword from "../../../emails/src/ResetPassword";
@@ -24,6 +26,8 @@ import type { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 import type { SSOUserInfo } from "./sso/sso-provider.interface";
 import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
+
+const SESSION_LIFETIME = "90d";
 
 function resetPasswordURL(key: string): string {
   return `${process.env.APP_URL ?? ""}/reset-password?key=${key}`;
@@ -126,7 +130,7 @@ export class AuthService {
     await this.cache.set(
       cacheConstants.accessToken(user.id),
       allAccessToken,
-      "90d", // Per spec feat-auth-platform br-auth-001 (D-005): access token IS the persistent session.
+      SESSION_LIFETIME,
     );
 
     return {
@@ -209,31 +213,30 @@ export class AuthService {
 
       const confirms =
         emailVerified &&
-        (!user.emailVerified || !user.email_verified_at) &&
+        !this.isConfirmed(user) &&
         user.email.trim().toLowerCase() === normalizedEmail;
-      const changed = picture && picture !== user.imageSrc;
-      if (confirms || changed) {
-        const written = await this.db
+      if (
+        confirms &&
+        !(await this.db
+          .getOrCreateConnection()
+          .transaction()
+          .execute((trx) =>
+            this.confirmAddress(trx, user.id, normalizedEmail, {
+              provider,
+              providerUserId,
+            }),
+          ))
+      )
+        throw new ConflictError(
+          "The account's email changed while signing in. Sign in again.",
+        );
+      if (picture && picture !== user.imageSrc)
+        await this.db
           .getOrCreateConnection()
           .updateTable("user")
-          .set({
-            ...(changed
-              ? { imageSrc: picture, picture_source: provider as any }
-              : {}),
-            ...(confirms
-              ? { emailVerified: true, email_verified_at: sql`now()` }
-              : {}),
-          })
+          .set({ imageSrc: picture, picture_source: provider as any })
           .where("id", "=", user.id)
-          .$if(Boolean(confirms), (qb) =>
-            qb.where(sql`lower(trim(email))`, "=", normalizedEmail),
-          )
-          .executeTakeFirst();
-        if (confirms && Number(written.numUpdatedRows) === 0)
-          throw new ConflictError(
-            "The account's email changed while signing in. Sign in again.",
-          );
-      }
+          .execute();
 
       return this.loginUser(
         confirms ? { ...user, emailVerified: true } : user,
@@ -303,9 +306,6 @@ export class AuthService {
               );
           }
           const updates: Record<string, unknown> = {
-            ...(this.isConfirmed(locked)
-              ? {}
-              : { emailVerified: true, email_verified_at: sql`now()` }),
             ...(!confirmed && locked.password ? { password: null } : {}),
           };
           if (picture && picture !== locked.imageSrc) {
@@ -318,7 +318,11 @@ export class AuthService {
               .set(updates)
               .where("id", "=", locked.id)
               .execute();
-          if (!confirmed) await this.logoutAll(locked.id);
+          if (!this.isConfirmed(locked))
+            await this.confirmAddress(trx, locked.id, normalizedEmail, {
+              provider,
+              providerUserId,
+            });
           return { ...locked, ...updates, emailVerified: true } as User;
         });
 
@@ -469,6 +473,52 @@ export class AuthService {
 
   private isConfirmed(user: Pick<User, "emailVerified" | "email_verified_at">) {
     return user.emailVerified && user.email_verified_at !== null;
+  }
+
+  private async confirmAddress(
+    trx: Transaction<Database>,
+    userId: string,
+    address: string,
+    keep: {
+      provider?: SsoProviderEnum;
+      providerUserId?: string;
+      session?: string;
+    } = {},
+  ): Promise<boolean> {
+    const stamped = await trx
+      .updateTable("user")
+      .set({ emailVerified: true, email_verified_at: sql`now()` })
+      .where("id", "=", userId)
+      .where(sql`lower(trim(email))`, "=", address)
+      .executeTakeFirst();
+    if (Number(stamped.numUpdatedRows) === 0) return false;
+
+    const { provider, providerUserId } = keep;
+    await trx
+      .deleteFrom("user_sso_accounts")
+      .where("user_id", "=", userId)
+      .where(sql`lower(trim(email))`, "!=", address)
+      .$if(Boolean(provider && providerUserId), (qb) =>
+        qb.where((eb) =>
+          eb.not(
+            eb.and([
+              eb("provider", "=", provider as SsoProviderEnum),
+              eb("provider_user_id", "=", providerUserId as string),
+            ]),
+          ),
+        ),
+      )
+      .execute();
+    await this.signOutOtherSessions(userId, keep.session);
+    return true;
+  }
+
+  private async signOutOtherSessions(userId: string, keep?: string) {
+    const key = cacheConstants.accessToken(userId);
+    const sessions = await this.cache.get<string[]>(key);
+    if (keep && sessions?.includes(keep))
+      await this.cache.set(key, [keep], SESSION_LIFETIME);
+    else await this.cache.delete(key);
   }
 
   public async logoutAll(userId: string): Promise<boolean> {
@@ -687,23 +737,12 @@ export class AuthService {
 
         await trx
           .updateTable("user")
-          .set({
-            email: locked.email,
-            password: hashedPassword,
-            emailVerified: true,
-            email_verified_at: this.isConfirmed(locked)
-              ? locked.email_verified_at
-              : sql`now()`,
-          })
+          .set({ email: locked.email, password: hashedPassword })
           .where("id", "=", locked.id)
           .execute();
 
-        if (!locked.emailVerified)
-          await trx
-            .deleteFrom("user_sso_accounts")
-            .where("user_id", "=", user.id)
-            .where(sql`lower(trim(email))`, "!=", email)
-            .execute();
+        if (!this.isConfirmed(locked))
+          await this.confirmAddress(trx, locked.id, email);
         await this.logoutAll(user.id);
         return true;
       });
@@ -713,10 +752,12 @@ export class AuthService {
     token,
     jwt,
     currentUserId,
+    session,
   }: {
     token: string;
     jwt: JWT;
     currentUserId: string;
+    session?: string;
   }): Promise<AuthPayload> {
     const user = await this.db
       .getOrCreateConnection()
@@ -755,16 +796,13 @@ export class AuthService {
 
     const confirmed = await this.db
       .getOrCreateConnection()
-      .updateTable("user")
-      .set({
-        emailVerified: true,
-        email_verified_at: sql`now()`,
-      })
-      .where("id", "=", user.id)
-      .where(sql`lower(trim(email))`, "=", payload.email)
-      .executeTakeFirst();
-    if (Number(confirmed.numUpdatedRows) === 0)
-      throw new ValidationError("Invalid verification token");
+      .transaction()
+      .execute((trx) =>
+        this.confirmAddress(trx, user.id, payload.email as string, {
+          session,
+        }),
+      );
+    if (!confirmed) throw new ValidationError("Invalid verification token");
 
     return this.loginUser({ ...user, emailVerified: true }, jwt);
   }
