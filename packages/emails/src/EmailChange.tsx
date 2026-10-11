@@ -78,7 +78,7 @@ export function EmailChangeAccountExists() {
   );
 }
 
-export function EmailChanged({ href }: { href: string }) {
+export function EmailChanged({ href }: { href?: string }) {
   return (
     <Layout
       preview="Your VerseMate email address was changed"
@@ -88,18 +88,46 @@ export function EmailChanged({ href }: { href: string }) {
         The email address on your VerseMate account was changed, and the account
         was signed out on every device.
       </Text>
+      {href ? (
+        <>
+          <Text style={text}>
+            If you did not make this change, undo it within 7 days. The account
+            moves back to this address and every session is signed out.
+          </Text>
+          <Section style={{ textAlign: "center", margin: "28px 0" }}>
+            <Link style={button} href={href}>
+              Undo this change
+            </Link>
+          </Section>
+          <Text style={muted}>
+            After undoing it, set a new password with "Forgot password" before
+            you sign in.
+          </Text>
+        </>
+      ) : (
+        <Text style={muted}>
+          This address was never confirmed on the account, so the change cannot
+          be undone from here.
+        </Text>
+      )}
+    </Layout>
+  );
+}
+
+export function EmailChangeUndone() {
+  return (
+    <Layout
+      preview="An email address change on your VerseMate account was undone"
+      title="The email address change was undone"
+    >
       <Text style={text}>
-        If you did not make this change, undo it within 7 days. The account
-        moves back to this address and every session is signed out.
+        A recent change of the email address on a VerseMate account that used
+        this address was undone from the previous address. The account no longer
+        uses this address.
       </Text>
-      <Section style={{ textAlign: "center", margin: "28px 0" }}>
-        <Link style={button} href={href}>
-          Undo this change
-        </Link>
-      </Section>
       <Text style={muted}>
-        After undoing it, set a new password with "Forgot password" before you
-        sign in.
+        The account was signed out on every device and its password was removed.
+        If you did not expect this, you can ignore this email.
       </Text>
     </Layout>
   );

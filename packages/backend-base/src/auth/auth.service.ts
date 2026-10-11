@@ -8,6 +8,7 @@ import type { Transaction } from "kysely";
 import {
   ConfirmEmailChange,
   EmailChangeAccountExists,
+  EmailChangeUndone,
   EmailChanged,
   VerifyEmail,
   render,
@@ -41,6 +42,8 @@ const EMAIL_CHANGE_MAILS_PER_RECIPIENT = 3;
 const EMAIL_CHANGE_REQUESTS_PER_HOUR = 30;
 const EMAIL_CHANGE_TRIES = 5;
 const EMAIL_CHANGE_REVERT_LIFETIME = "7d";
+const EMAIL_CHANGE_REVERT_MS = 7 * 24 * 60 * 60 * 1000;
+const EMAIL_CHANGE_REVERTS_KEPT = EMAIL_CHANGE_MAILS_PER_HOUR * 24 * 7;
 const UNIQUE_VIOLATION = "23505";
 
 type AccountProfile = Pick<
@@ -69,8 +72,16 @@ type EmailChangeRevert = {
   userId: string;
   from: string;
   to: string;
-  changedAt: string;
+  linkIds: string[];
+  expiresAt: number;
 };
+
+type AddressMove =
+  | "already"
+  | "wrong-address"
+  | "unusable"
+  | "refused"
+  | { revertable: boolean };
 
 type AddressProof =
   | { by: "account-holder" }
@@ -460,6 +471,14 @@ export class AuthService {
     if (!emailVerified && normalizedEmail)
       throw new ConflictError(
         "The sign-in provider has not verified this email. Verify it with the provider or sign in another way.",
+      );
+
+    if (
+      normalizedEmail &&
+      (await this.reservedForAnother(normalizedEmail, null))
+    )
+      throw new ConflictError(
+        "This email address was moved off a VerseMate account in the last 7 days. If that account is yours, use the undo link sent to this address, then sign in.",
       );
 
     const newUser = await this.db
@@ -991,8 +1010,7 @@ export class AuthService {
   }
 
   private async checkEmailChangeLimits(userId: string) {
-    const tooMany = async (cacheKey: string, max: number) => {
-      if (((await this.cache.get<number>(cacheKey)) ?? 0) < max) return;
+    const refuse = async (cacheKey: string) => {
       const retryAfter = await this.cache.ttl(cacheKey).catch(() => -1);
       throw {
         status: 429,
@@ -1000,18 +1018,18 @@ export class AuthService {
         ...(retryAfter > 0 ? { retryAfter } : {}),
       };
     };
-    await tooMany(
-      cacheConstants.emailChangeMailsSent(userId),
-      EMAIL_CHANGE_MAILS_PER_HOUR,
-    );
-    await tooMany(
-      cacheConstants.emailChangeRequests(userId),
-      EMAIL_CHANGE_REQUESTS_PER_HOUR,
-    );
-    await this.cache.increment(
-      cacheConstants.emailChangeRequests(userId),
-      EMAIL_CHANGE_WINDOW_SECONDS,
-    );
+    const mailsSent = cacheConstants.emailChangeMailsSent(userId);
+    if (
+      ((await this.cache.get<number>(mailsSent)) ?? 0) >=
+      EMAIL_CHANGE_MAILS_PER_HOUR
+    )
+      await refuse(mailsSent);
+    const requests = cacheConstants.emailChangeRequests(userId);
+    if (
+      (await this.cache.increment(requests, EMAIL_CHANGE_WINDOW_SECONDS)) >
+      EMAIL_CHANGE_REQUESTS_PER_HOUR
+    )
+      await refuse(requests);
   }
 
   private async requestEmailChange(userId: string, from: string, to: string) {
@@ -1042,8 +1060,9 @@ export class AuthService {
   }
 
   private async mailEmailChange(userId: string, requestId: string) {
-    const pendingKey = cacheConstants.emailChangePending(userId);
-    const pending = await this.cache.get<PendingEmailChange>(pendingKey);
+    const pending = await this.cache.get<PendingEmailChange>(
+      cacheConstants.emailChangePending(userId),
+    );
     if (pending?.requestId !== requestId) return;
     const conn = this.db.getOrCreateConnection();
     const holder = await conn
@@ -1062,7 +1081,7 @@ export class AuthService {
     );
     if (sent > EMAIL_CHANGE_MAILS_PER_HOUR) {
       console.warn("Email change mail over the hourly limit", { userId });
-      await this.cache.deleteWhen(pendingKey, "requestId", requestId);
+      await this.dropEmailChangeRequest(userId, requestId);
       return;
     }
     const toRecipient = await this.cache.increment(
@@ -1071,6 +1090,7 @@ export class AuthService {
     );
     if (toRecipient > EMAIL_CHANGE_MAILS_PER_RECIPIENT) {
       console.warn("Email change mail over the recipient limit", { userId });
+      await this.dropEmailChangeRequest(userId, requestId);
       return;
     }
 
@@ -1124,6 +1144,15 @@ export class AuthService {
     }
   }
 
+  private async dropEmailChangeRequest(userId: string, requestId: string) {
+    await this.cache.deleteWhen(
+      cacheConstants.emailChangePending(userId),
+      "requestId",
+      requestId,
+    );
+    await this.cache.delete(cacheConstants.emailChangeMailing(requestId));
+  }
+
   private async liveEmailChangeKey(hash: string) {
     const record = await this.cache.get<EmailChangeKey>(
       cacheConstants.emailChangeKey(hash),
@@ -1152,11 +1181,12 @@ export class AuthService {
   }
 
   public async revertEmailChange(key: string): Promise<boolean> {
-    const record = await this.cache.take<EmailChangeRevert>(
-      cacheConstants.emailChangeRevert(hashKey(key)),
-    );
-    if (!record) return false;
-    let reverted: boolean;
+    const hash = hashKey(key);
+    const recordKey = cacheConstants.emailChangeRevert(hash);
+    const peek = await this.cache.get<EmailChangeRevert>(recordKey);
+    if (!peek) return false;
+    let taken: EmailChangeRevert | null = null;
+    let reverted: { record: EmailChangeRevert; previous: string } | null;
     try {
       reverted = await this.db
         .getOrCreateConnection()
@@ -1164,53 +1194,122 @@ export class AuthService {
         .execute(async (trx) => {
           const locked = await trx
             .selectFrom("user")
-            .select(["id"])
-            .where("id", "=", record.userId)
+            .select(["id", "email"])
+            .where("id", "=", peek.userId)
             .forUpdate()
             .executeTakeFirst();
-          if (!locked) return false;
+          const record = await this.cache.take<EmailChangeRevert>(recordKey);
+          if (!record || !locked) return null;
+          taken = record;
           const other = await trx
             .selectFrom("user")
             .select("id")
             .where(sql`lower(trim(email))`, "=", record.from)
             .where("id", "!=", record.userId)
             .executeTakeFirst();
-          if (other) return false;
+          if (other) {
+            await this.restoreRevert(recordKey, record);
+            taken = null;
+            return null;
+          }
           await trx
             .updateTable("user")
             .set({ email: record.from, password: null })
             .where("id", "=", locked.id)
             .execute();
           await trx
-            .deleteFrom("user_sso_accounts")
-            .where("user_id", "=", locked.id)
-            .where("created_at", ">=", new Date(record.changedAt))
+            .updateTable("user")
+            .set({ emailVerified: true, email_verified_at: sql`now()` })
+            .where("id", "=", locked.id)
+            .where(sql`lower(trim(email))`, "=", record.from)
             .execute();
-          if (
-            !(await this.confirmAddress(
-              trx,
-              { id: locked.id, emailVerified: false },
-              record.from,
-              { by: "account-holder" },
-            ))
-          )
-            throw new Error("The old address could not be confirmed");
-          return true;
+          let addedSince = trx
+            .deleteFrom("user_sso_accounts")
+            .where("user_id", "=", locked.id);
+          if (record.linkIds.length > 0)
+            addedSince = addedSince.where("id", "not in", record.linkIds);
+          await addedSince.execute();
+          await this.dropRevertsFrom(record.userId, hash);
+          await this.cache.deleteWhen(
+            cacheConstants.emailChangeReserved(hashKey(record.from)),
+            "userId",
+            record.userId,
+          );
+          return { record, previous: locked.email.trim().toLowerCase() };
         });
     } catch (error) {
+      if (taken) await this.restoreRevert(recordKey, taken);
       if ((error as { code?: string }).code === UNIQUE_VIOLATION) return false;
       throw error;
     }
     if (!reverted) return false;
-    await this.logoutAll(record.userId);
-    await this.cache.delete(cacheConstants.emailChangePending(record.userId));
-    await this.cache.delete(
-      cacheConstants.emailChangeReserved(hashKey(record.from)),
-    );
+    const { record, previous } = reverted;
     console.info("Email change undone from the old address", {
       userId: record.userId,
     });
+    await this.cache.delete(cacheConstants.emailChangePending(record.userId));
+    try {
+      await this.logoutAll(record.userId);
+    } finally {
+      for (const to of new Set([record.to, previous]))
+        if (to !== record.from) await this.mailEmailChangeUndone(to);
+    }
     return true;
+  }
+
+  private async restoreRevert(recordKey: string, record: EmailChangeRevert) {
+    const remainingMs = record.expiresAt - Date.now();
+    if (remainingMs > 0)
+      await this.cache.set(recordKey, record, String(remainingMs));
+  }
+
+  private async dropRevertsFrom(userId: string, hash: string) {
+    const index = cacheConstants.emailChangeReverts(userId);
+    const hashes = (await this.cache.get<string[]>(index)) ?? [];
+    const at = hashes.indexOf(hash);
+    for (const later of at < 0 ? hashes : hashes.slice(at)) {
+      const record = await this.cache.take<EmailChangeRevert>(
+        cacheConstants.emailChangeRevert(later),
+      );
+      if (record)
+        await this.cache.deleteWhen(
+          cacheConstants.emailChangeReserved(hashKey(record.from)),
+          "userId",
+          userId,
+        );
+      await this.cache.removeFromJsonArray(index, later);
+    }
+  }
+
+  private async liveRevertSeconds(userId: string): Promise<number> {
+    const hashes =
+      (await this.cache.get<string[]>(
+        cacheConstants.emailChangeReverts(userId),
+      )) ?? [];
+    let longest = 0;
+    for (const hash of hashes)
+      longest = Math.max(
+        longest,
+        await this.cache.ttl(cacheConstants.emailChangeRevert(hash)),
+      );
+    return longest;
+  }
+
+  private async mailEmailChangeUndone(to: string) {
+    try {
+      const result = await this.notification.sendEmail({
+        to: { email: to, name: "" },
+        subject: "An email address change on your VerseMate account was undone",
+        text: "A recent change of the email address on a VerseMate account that used this address was undone from the previous address. The account no longer uses this address, it was signed out on every device and its password was removed.",
+        html: render(EmailChangeUndone()),
+      });
+      if (!result.delivered && !result.suppressed)
+        console.error("Email change undo notice was not delivered", {
+          error: result.error,
+        });
+    } catch (error) {
+      console.error("Email change undo notice failed", { error });
+    }
   }
 
   public async emailChangeKeyUsable(key: string): Promise<boolean> {
@@ -1222,81 +1321,38 @@ export class AuthService {
     typedEmail: string,
   ): Promise<"confirmed" | "wrong-address" | "unusable"> {
     const hash = hashKey(key);
+    const keyRecord = cacheConstants.emailChangeKey(hash);
     const typed = typedEmail.trim().toLowerCase();
     const done = await this.cache.get<{ from: string }>(
       cacheConstants.emailChangeDone(hash),
     );
-    if (done) return done.from === typed ? "confirmed" : "unusable";
+    if (!done && !(await this.cache.get(keyRecord))) return "unusable";
 
     const tries = await this.cache.increment(
       cacheConstants.emailChangeTries(hash),
       EMAIL_CHANGE_WINDOW_SECONDS,
     );
     if (tries > EMAIL_CHANGE_TRIES) {
-      await this.cache.delete(cacheConstants.emailChangeKey(hash));
+      await this.cache.delete(keyRecord);
       return "unusable";
     }
+    if (done) return done.from === typed ? "confirmed" : "unusable";
     const record = await this.liveEmailChangeKey(hash);
     if (!record) return "unusable";
 
-    let outcome: "moved" | "already" | "wrong-address" | "unusable";
+    const revertKey = randomBytes(32).toString("base64url");
+    let outcome: AddressMove;
     try {
       outcome = await this.db
         .getOrCreateConnection()
         .transaction()
-        .execute(async (trx) => {
-          const locked = await trx
-            .selectFrom("user")
-            .select(["id", "email", "emailVerified", "email_verified_at"])
-            .where("id", "=", record.userId)
-            .forUpdate()
-            .executeTakeFirst();
-          if (!locked) return "unusable";
-          const current = locked.email.trim().toLowerCase();
-          if (current === record.to && typed === record.from) return "already";
-          if (typed !== current) return "wrong-address";
-          if (current !== record.from) return "unusable";
-
-          const taken = await this.cache.takeWhen<EmailChangeKey>(
-            cacheConstants.emailChangeKey(hash),
-            {
-              key: cacheConstants.emailChangePending(record.userId),
-              field: "requestId",
-              value: record.requestId,
-            },
-          );
-          if (taken?.requestId !== record.requestId) return "unusable";
-          const other = await trx
-            .selectFrom("user")
-            .select("id")
-            .where(sql`lower(trim(email))`, "=", record.to)
-            .where("id", "!=", record.userId)
-            .executeTakeFirst();
-          if (
-            other ||
-            (await this.reservedForAnother(record.to, record.userId))
-          )
-            return "unusable";
-          await trx
-            .updateTable("user")
-            .set({ email: record.to })
-            .where("id", "=", locked.id)
-            .execute();
-          if (
-            !(await this.confirmAddress(trx, locked, record.to, {
-              by: "account-holder",
-            }))
-          )
-            throw new Error("The new address could not be confirmed");
-          if (!this.isConfirmed(locked))
-            await trx
-              .updateTable("user")
-              .set({ password: null })
-              .where("id", "=", locked.id)
-              .execute();
-          return "moved";
-        });
+        .execute((trx) =>
+          this.moveAddress(trx, { hash, record, typed, revertKey }),
+        );
     } catch (error) {
+      await this.forgetRevert(record, revertKey);
+      if (!(await this.cache.get(keyRecord)))
+        await this.dropEmailChangeRequest(record.userId, record.requestId);
       if ((error as { code?: string }).code === UNIQUE_VIOLATION)
         return "unusable";
       throw error;
@@ -1304,14 +1360,15 @@ export class AuthService {
     if (outcome === "already") return "confirmed";
     if (outcome === "wrong-address") {
       if (tries === EMAIL_CHANGE_TRIES) {
-        await this.cache.delete(cacheConstants.emailChangeKey(hash));
+        await this.cache.delete(keyRecord);
         return "unusable";
       }
       return "wrong-address";
     }
-    if (outcome === "unusable") return "unusable";
+    if (outcome === "refused")
+      await this.dropEmailChangeRequest(record.userId, record.requestId);
+    if (outcome === "unusable" || outcome === "refused") return "unusable";
 
-    await this.logoutAll(record.userId);
     await this.cache.set(
       cacheConstants.emailChangeDone(hash),
       { from: record.from },
@@ -1324,27 +1381,133 @@ export class AuthService {
     );
     await this.cache.delete(cacheConstants.emailChangeTries(hash));
     try {
-      const revertKey = randomBytes(32).toString("base64url");
+      await this.logoutAll(record.userId);
+    } finally {
+      await this.mailEmailChanged(
+        record,
+        outcome.revertable ? revertKey : null,
+      );
+    }
+    return "confirmed";
+  }
+
+  private async moveAddress(
+    trx: Transaction<Database>,
+    {
+      hash,
+      record,
+      typed,
+      revertKey,
+    }: {
+      hash: string;
+      record: EmailChangeKey;
+      typed: string;
+      revertKey: string;
+    },
+  ): Promise<AddressMove> {
+    const locked = await trx
+      .selectFrom("user")
+      .select(["id", "email", "emailVerified", "email_verified_at"])
+      .where("id", "=", record.userId)
+      .forUpdate()
+      .executeTakeFirst();
+    if (!locked) return "unusable";
+    const current = locked.email.trim().toLowerCase();
+    if (current === record.to && typed === record.from) return "already";
+    if (current !== record.from) return "unusable";
+    if (typed !== current) return "wrong-address";
+
+    const taken = await this.cache.takeWhen<EmailChangeKey>(
+      cacheConstants.emailChangeKey(hash),
+      {
+        key: cacheConstants.emailChangePending(record.userId),
+        field: "requestId",
+        value: record.requestId,
+      },
+    );
+    if (taken?.requestId !== record.requestId) return "unusable";
+    const other = await trx
+      .selectFrom("user")
+      .select("id")
+      .where(sql`lower(trim(email))`, "=", record.to)
+      .where("id", "!=", record.userId)
+      .executeTakeFirst();
+    if (other || (await this.reservedForAnother(record.to, record.userId)))
+      return "refused";
+
+    const revertable = locked.emailVerified;
+    if (revertable) {
+      const links = await trx
+        .selectFrom("user_sso_accounts")
+        .select("id")
+        .where("user_id", "=", locked.id)
+        .execute();
+      const revertHash = hashKey(revertKey);
       await this.cache.set(
-        cacheConstants.emailChangeRevert(hashKey(revertKey)),
+        cacheConstants.emailChangeRevert(revertHash),
         {
           userId: record.userId,
           from: record.from,
           to: record.to,
-          changedAt: new Date().toISOString(),
+          linkIds: links.map((link) => link.id),
+          expiresAt: Date.now() + EMAIL_CHANGE_REVERT_MS,
         } satisfies EmailChangeRevert,
         EMAIL_CHANGE_REVERT_LIFETIME,
+      );
+      await this.cache.appendToJsonArray(
+        cacheConstants.emailChangeReverts(record.userId),
+        revertHash,
+        EMAIL_CHANGE_REVERT_LIFETIME,
+        EMAIL_CHANGE_REVERTS_KEPT,
       );
       await this.cache.set(
         cacheConstants.emailChangeReserved(hashKey(record.from)),
         { userId: record.userId },
         EMAIL_CHANGE_REVERT_LIFETIME,
       );
-      const href = revertEmailChangeURL(revertKey);
+    }
+
+    await trx
+      .updateTable("user")
+      .set({ email: record.to, ...(revertable ? {} : { password: null }) })
+      .where("id", "=", locked.id)
+      .execute();
+    if (
+      !(await this.confirmAddress(trx, locked, record.to, {
+        by: "account-holder",
+      }))
+    )
+      throw new Error("The new address could not be confirmed");
+    return { revertable };
+  }
+
+  private async forgetRevert(record: EmailChangeKey, revertKey: string) {
+    const revertHash = hashKey(revertKey);
+    if (!(await this.cache.take(cacheConstants.emailChangeRevert(revertHash))))
+      return;
+    await this.cache.removeFromJsonArray(
+      cacheConstants.emailChangeReverts(record.userId),
+      revertHash,
+    );
+    await this.cache.deleteWhen(
+      cacheConstants.emailChangeReserved(hashKey(record.from)),
+      "userId",
+      record.userId,
+    );
+  }
+
+  private async mailEmailChanged(
+    record: EmailChangeKey,
+    revertKey: string | null,
+  ) {
+    try {
+      const href = revertKey ? revertEmailChangeURL(revertKey) : undefined;
       const result = await this.notification.sendEmail({
         to: { email: record.from, name: "" },
         subject: "Your VerseMate email address was changed",
-        text: `The email address of your VerseMate account was changed and every session was signed out. If you did not do this, undo it within 7 days: ${href}`,
+        text: href
+          ? `The email address of your VerseMate account was changed and every session was signed out. If you did not do this, undo it within 7 days: ${href}`
+          : "The email address of your VerseMate account was changed and every session was signed out. This address was never confirmed on the account, so the change cannot be undone from here.",
         html: render(EmailChanged({ href })),
       });
       if (!result.delivered && !result.suppressed)
@@ -1358,7 +1521,6 @@ export class AuthService {
         error,
       });
     }
-    return "confirmed";
   }
 
   /**
@@ -1416,6 +1578,13 @@ export class AuthService {
         throw new UnauthorizedError("Invalid password");
       }
     }
+
+    const undoable = await this.liveRevertSeconds(userId);
+    if (undoable > 0)
+      throw new ConflictError(
+        "The email address of this account changed recently and can still be changed back from the previous address. The account can be deleted once that time has passed.",
+        { retryAfter: undoable },
+      );
 
     // Delete all user data in a transaction to ensure atomicity
     await this.db
@@ -1497,6 +1666,8 @@ export class AuthService {
       });
 
     await this.cache.delete(cacheConstants.accessToken(userId));
+    await this.cache.delete(cacheConstants.emailChangeReverts(userId));
+    await this.cache.delete(cacheConstants.emailChangePending(userId));
   }
 
   // TODO: Implement refresh accessToken (keep alive)
