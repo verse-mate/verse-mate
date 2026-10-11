@@ -69,8 +69,13 @@ Same access constraints as `seed-jesus-corpus.md`, plus a provider key:
 - **Database allowlist.** The managed database restricts by trusted source, so
   whichever machine runs this has to be on it.
 - **Keep `?sslmode=require`** in `POSTGRES_URL`. `getSSLConfig()` detects that
-  exact substring to enable TLS with `rejectUnauthorized: false`, then strips it
-  before connecting. Omit it and TLS is off and the connection is refused.
+  exact substring to enable TLS, then strips it before connecting. Omit it and
+  TLS is off and the connection is refused.
+- **Set `POSTGRES_CA_CERT`** to the database's CA certificate (PEM text, from
+  the database's Connection Details, "Download CA certificate"). The server
+  certificate is verified against it; without it, verification uses the system
+  CAs, which do not include the managed database's CA, so the connection fails
+  with a certificate error rather than going unverified.
 - **`OPEN_AI_KEY`**, and `AI_PROVIDER` left at its default (`openai`).
 - **An active `system` prompt**, post-F1. Extraction reads it at run time and
   will happily use a stale one — there is no version check between the prompt
@@ -85,8 +90,8 @@ bun install
 cd packages/backend-base
 ```
 
-Every command below runs from `packages/backend-base` with `POSTGRES_URL` and
-`OPEN_AI_KEY` set in the environment.
+Every command below runs from `packages/backend-base` with `POSTGRES_URL`,
+`POSTGRES_CA_CERT` and `OPEN_AI_KEY` set in the environment.
 
 > **Note on `bun run` and flags.** The `--` before script flags is required:
 > `bun run jesus:extract -- --apply`. Without it, bun eats them and the script

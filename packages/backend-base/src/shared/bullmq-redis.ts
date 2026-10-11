@@ -1,14 +1,7 @@
 import IORedis from "ioredis";
+import { redisTlsOptions } from "./redis-tls";
 
 const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
-
-// TLS config for DigitalOcean managed Redis (self-signed certs)
-const getTLSConfig = (url: string) => {
-  if (url.startsWith("rediss://")) {
-    return { rejectUnauthorized: false };
-  }
-  return undefined;
-};
 
 export const bullmqRedisConnection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
@@ -33,7 +26,7 @@ export const bullmqRedisConnection = new IORedis(redisUrl, {
     }
     return false;
   },
-  tls: getTLSConfig(redisUrl),
+  tls: redisTlsOptions(redisUrl),
 });
 
 export default bullmqRedisConnection;
