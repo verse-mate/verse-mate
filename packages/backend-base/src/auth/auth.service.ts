@@ -63,10 +63,15 @@ export class AuthService {
   private unmatchedHash?: Promise<string>;
 
   private async compareWithoutAccount(password: string): Promise<void> {
-    this.unmatchedHash ??= Bun.password.hash(randomUUID(), {
-      algorithm: "bcrypt",
-      cost: this.jwtConstants.hashSalt,
-    });
+    this.unmatchedHash ??= Bun.password
+      .hash(randomUUID(), {
+        algorithm: "bcrypt",
+        cost: this.jwtConstants.hashSalt,
+      })
+      .catch((error) => {
+        this.unmatchedHash = undefined;
+        throw error;
+      });
     await Bun.password.verify(password, await this.unmatchedHash, "bcrypt");
   }
 
@@ -610,7 +615,13 @@ export class AuthService {
     const user = await this.db
       .getOrCreateConnection()
       .selectFrom("user")
-      .where("email", "=", authForgotPasswordInput.email)
+      .where(
+        sql`lower(trim(email))`,
+        "=",
+        authForgotPasswordInput.email.trim().toLowerCase(),
+      )
+      .orderBy(sql`email = ${authForgotPasswordInput.email}`, "desc")
+      .orderBy("createdAt")
       .selectAll()
       .executeTakeFirst();
 

@@ -1144,6 +1144,18 @@ describe("a password reset cannot be used up by someone else", () => {
     expect(owner).toEqual(["ok", "ok", "ok"]);
   });
 
+  it("requests refused for their address do not count against an email's ceiling", async () => {
+    hops("1");
+    const cache = memoryCache();
+    for (let i = 0; i < 20; i++)
+      await reset(cache, CLIENT, `reader${i}@example.test`);
+    for (let i = 0; i < 30; i++) await reset(cache, CLIENT, EMAIL);
+    const owner = [];
+    for (let i = 0; i < 10; i++)
+      owner.push(await reset(cache, `203.0.113.${i + 100}`, EMAIL));
+    expect(owner.every((a) => a === "ok")).toBe(true);
+  });
+
   it("every refusal keeps the 429 answer the route gave before", async () => {
     hops("1");
     for (const limiter of [
