@@ -10,8 +10,8 @@ import {
 } from "kysely";
 import { Pool } from "pg";
 
-import { DISCARD_FLAG } from "../../migrations/20261011070000-coach-reports-and-roster";
-import { RESTORE_FLAG } from "../../migrations/20261011110000-coach-clear-unproven-confirmations";
+import { DISCARD_FLAG } from "../../migrations/20261011150000-coach-reports-and-roster";
+import { RESTORE_FLAG } from "../../migrations/20261011190000-coach-clear-unproven-confirmations";
 import { getCleanConnectionString, getSSLConfig } from "../utils/ssl-config";
 
 const MIGRATIONS = path.join(import.meta.dir, "../../migrations");

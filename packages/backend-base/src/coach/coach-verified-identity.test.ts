@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
-import { clearUnprovenRosterConfirmations } from "database/migrations/20261011110000-coach-clear-unproven-confirmations";
+import { clearUnprovenRosterConfirmations } from "database/migrations/20261011190000-coach-clear-unproven-confirmations";
 
 import { CoachIdentityService } from "./coach-identity.service";
 import { CoachService } from "./coach.service";
