@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
 import { createTestUser } from "../shared/test-helpers";
@@ -9,7 +10,7 @@ import Backend from "./bible.plugin";
 type TestUser = Awaited<ReturnType<typeof createTestUser>>;
 
 describe("Bible Plugin - user-scoped routes answer only the signed-in user", () => {
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   let owner: TestUser;
   let other: TestUser;
   let explanationId: number;

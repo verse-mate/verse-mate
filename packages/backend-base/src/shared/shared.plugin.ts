@@ -1,36 +1,24 @@
-import { bearer } from "@elysiajs/bearer";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
 import { ApiError } from "../common/errors";
-import { UserService } from "../user/user.service";
 
+import { answerError, isRouteNotFound } from "../common/error-handler";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
 import bullmqRedisConnection from "./bullmq-redis";
 import { type Logger, PosthogService } from "./posthog.service";
 import redisClient from "./redis-client";
+import { signingSecret } from "./signing-secret";
 
 export type cache = typeof redisClient;
 
 export type db = typeof Database;
 
-// Security (audit #2): never sign sessions with a hardcoded or publicly-known
-// secret, either lets any attacker forge a valid JWT for any user. Fail closed
-// at startup when the secret is unset OR still the historical default that was
-// shipped in .env.example on a public repo (so setting it to that known value
-// does not sneak past this guard).
-const authTokenSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
-if (!authTokenSecret || authTokenSecret === "my-super-secret") {
-  throw new Error(
-    "AUTH_ACCESS_TOKEN_SECRET is unset or the known-public default — refusing to start; set a unique secret",
-  );
-}
-
 const jwt = ElysiaJwt({
   name: "jwt",
-  secret: authTokenSecret,
+  secret: signingSecret(),
   // Per spec feat-auth-platform br-auth-001 (D-005): access token IS the
   // persistent session token; refresh tokens eliminated. Backend Redis cache
   // validates every token so server-side logout immediately revokes regardless
@@ -62,15 +50,12 @@ const posthogService = new PosthogService({ logger });
  * Used in global error handler to add user context to exceptions
  */
 async function maybeCurrentUserId({
-  bearer: bearerToken,
-  query,
+  bearer: token,
   jwt: jwtVerifier,
 }: {
   bearer: string | undefined;
-  query: { accessToken?: string };
   jwt: JWT;
 }): Promise<string | null> {
-  const token = bearerToken ?? query?.accessToken;
   if (!token) return null;
 
   try {
@@ -86,8 +71,19 @@ async function maybeCurrentUserId({
 
 // const storage = new ObjectStorageService();
 
+const answeredErrors = new Elysia({ name: "answered-errors" }).onError(
+  { as: "global" },
+  ({ code, error, path, set }) => answerError(path, code, error, set),
+);
+
+const BEARER_PREFIX = "Bearer ";
+
 const setup = new Elysia({ name: "shared" })
-  .use(bearer())
+  .derive({ as: "global" }, ({ headers: { authorization } }) => ({
+    bearer: authorization?.startsWith(BEARER_PREFIX)
+      ? authorization.slice(BEARER_PREFIX.length)
+      : undefined,
+  }))
   .use(jwt)
   .state("db", Database)
   .state("cache", redisClient)
@@ -96,26 +92,25 @@ const setup = new Elysia({ name: "shared" })
   .decorate("posthog", posthogService)
   .onError(
     { as: "global" },
-    async ({
-      bearer: bearerToken,
-      query,
-      jwt: jwtVerifier,
-      error,
-      code,
-      path,
-    }) => {
-      // NOT_FOUND is expected HTTP behavior (404s), not an application exception
-      if (code === "NOT_FOUND") return;
+    async ({ bearer: bearerToken, jwt: jwtVerifier, error, code, path }) => {
+      if (
+        code === "NOT_FOUND" &&
+        (error instanceof ApiError || isRouteNotFound(error))
+      )
+        return;
+      if (
+        !(error instanceof Error) &&
+        (error as { status?: unknown }).status === 429
+      )
+        return;
       if (
         error instanceof ApiError &&
         (error.status === 401 || error.status === 403)
       )
         return;
-      if ((error as { status?: unknown }).status === 429) return;
 
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,
-        query: query as { accessToken?: string },
         jwt: jwtVerifier,
       });
       const reported =
@@ -130,49 +125,7 @@ const setup = new Elysia({ name: "shared" })
       });
     },
   )
-  .derive(async ({ jwt, cookie: { auth }, store }) => {
-    let payload: any;
-    try {
-      payload = await jwt.verify(auth?.value as string | undefined);
-    } catch {
-      console.warn("JWT verification failed");
-      return { user: null };
-    }
-
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      typeof (payload as any).id !== "string" ||
-      !(payload as any).id
-    ) {
-      return { user: null };
-    }
-
-    try {
-      const userService = new UserService(store.db);
-      const user = await userService.findOne((payload as any).id);
-      if (!user) return { user: null };
-      return { user };
-    } catch {
-      console.error("Failed to load user from store");
-      return { user: null };
-    }
-  })
-  // @ts-ignore - Elysia macro types are complex and not fully inferred
-  .macro(({ onBeforeHandle }: any) => ({
-    isAuthenticated() {
-      onBeforeHandle(({ user, set }: any) => {
-        if (!user) {
-          set.status = 401;
-          return {
-            error: "UNAUTHORIZED",
-            message: "Authentication required",
-            details: undefined,
-          };
-        }
-      });
-    },
-  }));
+  .use(answeredErrors as unknown as Elysia);
 
 import { audioCleanupQueue } from "../bible/audio/audio-cleanup.queue";
 import {

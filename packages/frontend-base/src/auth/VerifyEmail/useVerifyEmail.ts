@@ -2,6 +2,8 @@
 import { api } from "backend-api";
 import { useState } from "react";
 import useMutation from "../../hooks/useMutation";
+import { setCookie } from "../../utils/auth-utils";
+import { ACCESS_TOKEN_COOKIE } from "../lib";
 
 const getKey = () => {
   const params = new URLSearchParams(document.location.search);
@@ -19,7 +21,9 @@ export function useVerifyEmail() {
       setIsLoading(false);
     },
 
-    onSuccess: () => {
+    onSuccess: ({ data }) => {
+      if (data?.accessToken)
+        setCookie(ACCESS_TOKEN_COOKIE, data.accessToken, 90);
       setIsLoading(false);
     },
   });

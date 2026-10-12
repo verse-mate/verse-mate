@@ -11,3 +11,9 @@ export { default as CoachReport } from "./src/CoachReport";
 export { default as CoachReshareRequest } from "./src/CoachReshareRequest";
 export { default as CoachUploadReminder } from "./src/CoachUploadReminder";
 export { render } from "@react-email/render";
+export {
+  ConfirmEmailChange,
+  EmailChangeAccountExists,
+  EmailChanged,
+  EmailChangeUndone,
+} from "./src/EmailChange";

@@ -6,6 +6,7 @@
     "./admin": "./admin/index.ts",
     "./styles/*": "./styles/*",
     "./src/analytics": "./src/analytics/index.ts",
+    "./src/api/auth": "./src/api/auth.ts",
     "./src/auth/lib": "./src/auth/lib.ts",
     "./src/utils/auth-utils": "./src/utils/auth-utils.ts",
     "./package.json": "./package.json"

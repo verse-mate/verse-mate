@@ -41,8 +41,8 @@ export const SUPPORT_EMAIL = "support@my-domain.com";
  */
 export interface SSOCallbackResult {
   success: boolean;
+  code?: string;
   accessToken?: string;
-  refreshToken?: string;
   verified?: boolean;
   error?: string;
   errorDescription?: string;
@@ -89,20 +89,18 @@ export function parseSSOCallbackParams(
       ? new URLSearchParams(searchParams)
       : searchParams;
 
+  const code = params.get("code");
   const accessToken = params.get("accessToken");
-  const refreshToken = params.get("refreshToken");
   const verified = params.get("verified");
   const error = params.get("error");
   const errorDescription = params.get("error_description");
 
-  // Check if we have tokens (success case)
+  if (code) {
+    return { success: true, code };
+  }
+
   if (accessToken) {
-    return {
-      success: true,
-      accessToken,
-      refreshToken: refreshToken || undefined,
-      verified: verified === "true",
-    };
+    return { success: true, accessToken, verified: verified === "true" };
   }
 
   // Error case
@@ -239,46 +237,146 @@ export function setupPostLoginBehavior(): void {
   }
 }
 
-/**
- * Complete SSO callback flow: parse params, store tokens, and get redirect URL.
- * This is a convenience function that combines all the SSO callback handling steps.
- *
- * @param searchParams - URL search parameters from the callback
- * @returns Object with success status and redirect URL or error message
- */
-export function handleSSOCallback(searchParams: string | URLSearchParams): {
+export const SSO_VERIFIER_KEY = "ssoVerifier";
+
+function base64url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export async function ssoChallengeFor(verifier: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(verifier),
+  );
+  return base64url(new Uint8Array(digest));
+}
+
+export const SSO_VERIFIER_MAX_AGE_MS = 600_000;
+
+export const SSO_START_FAILED_DESCRIPTION =
+  "Sign-in could not start, please try again";
+
+interface PendingVerifier {
+  verifier: string;
+  startedAt: number;
+}
+
+export type SSOProviderName = "google" | "apple";
+
+function callbackPageFor(provider: SSOProviderName): string {
+  const query = new URLSearchParams({
+    error: "invalid_state",
+    error_description: SSO_START_FAILED_DESCRIPTION,
+  });
+  return `/auth/callback/${provider}?${query}`;
+}
+
+export async function startSSOSignIn(
+  apiUrl: string,
+  provider: SSOProviderName,
+): Promise<void> {
+  try {
+    const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = await ssoChallengeFor(verifier);
+    const pending: PendingVerifier = { verifier, startedAt: Date.now() };
+    sessionStorage.setItem(SSO_VERIFIER_KEY, JSON.stringify(pending));
+    const query = new URLSearchParams({
+      challenge,
+      returnTo: window.location.origin,
+    });
+    window.location.href = `${apiUrl}/auth/sso/${provider}/redirect?${query}`;
+  } catch {
+    window.location.href = callbackPageFor(provider);
+  }
+}
+
+function freshVerifier(stored: string | null): string | null {
+  if (!stored) return null;
+  try {
+    const { verifier, startedAt } = JSON.parse(stored) as PendingVerifier;
+    if (typeof verifier !== "string" || typeof startedAt !== "number") {
+      return null;
+    }
+    return Date.now() - startedAt <= SSO_VERIFIER_MAX_AGE_MS ? verifier : null;
+  } catch {
+    return null;
+  }
+}
+
+function takePendingVerifier(): string | null {
+  try {
+    const stored = sessionStorage.getItem(SSO_VERIFIER_KEY);
+    sessionStorage.removeItem(SSO_VERIFIER_KEY);
+    return freshVerifier(stored);
+  } catch {
+    return null;
+  }
+}
+
+export type SSOCodeExchange = (
+  code: string,
+  verifier: string,
+) => Promise<{ accessToken: string; verified: boolean }>;
+
+async function sessionTokenFrom(
+  result: SSOCallbackResult,
+  verifier: string | null,
+  exchangeCode: SSOCodeExchange,
+): Promise<string | undefined> {
+  if (!verifier) return undefined;
+  if (!result.code) return result.accessToken;
+  try {
+    return (await exchangeCode(result.code, verifier)).accessToken;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function handleSSOCallback(
+  searchParams: string | URLSearchParams,
+  exchangeCode: SSOCodeExchange,
+): Promise<{
   success: boolean;
   redirectUrl?: string;
   error?: string;
   errorMessage?: string;
-} {
-  const result = parseSSOCallbackParams(searchParams);
+}> {
+  const parsed = parseSSOCallbackParams(searchParams);
+  const verifier = takePendingVerifier();
 
-  if (result.success && result.accessToken) {
-    // Store tokens
-    storeSSOTokens(result.accessToken, result.refreshToken);
-
-    // Setup post-login behavior
-    setupPostLoginBehavior();
-
-    // Get redirect destination
-    const redirectUrl = getSSORedirectDestination();
-
-    return {
-      success: true,
-      redirectUrl,
-    };
+  if (parsed.success) {
+    const accessToken = await sessionTokenFrom(parsed, verifier, exchangeCode);
+    if (accessToken) {
+      storeSSOTokens(accessToken);
+      setupPostLoginBehavior();
+      return { success: true, redirectUrl: getSSORedirectDestination() };
+    }
   }
 
-  // Handle error
-  const errorMessage = getSSOErrorMessage(
-    result.error || "unknown_error",
-    result.errorDescription,
-  );
-
+  const error = parsed.success ? "auth_failed" : parsed.error;
   return {
     success: false,
-    error: result.error,
-    errorMessage,
+    error,
+    errorMessage: getSSOErrorMessage(
+      error || "unknown_error",
+      parsed.errorDescription,
+    ),
   };
+}
+
+export function completeSSOCallback(
+  search: string,
+  exchangeCode: SSOCodeExchange,
+): ReturnType<typeof handleSSOCallback> {
+  window.history.replaceState(
+    window.history.state,
+    "",
+    window.location.pathname,
+  );
+  return handleSSOCallback(search, exchangeCode);
 }
