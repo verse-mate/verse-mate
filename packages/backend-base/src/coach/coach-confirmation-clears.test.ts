@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
-import { DISCARD_FLAG } from "database/migrations/20261011070000-coach-reports-and-roster";
+import { DISCARD_FLAG } from "database/migrations/20261011150000-coach-reports-and-roster";
 import {
   RESTORE_FLAG,
   clearUnprovenRosterConfirmations,
   down,
-} from "database/migrations/20261011110000-coach-clear-unproven-confirmations";
+} from "database/migrations/20261011190000-coach-clear-unproven-confirmations";
 import { sql } from "kysely";
 
 const conn = Database.getOrCreateConnection();
