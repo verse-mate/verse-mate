@@ -39,7 +39,9 @@ export class SupportService {
   private supportRepository: SupportRepository;
 
   constructor(private readonly db: db) {
-    this.slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
+    this.slackClient = new WebClient(process.env.SLACK_BOT_TOKEN, {
+      slackApiUrl: process.env.SLACK_API_URL || undefined,
+    });
     this.channelId = process.env.SLACK_SUPPORT_CHANNEL_ID || "";
     this.supportRepository = new SupportRepository(db);
     if (!process.env.SLACK_SIGNING_SECRET) {

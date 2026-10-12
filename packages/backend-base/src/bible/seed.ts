@@ -34,25 +34,17 @@ async function createGenres() {
   return { message: "Genres created" };
 }
 
-async function saveBook({ name, testament, genre_id }: Omit<Books, "book_id">) {
-  await db
-    .getOrCreateConnection()
-    .insertInto("books")
-    .values({
-      name,
-      testament,
-      genre_id,
-    })
-    .execute();
+async function saveBook(book: Books) {
+  await db.getOrCreateConnection().insertInto("books").values(book).execute();
 
-  const book_id = await db
+  const saved = await db
     .getOrCreateConnection()
     .selectFrom("books")
-    .where("name", "=", name)
+    .where("name", "=", book.name)
     .select("book_id")
     .executeTakeFirst();
 
-  return { book_id: book_id?.book_id };
+  return { book_id: saved?.book_id };
 }
 
 /**
@@ -456,6 +448,7 @@ export async function main() {
     // If not found, create it
     if (!savedBook) {
       const newBook = await saveBook({
+        book_id: book.bookId,
         name: book.name,
         testament: book.testament as TestamentEnum,
         genre_id: book.genre.g,

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { Elysia } from "elysia";
 
 import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import authPlugin from "../auth/auth.plugin";
@@ -8,7 +9,7 @@ import Backend from "./bible.plugin";
 
 describe("Bible Plugin", () => {
   let testUser: Awaited<ReturnType<typeof createTestUser>>;
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - Combined plugin types
   const testClient = getTestClient<typeof plugin>(plugin);
 
@@ -136,6 +137,25 @@ describe("Bible Plugin", () => {
       expect(typeof firstChapter?.chapterNumber).toBe("number");
     });
 
+    it.each([
+      [1, "Genesis"],
+      [19, "Psalms"],
+      [40, "Matthew"],
+      [43, "John"],
+      [66, "Revelation"],
+    ])(
+      "GET /bible/book/%i/1 - serves %s at its canonical book id",
+      async (bookId, name) => {
+        // @ts-ignore - Dynamic path parameter
+        const { data, error } = await testClient.bible.book[bookId][1].get({
+          query: { versionKey: "NASB1995" },
+        });
+
+        expect(error).toBeFalsy();
+        expect(data?.book?.name).toBe(name);
+      },
+    );
+
     it("GET /bible/book/:bookId/:chapterNumber - accepts bible_version alias", async () => {
       // @ts-ignore - Dynamic path parameter
       const { data, error } = await testClient.bible.book[1][1].get({
@@ -159,11 +179,9 @@ describe("Bible Plugin", () => {
       expect(nasb?.language_code).toBe("en");
       expect(nasb?.testament_coverage).toBeDefined();
 
-      // Curated open versions seeded by migration are discoverable, including
-      // the NT-only Ukrainian translation.
       const ukrkl = data?.versions.find((v) => v.version_key === "UKRKL");
       expect(ukrkl).toBeDefined();
-      expect(ukrkl?.testament_coverage).toBe("nt");
+      expect(ukrkl?.testament_coverage).toBe("full");
     });
 
     it("GET /bible/book/explanation/:bookId/:chapterNumber - returns the explanation shape", async () => {

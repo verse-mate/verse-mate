@@ -96,7 +96,7 @@ const plugin = new Elysia()
             tags: ["Offline"],
             summary: "Download Bible version data",
             description:
-              "Returns all verses for a specific Bible version as gzip-compressed JSON. Supports If-Modified-Since header for conditional requests.",
+              "Returns all verses for a specific Bible version as JSON. Supports If-Modified-Since header for conditional requests.",
           },
         },
       )
@@ -104,8 +104,9 @@ const plugin = new Elysia()
       // GET /offline/commentaries/:languageCode - Download all commentaries for a language
       .get(
         "/commentaries/:languageCode",
-        async ({ params, headers, store: { offlineService } }) => {
+        async ({ params, headers, bearer, jwt, store }) => {
           const { languageCode } = params;
+          const { offlineService } = store;
 
           // Check if commentaries exist for this language
           const exists = await offlineService.commentaryExists(languageCode);
@@ -128,12 +129,16 @@ const plugin = new Elysia()
             }
           }
 
-          // Get data
-          const data = await offlineService.getCommentaryData(languageCode);
+          const { currentUserId } = await authDerive({ bearer, jwt, store });
+          const data = await offlineService.getCommentaryData(
+            languageCode,
+            currentUserId,
+          );
 
           const responseHeaders: Record<string, string> = {
             "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=86400",
+            "Cache-Control": `${currentUserId ? "private" : "public"}, max-age=86400`,
+            Vary: "Authorization",
           };
 
           const lastModified =
@@ -154,7 +159,7 @@ const plugin = new Elysia()
             tags: ["Offline"],
             summary: "Download commentaries for a language",
             description:
-              "Returns all active explanations/commentaries for a specific language as gzip-compressed JSON. Supports If-Modified-Since header for conditional requests.",
+              "Returns all active explanations/commentaries for a specific language as JSON. Supports If-Modified-Since header for conditional requests.",
           },
         },
       )
@@ -213,7 +218,7 @@ const plugin = new Elysia()
             tags: ["Offline"],
             summary: "Download topics for a language",
             description:
-              "Returns all topics and their references for a specific language as gzip-compressed JSON. Supports If-Modified-Since header for conditional requests.",
+              "Returns all topics and their references for a specific language as JSON. Supports If-Modified-Since header for conditional requests.",
           },
         },
       )
@@ -242,7 +247,7 @@ const plugin = new Elysia()
               tags: ["Offline"],
               summary: "Download user data",
               description:
-                "Returns all notes, highlights, and bookmarks for the authenticated user as gzip-compressed JSON.",
+                "Returns all notes, highlights, and bookmarks for the authenticated user as JSON.",
             },
           },
         ),

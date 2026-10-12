@@ -263,10 +263,13 @@ ZRKqOIZzG+HblXQ0h5b8bLMqkHmXFQ==
     it("should store state in Redis when redirect is initiated", async () => {
       // Make a direct request
       const response = await Backend.handle(
-        new Request("http://localhost/auth/sso/google/redirect", {
-          method: "GET",
-          redirect: "manual",
-        }),
+        new Request(
+          `http://localhost/auth/sso/google/redirect?challenge=${"a".repeat(43)}`,
+          {
+            method: "GET",
+            redirect: "manual",
+          },
+        ),
       );
 
       // Should be a redirect (302)
@@ -281,10 +284,13 @@ ZRKqOIZzG+HblXQ0h5b8bLMqkHmXFQ==
   describe("GET /auth/sso/apple/redirect", () => {
     it("should return 302 redirect status when initiated", async () => {
       const response = await Backend.handle(
-        new Request("http://localhost/auth/sso/apple/redirect", {
-          method: "GET",
-          redirect: "manual",
-        }),
+        new Request(
+          `http://localhost/auth/sso/apple/redirect?challenge=${"a".repeat(43)}`,
+          {
+            method: "GET",
+            redirect: "manual",
+          },
+        ),
       );
 
       expect(response.status).toBe(302);

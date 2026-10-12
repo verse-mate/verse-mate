@@ -22,13 +22,7 @@ export const audioGenerationWorker = new Worker<
       createTtsProvider(),
     );
 
-    const explanation = await Database.getOrCreateConnection()
-      .selectFrom("explanations")
-      .select(["explanation_id", "explanation"])
-      .where("explanation_id", "=", job.data.explanation_id)
-      .executeTakeFirstOrThrow();
-
-    const row = await service.synthesizeAndStore(explanation.explanation, {
+    const row = await service.synthesizeQueuedJob({
       explanation_id: job.data.explanation_id,
       voice: job.data.voice,
       language_code: job.data.language_code,

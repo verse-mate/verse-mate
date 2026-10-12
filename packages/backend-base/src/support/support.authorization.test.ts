@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 import type SupportSenderEnum from "database/src/models/public/SupportSenderEnum";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
 import { createTestUser } from "../shared/test-helpers";
@@ -10,7 +11,7 @@ import Backend from "./support.plugin";
 type TestUser = Awaited<ReturnType<typeof createTestUser>>;
 
 describe("Support conversations answer only their owner", () => {
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   let owner: TestUser;
   let other: TestUser;
   let conversationId: string;

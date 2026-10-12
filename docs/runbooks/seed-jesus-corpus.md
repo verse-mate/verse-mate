@@ -34,12 +34,18 @@ Two access notes:
 
 - The managed database restricts by trusted sources; whichever machine runs
   this has to be on the allowlist.
-- **Keep `?sslmode=require` in the connection string.** `getSSLConfig()` detects
-  that exact substring to enable TLS with `rejectUnauthorized: false` — the
-  managed database uses self-signed certificates — and
-  `getCleanConnectionString()` then strips it before connecting, because
-  `sslmode` in the URL conflicts with the `ssl` object. Omit it and TLS is off
-  and the connection is refused.
+- **Keep `?sslmode=require` in the connection string.** `getSSLConfig()` reads
+  the `sslmode` parameter: `require`, `verify-ca` and `verify-full` connect over
+  TLS with certificate verification; no `sslmode`, or `disable`, connects
+  without TLS; any other mode stops with an error. `getCleanConnectionString()`
+  then strips the parameter before connecting, because `sslmode` in the URL
+  conflicts with the `ssl` object. Without TLS the managed database refuses the
+  connection.
+- **Set `POSTGRES_CA_CERT`** to the database's CA certificate (PEM text, from
+  the database's Connection Details, "Download CA certificate"). The managed
+  database's certificate is signed by its own CA, and the server certificate is
+  verified against it. Without the variable, verification uses the system CAs
+  and the connection fails with a certificate error.
 
 ## 3. Run
 
@@ -47,6 +53,7 @@ Two access notes:
 git checkout main && git pull
 bun install
 cd packages/database
+export POSTGRES_CA_CERT="$(cat ~/Downloads/ca-certificate.crt)"
 POSTGRES_URL='postgresql://USER:PASS@HOST:PORT/DB?sslmode=require' bun db:seed
 ```
 

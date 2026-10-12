@@ -114,13 +114,27 @@ export const authRateLimiters = {
     message: "Too many signup attempts, please try again later",
   }),
 
-  /**
-   * Forgot password rate limiter: 3 attempts per email per hour
-   */
   forgotPassword: createRateLimit({
     windowSeconds: 3600,
     max: 3,
-    keyGenerator: (context) => `forgot-password:${digest(context.body.email)}`,
+    keyGenerator: (context) =>
+      `forgot-password:${digest(normalizedEmail(context.body?.email))}:${clientBucket(context.request, context.server)}`,
+    message: "Too many password reset requests, please try again later",
+  }),
+
+  forgotPasswordIp: createRateLimit({
+    windowSeconds: 3600,
+    max: 20,
+    keyGenerator: (context) =>
+      `forgot-password-ip:${clientBucket(context.request, context.server)}`,
+    message: "Too many password reset requests, please try again later",
+  }),
+
+  forgotPasswordEmail: createRateLimit({
+    windowSeconds: 3600,
+    max: 10,
+    keyGenerator: (context) =>
+      `forgot-password-email:${digest(normalizedEmail(context.body?.email))}`,
     message: "Too many password reset requests, please try again later",
   }),
 
@@ -133,6 +147,32 @@ export const authRateLimiters = {
       `sso:${clientBucket(context.request, context.server)}`,
     message: "Too many SSO attempts, please try again in a minute",
   }),
+
+  ssoRedirect: createRateLimit({
+    windowSeconds: 60,
+    max: 20,
+    keyGenerator: (context) =>
+      `sso-redirect:${clientBucket(context.request, context.server)}`,
+    message: "Too many sign-in attempts, please try again in a minute",
+  }),
+
+  ssoExchange: createRateLimit({
+    windowSeconds: 60,
+    max: 20,
+    keyGenerator: (context) =>
+      `sso-exchange:${clientBucket(context.request, context.server)}`,
+    message: "Too many sign-in attempts, please try again in a minute",
+  }),
+
+  confirmEmailChange: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 3600,
+      max: 20,
+      keyGenerator: (context) =>
+        `confirm-email-change:${clientBucket(context.request, context.server)}`,
+      message: "Too many attempts, please try again later",
+    }),
+  ),
 
   sendEmailVerification: createRateLimit({
     windowSeconds: 3600,

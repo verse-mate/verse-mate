@@ -875,6 +875,8 @@ describe("each limiter keeps the window its policy names", () => {
       authRateLimiters.sso,
       authRateLimiters.signup,
       authRateLimiters.forgotPassword,
+      authRateLimiters.forgotPasswordIp,
+      authRateLimiters.forgotPasswordEmail,
     ])
       await hit(
         limiter,
@@ -890,6 +892,8 @@ describe("each limiter keeps the window its policy names", () => {
       sso: 60,
       signup: 3600,
       "forgot-password": 3600,
+      "forgot-password-ip": 3600,
+      "forgot-password-email": 3600,
     });
   });
 });
@@ -923,19 +927,19 @@ describe("a refused request carries no email or address", () => {
     expect(keys).not.toContain("example");
   });
 
-  it("the forgot-password key is the email as typed, as before", async () => {
+  it("the password reset keys hold a digest of the email, whatever its casing", async () => {
     const cache = recordingCache();
-    for (const email of ["someone@example.test", "Someone@example.test"])
-      await hit(
-        authRateLimiters.forgotPassword,
-        cache as never,
-        CLIENT,
-        {},
-        {
-          email,
-        },
-      );
-    expect(cache.keys[0]).not.toBe(cache.keys[1]);
+    for (const limiter of [
+      authRateLimiters.forgotPassword,
+      authRateLimiters.forgotPasswordEmail,
+    ])
+      for (const email of ["someone@example.test", " Someone@Example.test"])
+        await hit(limiter, cache as never, CLIENT, {}, { email });
+    expect(cache.keys[0]).toBe(cache.keys[1]);
+    expect(cache.keys[2]).toBe(cache.keys[3]);
+    const keys = cache.keys.join(" ").toLowerCase();
+    expect(keys).not.toContain("someone");
+    expect(keys).not.toContain("example");
   });
 
   it("a wait that cannot be read leaves the refusal without one", async () => {
@@ -974,7 +978,9 @@ describe("a refused request carries no email or address", () => {
         email: "someone@example.test",
       },
     );
-    expect(cache.keys[0]).toMatch(/^rate-limit:forgot-password:[\w-]{43}$/);
+    expect(cache.keys[0]).toMatch(
+      /^rate-limit:forgot-password:[\w-]{43}:198\.51\.100\.7$/,
+    );
   });
 });
 
@@ -1093,5 +1099,110 @@ describe("the confirmation email limit counts per account", () => {
     for (let i = 0; i < 5; i += 1) expect(await send("u1")).toBe("ok");
     expect(await send("u1")).toBe(429);
     expect(await send("u2")).toBe("ok");
+  });
+});
+
+describe("a password reset cannot be used up by someone else", () => {
+  const reset = (
+    cache: ReturnType<typeof memoryCache>,
+    socket: string,
+    email: string,
+    headers: Record<string, string> = {},
+  ) =>
+    hit(
+      async (context) => {
+        await authRateLimiters.forgotPassword(context);
+        await authRateLimiters.forgotPasswordIp(context);
+        await authRateLimiters.forgotPasswordEmail(context);
+      },
+      cache,
+      socket,
+      headers,
+      { email },
+    );
+
+  const OWNER = "203.0.113.20";
+  const EMAIL = "owner@example.test";
+
+  for (const proxyHops of [undefined, "1"])
+    it(`three requests from one address for one email, then that address waits and the owner does not (TRUSTED_PROXY_HOPS ${proxyHops ?? "unset"})`, async () => {
+      hops(proxyHops);
+      const cache = memoryCache();
+      const from = (address: string) =>
+        proxyHops === undefined
+          ? reset(cache, PROXY, EMAIL, { "x-forwarded-for": address })
+          : reset(cache, address, EMAIL);
+      const other = [];
+      for (let i = 0; i < 4; i++) other.push(await from(CLIENT));
+      expect(other).toEqual(["ok", "ok", "ok", 429]);
+      expect(await from(OWNER)).toBe("ok");
+    });
+
+  it("one address asks for twenty resets an hour across emails, then waits", async () => {
+    hops("1");
+    const cache = memoryCache();
+    const answers = [];
+    for (let i = 0; i < 21; i++)
+      answers.push(await reset(cache, CLIENT, `reader${i}@example.test`));
+    expect(answers.slice(0, 20).every((a) => a === "ok")).toBe(true);
+    expect(answers[20]).toBe(429);
+    expect(await reset(cache, OWNER, EMAIL)).toBe("ok");
+  });
+
+  it("one email receives at most ten resets an hour, however many addresses ask", async () => {
+    hops("1");
+    const cache = memoryCache();
+    const answers = [];
+    for (let i = 0; i < 11; i++)
+      answers.push(await reset(cache, `198.51.100.${i + 1}`, EMAIL));
+    expect(answers.slice(0, 10).every((a) => a === "ok")).toBe(true);
+    expect(answers[10]).toBe(429);
+  });
+
+  it("a request refused for its address and email does not count against the email's ceiling", async () => {
+    hops("1");
+    const cache = memoryCache();
+    for (let i = 0; i < 50; i++) await reset(cache, CLIENT, EMAIL);
+    const owner = [];
+    for (let i = 0; i < 3; i++) owner.push(await reset(cache, OWNER, EMAIL));
+    expect(owner).toEqual(["ok", "ok", "ok"]);
+  });
+
+  it("requests refused for their address do not count against an email's ceiling", async () => {
+    hops("1");
+    const cache = memoryCache();
+    for (let i = 0; i < 20; i++)
+      await reset(cache, CLIENT, `reader${i}@example.test`);
+    for (let i = 0; i < 30; i++) await reset(cache, CLIENT, EMAIL);
+    const owner = [];
+    for (let i = 0; i < 10; i++)
+      owner.push(await reset(cache, `203.0.113.${i + 100}`, EMAIL));
+    expect(owner.every((a) => a === "ok")).toBe(true);
+  });
+
+  it("every refusal keeps the 429 answer the route gave before", async () => {
+    hops("1");
+    for (const limiter of [
+      authRateLimiters.forgotPassword,
+      authRateLimiters.forgotPasswordIp,
+      authRateLimiters.forgotPasswordEmail,
+    ]) {
+      let refusal: unknown;
+      const cache = { increment: async () => 1000, ttl: async () => 3599 };
+      await limiter({
+        request: new Request("http://localhost/auth/forgot-password"),
+        server: socketOf(CLIENT),
+        store: { cache },
+        body: { email: EMAIL },
+        set: {},
+      }).catch((e: unknown) => {
+        refusal = e;
+      });
+      expect(refusal).toEqual({
+        status: 429,
+        message: "Too many password reset requests, please try again later",
+        retryAfter: 3599,
+      });
+    }
   });
 });

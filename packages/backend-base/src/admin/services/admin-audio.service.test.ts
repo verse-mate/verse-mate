@@ -15,7 +15,10 @@ import {
   type AudioGenerationJobData,
   audioGenerationJobId,
 } from "../../bible/audio/audio-generation.queue";
+import { ValidationError } from "../../common/errors";
 import { AdminAudioService } from "./admin-audio.service";
+
+const DEFAULT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
 
 class FakeQueue {
   public addCalls: Array<{
@@ -23,15 +26,17 @@ class FakeQueue {
     jobId: string;
   }> = [];
   public inFlight = new Set<string>();
+  public finished = new Map<string, "completed" | "failed">();
 
   async getJob(jobId: string) {
-    if (!this.inFlight.has(jobId)) return undefined;
+    const state = this.finished.get(jobId);
+    if (!this.inFlight.has(jobId) && !state) return undefined;
     return {
-      async isCompleted() {
-        return false;
-      },
-      async isFailed() {
-        return false;
+      isCompleted: async () => state === "completed",
+      isFailed: async () => state === "failed",
+      remove: async () => {
+        this.finished.delete(jobId);
+        this.inFlight.delete(jobId);
       },
     } as never;
   }
@@ -41,6 +46,9 @@ class FakeQueue {
     data: AudioGenerationJobData,
     opts: { jobId: string },
   ) {
+    if (this.inFlight.has(opts.jobId) || this.finished.has(opts.jobId)) {
+      return { id: opts.jobId } as never;
+    }
     this.addCalls.push({ data, jobId: opts.jobId });
     this.inFlight.add(opts.jobId);
     return { id: opts.jobId } as never;
@@ -156,16 +164,39 @@ describe("AdminAudioService.bulkRegenerate", () => {
     ]);
   });
 
-  it("explicit voice + language override per-explanation defaults", async () => {
+  it("an explicit regional form of the explanations' language is queued as given", async () => {
     await makeService().bulkRegenerate({
-      explanationIds: [1, 4],
-      voice: "nova",
-      language: "pt",
+      explanationIds: [1, 2],
+      voice: DEFAULT_VOICE,
+      language: "en-US",
     });
-    expect(queue.addCalls.every((c) => c.data.voice === "nova")).toBe(true);
-    expect(queue.addCalls.every((c) => c.data.language_code === "pt")).toBe(
+    expect(queue.addCalls).toHaveLength(2);
+    expect(queue.addCalls.every((c) => c.data.voice === DEFAULT_VOICE)).toBe(
       true,
     );
+    expect(queue.addCalls.every((c) => c.data.language_code === "en-US")).toBe(
+      true,
+    );
+  });
+
+  it("refuses a voice the product does not offer and queues nothing", async () => {
+    await expect(
+      makeService().bulkRegenerate({
+        explanationIds: [1, 2],
+        voice: DEFAULT_VOICE === "nova" ? "alloy" : "nova",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(queue.addCalls).toHaveLength(0);
+  });
+
+  it("refuses a language outside any selected explanation's forms and queues nothing", async () => {
+    await expect(
+      makeService().bulkRegenerate({
+        explanationIds: [1, 4],
+        language: "pt",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(queue.addCalls).toHaveLength(0);
   });
 
   it("already-in-flight job is not re-enqueued (br-audio-006 dedup)", async () => {
@@ -183,6 +214,38 @@ describe("AdminAudioService.bulkRegenerate", () => {
     expect(result.job_count).toBe(1); // only #2 queued
     expect(queue.addCalls).toHaveLength(1);
     expect(queue.addCalls[0].data.explanation_id).toBe(2);
+  });
+
+  it.each(["failed", "completed"] as const)(
+    "a %s job for the variant is replaced by a fresh one",
+    async (state) => {
+      const targetJobId = audioGenerationJobId({
+        explanation_id: 1,
+        voice: DEFAULT_VOICE,
+        language_code: "en",
+      });
+      queue.finished.set(targetJobId, state);
+
+      const result = await makeService().bulkRegenerate({
+        explanationIds: [1],
+      });
+
+      expect(result.job_count).toBe(1);
+      expect(queue.addCalls.map((c) => c.jobId)).toEqual([targetJobId]);
+    },
+  );
+
+  it("refuses an explanation version that was replaced, queueing nothing", async () => {
+    await expect(
+      new AdminAudioService(
+        makeFakeDb([
+          ...explanations,
+          { ...explanations[0], explanation_id: 5, is_active: false },
+        ]),
+        queue as unknown as Queue<AudioGenerationJobData>,
+      ).bulkRegenerate({ explanationIds: [1, 5] }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(queue.addCalls).toHaveLength(0);
   });
 
   it("empty filter result returns job_count=0 but still returns a batch_id", async () => {
