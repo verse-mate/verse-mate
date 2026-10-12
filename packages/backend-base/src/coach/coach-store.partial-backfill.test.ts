@@ -17,17 +17,21 @@ const leaderRows = datasetToRows({ coaches: [leader] });
 
 const INTERRUPTED = "partial-backfill-leader";
 
-async function restoreLeader() {
+async function removeLeader() {
   await conn
     .deleteFrom("coach_reports")
     .where("coach_id", "in", [leader.id, INTERRUPTED])
     .execute();
+}
+
+async function restoreLeader() {
+  await removeLeader();
   await conn.insertInto("coach_reports").values(leaderRows).execute();
 }
 
 describe("a partly loaded legacy history is never served as complete", () => {
   beforeEach(restoreLeader);
-  afterEach(restoreLeader);
+  afterEach(removeLeader);
 
   it("a leader with only their first legacy row stored still shows every bundled report", async () => {
     await conn
