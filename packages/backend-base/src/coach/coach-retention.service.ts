@@ -47,22 +47,20 @@ export class CoachRetentionService {
     // version has no window-function builder.
     const doomed = await sql<{ id: string; storage_key: string }>`
       SELECT id, storage_key FROM (
-        SELECT id, storage_key,
+        SELECT a.id, a.storage_key, s.report_id, s.state,
                row_number() OVER (
-                 PARTITION BY coach_id ORDER BY created_at DESC
+                 PARTITION BY a.coach_id
+                 ORDER BY s.session_date DESC, a.created_at DESC
                ) AS rank
-        FROM coach_session_assets
-        WHERE kind = 'recording'
-          -- Unattributed sessions are EXCLUDED from the bound. The archive
-          -- writes coach_id = '' when attribution has not resolved, so every
-          -- such recording shared one partition and everything past the 4th
-          -- was deleted from object storage. That destroyed the source material
-          -- for exactly the sessions an admin still needs in order to fix the
-          -- attribution. They are bounded by their report's lifetime instead,
-          -- through migration 7's cascade.
-          AND coach_id <> ''
+        FROM coach_session_assets a
+        JOIN coach_intake_sessions s
+          ON s.source_session_id = a.source_session_id
+        WHERE a.kind = 'recording'
+          AND a.coach_id <> ''
       ) ranked
       WHERE rank > ${RECORDINGS_KEPT_PER_LEADER}
+        AND report_id IS NOT NULL
+        AND state <> 'retained'
     `.execute(conn);
 
     let deleted = 0;

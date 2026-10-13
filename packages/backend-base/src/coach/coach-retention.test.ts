@@ -18,7 +18,41 @@ class FakeStorage {
   }
 }
 
-async function seed(coach: string, n: number, kind = "recording") {
+async function seed(
+  coach: string,
+  n: number,
+  kind = "recording",
+  session: { scored?: boolean; date?: Date } = {},
+) {
+  const id = `ff-${coach}-${n}`;
+  const scored = session.scored ?? true;
+  if (scored)
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: `ret-${id}`,
+        coach_id: coach,
+        session_date: session.date ?? new Date(Date.UTC(2026, 0, n)),
+        source_session_id: id,
+        legacy_ids: [],
+        summary: {},
+        metrics: {},
+        body: {},
+      })
+      .onConflict((oc) => oc.doNothing())
+      .execute();
+  await conn
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: id,
+      coach_id: coach,
+      title: "t",
+      session_date: session.date ?? new Date(Date.UTC(2026, 0, n)),
+      state: scored ? "delivered" : "retained",
+      report_id: scored ? `ret-${id}` : null,
+    })
+    .onConflict((oc) => oc.doNothing())
+    .execute();
   await conn
     .insertInto("coach_session_assets")
     .values({
@@ -36,6 +70,10 @@ async function clear() {
     await conn
       .deleteFrom("coach_session_assets")
       .where("coach_id", "=", c)
+      .execute();
+    await conn
+      .deleteFrom("coach_intake_sessions")
+      .where("source_session_id", "like", `ff-${c}-%`)
       .execute();
     await conn.deleteFrom("coach_reports").where("coach_id", "=", c).execute();
   }
@@ -75,6 +113,25 @@ describe("recordings are bounded per leader", () => {
       `ff-${A}-5`,
     ]);
     expect(storage.deleted).toEqual([`coach/sessions/ff-${A}-1/recording`]);
+  });
+
+  it("a recording whose session is not scored yet is kept, however far past the bound", async () => {
+    await seed(A, 1, "recording", { scored: false });
+    for (const n of [2, 3, 4, 5, 6]) await seed(A, n);
+    const { svc, storage } = service();
+
+    await svc.prune();
+    expect(storage.deleted).toEqual([`coach/sessions/ff-${A}-2/recording`]);
+    expect(await keysFor(A)).toContain(`ff-${A}-1`);
+  });
+
+  it("recordings are ranked by the session's date, not by when they were retrieved", async () => {
+    for (const n of [2, 3, 4, 5]) await seed(A, n);
+    await seed(A, 9, "recording", { date: new Date(Date.UTC(2025, 11, 1)) });
+    const { svc, storage } = service();
+
+    await svc.prune();
+    expect(storage.deleted).toEqual([`coach/sessions/ff-${A}-9/recording`]);
   });
 
   it("the bound is PER LEADER, one busy leader does not evict another's", async () => {
