@@ -2030,6 +2030,29 @@ describe("The weekly report email carries no headline score (task 6.15)", () => 
     expect(new Set(mailer.sent.map((s) => s.html)).size).toBe(1);
   });
 
+  it("governance rule 1 reads the dimension notes and the summary: his first name in a note blocks delivery", async () => {
+    await seedReport("r-note");
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        metrics: JSON.stringify({
+          dimensions: [
+            { n: 4, score: 3, note: "Closer to how Avery runs it." },
+          ],
+        }),
+      })
+      .where("id", "=", "r-note")
+      .execute();
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-note",
+      evidence: evidence(),
+    });
+    expect(result.refusal).toBe("governance-blocked");
+    expect(result.violations?.map((v) => v.rule)).toEqual(["benchmark-name"]);
+    expect(mailer.sent).toEqual([]);
+  });
+
   it("governance rule 1 reads the email body too: the benchmark leader's name in it blocks delivery", async () => {
     await seedScored("r-named", "Joint class with Avery Hollis");
     const mailer = new FakeMailer();

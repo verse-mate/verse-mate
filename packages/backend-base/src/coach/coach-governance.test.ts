@@ -119,6 +119,20 @@ describe("rule 1, the benchmark leader's name", () => {
     expect(v.length).toBe(1);
   });
 
+  it("his first name alone is a violation, matched as a whole word", () => {
+    const named = (body: string) =>
+      checkBenchmarkName({
+        reportCoachId: OTHER,
+        benchmarkCoachId: BENCH,
+        benchmarkName: "Bryan Bailey",
+        body,
+      }).length;
+    expect(named("Like Bryan's opening, this one landed.")).toBe(1);
+    expect(named(JSON.stringify({ note: "first line\nBryan would" }))).toBe(1);
+    expect(named("Ryan asked the best question.")).toBe(0);
+    expect(named("Bryant read the passage.")).toBe(0);
+  });
+
   it("no benchmark leader configured means no rule to break", () => {
     expect(
       checkBenchmarkName({

@@ -62,9 +62,13 @@ export function checkBenchmarkName(input: {
   // His own report: comparison to his own history is required, so his name
   // appearing there is correct, not a leak.
   if (input.reportCoachId === input.benchmarkCoachId) return [];
-  const name = input.benchmarkName.trim();
-  if (name.length === 0) return [];
-  if (!input.body.toLowerCase().includes(name.toLowerCase())) return [];
+  const first = input.benchmarkName.trim().split(/\s+/)[0] ?? "";
+  if (first.length === 0) return [];
+  const named = new RegExp(
+    `(?<![\\p{L}\\p{N}])${first.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`,
+    "iu",
+  ).test(input.body.replace(/\\./g, " "));
+  if (!named) return [];
   return [
     {
       rule: "benchmark-name",
