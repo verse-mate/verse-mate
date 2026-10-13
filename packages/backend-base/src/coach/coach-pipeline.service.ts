@@ -542,10 +542,11 @@ export class CoachPipelineService {
       };
 
     const dimensions = scored.dimensions;
+    const duration = `${Math.round(detail.duration ?? 0)} min`;
     const generated = await this.body.generate({
       sessionTitle: session.title,
       sessionDate: session.date,
-      duration: `${Math.round(detail.duration ?? 0)} min`,
+      duration,
       attendees: scored.attendees ?? null,
       newcomers: scored.newcomers ?? 0,
       transcript,
@@ -599,7 +600,7 @@ export class CoachPipelineService {
             topic: generated.body.topic,
             attendees: scored.attendees ?? null,
             newcomers: scored.newcomers ?? 0,
-            duration: `${Math.round(detail.duration ?? 0)} min`,
+            duration,
             holdReason,
             newVersionHold: versionHold,
           },
