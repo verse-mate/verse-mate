@@ -446,6 +446,12 @@ const AmendedProseSchema = t.Array(
   t.Object({
     title: t.String({ maxLength: 500 }),
     paragraphs: t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
+    evidence: t.Optional(
+      t.Object({
+        quote: t.String({ maxLength: 4000 }),
+        timestamp: t.String({ maxLength: 50 }),
+      }),
+    ),
   }),
   { maxItems: 10 },
 );
