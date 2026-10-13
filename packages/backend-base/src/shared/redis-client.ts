@@ -86,10 +86,12 @@ class RedisClient {
     const password = url.password || undefined;
     const useSSL = isSSLUrl(redisUrl);
 
-    // `keepAlive: 30_000` keeps the connection alive against DigitalOcean's
-    // 5-minute idle TCP timeout; without it the cache client cycles
-    // through "Socket closed unexpectedly → reconnect" every 5 minutes
-    // and the in-flight commands during the reset throw transient errors.
+    // DigitalOcean's managed Redis closes a client that sends no command for 5
+    // minutes (the server's `timeout`). TCP keepalive (`keepAlive`) doesn't count
+    // as activity there, so on its own the cache client still cycled through
+    // "Socket closed unexpectedly → reconnect" every 5 minutes in production
+    // (462 times between 2026-10-11 and 10-13). `pingInterval` (below) sends a
+    // PING every minute while connected, which keeps the client active.
     const socketConfig = useSSL
       ? {
           tls: true as const,
@@ -124,6 +126,7 @@ class RedisClient {
       url: redisUrl,
       ...(password ? { password } : {}),
       socket: socketConfig,
+      pingInterval: 60_000,
     });
 
     this.client.on("error", (error) => {
