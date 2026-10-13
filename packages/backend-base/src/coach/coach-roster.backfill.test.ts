@@ -46,25 +46,23 @@ const TOUCHED_SLUGS = [
 
 type MapEntry = {
   leader: string;
-  email: string;
+  email?: string;
   alt_emails?: string[];
   title_match?: string[];
 };
 const MAP_ENTRIES = (leaderMapJson as { coaches: MapEntry[] }).coaches;
 const addressesOf = (m: MapEntry) =>
   [m.email, ...(m.alt_emails ?? [])]
-    .filter(Boolean)
+    .filter((e): e is string => Boolean(e))
     .map((e) => e.toLowerCase());
 const BENCHMARK = bundle.coaches.find((c) =>
   bundle.coaches.some((other) => other.coachName === c.name),
 );
 const NO_EMAIL_ENTRIES = MAP_ENTRIES.filter((m) => !m.email);
-const ALT_ADDRESS_ENTRY = MAP_ENTRIES.find((m) =>
-  (m.alt_emails ?? []).some((e) => BUNDLE_EMAILS.includes(e)),
-);
-const ALT_ADDRESS_LEADER = bundle.coaches.find((c) =>
-  ALT_ADDRESS_ENTRY?.alt_emails?.includes(c.email),
-);
+// The committed map carries no addresses (the repository is public), so the
+// alternate-address cases run on a map of their own, aimed at a real roster
+// leader other than the benchmark.
+const ALT_ADDRESS_LEADER = bundle.coaches.find((c) => c.id !== BENCHMARK?.id);
 const TWO_NAME_LEADER = bundle.coaches.find((c) => c.name.includes("&"));
 const TWO_NAME_ENTRY = MAP_ENTRIES.find(
   (m) => leaderSlug(m.leader) === TWO_NAME_LEADER?.id,
@@ -125,20 +123,22 @@ describe("roster and monthly backfill (DB)", () => {
   });
 
   it("carries the intake attribution keywords across from the leader map", async () => {
-    const mapped = (
-      leaderMapJson as {
-        coaches: Array<{ email: string; title_match?: string[] }>;
-      }
-    ).coaches.find((c) => (c.title_match ?? []).length > 0 && c.email);
+    const mapped = MAP_ENTRIES.find(
+      (m) =>
+        (m.title_match ?? []).length > 0 &&
+        BUNDLE_SLUGS.includes(leaderSlug(m.leader)),
+    );
     expect(mapped).toBeTruthy();
     const row = await conn
       .selectFrom("coach_leaders")
       .select("title_match")
-      .where("email", "=", (mapped as { email: string }).email)
+      .where("slug", "=", leaderSlug(mapped?.leader ?? ""))
       .executeTakeFirst();
-    expect(row?.title_match).toEqual(
-      (mapped as { title_match: string[] }).title_match,
-    );
+    expect(row?.title_match).toEqual(mapped?.title_match ?? []);
+  });
+
+  it("the committed leader map holds no email address", () => {
+    expect(JSON.stringify(leaderMapJson)).not.toContain("@");
   });
 
   it("every roster leader gets keywords, or is listed by name as having none", async () => {
@@ -187,15 +187,28 @@ describe("roster and monthly backfill (DB)", () => {
 
   it("a map entry whose alternate address is the roster address reaches its leader, and its own address becomes an alternate", async () => {
     expect(ALT_ADDRESS_LEADER).toBeDefined();
+    await clear();
+    await backfillCoachRoster(coachDataJson, {
+      coaches: [
+        {
+          leader: ALT_ADDRESS_LEADER?.id ?? "",
+          email: "Own.Address@example.test",
+          alt_emails: [ALT_ADDRESS_LEADER?.email],
+          title_match: ["own"],
+        },
+      ],
+    });
     const row = await conn
       .selectFrom("coach_leaders")
       .select(["title_match", "alt_emails"])
       .where("slug", "=", ALT_ADDRESS_LEADER?.id ?? "")
       .executeTakeFirstOrThrow();
     expect(row).toEqual({
-      title_match: ALT_ADDRESS_ENTRY?.title_match ?? [],
-      alt_emails: [ALT_ADDRESS_ENTRY?.email.toLowerCase() ?? ""],
+      title_match: ["own"],
+      alt_emails: ["own.address@example.test"],
     });
+    await clear();
+    await backfillCoachRoster();
   });
 
   it("a map entry is joined on its alternate address even when its leader name is not the roster's", async () => {
