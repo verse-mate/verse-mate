@@ -369,7 +369,12 @@ export class CoachDeliveryService {
       : await this.governance.check({
           reportId,
           coachId,
-          body: `${JSON.stringify(report.body ?? {})}\n${email.text}`,
+          body: [
+            JSON.stringify(report.body ?? {}),
+            JSON.stringify(report.summary ?? {}),
+            JSON.stringify(report.metrics ?? {}),
+            email.text,
+          ].join("\n"),
           evidence,
         });
     if (!verdict.passed) {
