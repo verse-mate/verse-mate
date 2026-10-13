@@ -22,6 +22,7 @@ export async function refuseToDrop(
 }
 
 export async function up(db: Kysely<Database>): Promise<void> {
+  await sql`SET LOCAL lock_timeout = '5s'`.execute(db);
   await db.schema
     .createTable("coach_reports")
     .addColumn("id", "text", (col) => col.primaryKey())
