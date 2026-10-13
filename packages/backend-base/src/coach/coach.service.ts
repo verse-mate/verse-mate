@@ -85,6 +85,8 @@ export interface AdminCoachClass extends CoachClassRow {
  *  local + optional so unit tests can construct CoachService without one. */
 export const PIPELINE_FAILURES_PAGE = 50;
 export const PIPELINE_FAILURES_MAX = 200;
+export const NOT_SENT_AFTER_SCORING =
+  "scored but never sent: release it to deliver it";
 
 export interface CoachMailer {
   sendEmail(data: {
@@ -579,7 +581,11 @@ export class CoachService {
             : r.state === "delivered" && r.skipped_leader
               ? `delivered, but not emailed to ${r.skipped_leader}: ${r.skipped_group ? "a rotating class's group address, not the leader's own" : "placeholder address"}`
               : r.hold_reason ??
-                (r.release_required ? REATTRIBUTED_HOLD : null),
+                (r.release_required
+                  ? REATTRIBUTED_HOLD
+                  : r.state === "scored" && !r.parallel_run
+                    ? NOT_SENT_AFTER_SCORING
+                    : null),
       holdKind: (r.hold_kind ??
         (r.release_required ? "reattributed" : null)) as HoldKind | null,
       ...(r.hold_kind === "cold-recall"
