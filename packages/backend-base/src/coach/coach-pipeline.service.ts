@@ -545,7 +545,7 @@ export class CoachPipelineService {
     const generated = await this.body.generate({
       sessionTitle: session.title,
       sessionDate: session.date,
-      duration: `${detail.duration ?? 0} min`,
+      duration: `${Math.round(detail.duration ?? 0)} min`,
       attendees: scored.attendees ?? null,
       newcomers: scored.newcomers ?? 0,
       transcript,
@@ -599,7 +599,7 @@ export class CoachPipelineService {
             topic: generated.body.topic,
             attendees: scored.attendees ?? null,
             newcomers: scored.newcomers ?? 0,
-            duration: `${detail.duration ?? 0} min`,
+            duration: `${Math.round(detail.duration ?? 0)} min`,
             holdReason,
             newVersionHold: versionHold,
           },

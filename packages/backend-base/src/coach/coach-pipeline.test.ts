@@ -13,7 +13,7 @@ import { sql } from "kysely";
 
 import { rowToReport } from "./coach-store.transform";
 import { ReportSchema } from "./coach.schema";
-import { CoachService } from "./coach.service";
+import { CoachService, NOT_SENT_AFTER_SCORING } from "./coach.service";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { reattributeSession } from "./coach-attribution";
@@ -23,6 +23,7 @@ import {
   releaseDeliveredVersions,
 } from "./coach-delivery.service";
 import { evidenceFromBody } from "./coach-governance.service";
+import { endParallelRun } from "./coach-parallel-run";
 import {
   CoachPipelineService,
   PIPELINE_ATTEMPT_LIMIT,
@@ -886,6 +887,65 @@ describe("a retained session reaches a delivered report", () => {
     const released = await service.releaseHeldReport(held.reportId as string);
     expect(released.delivered).toBe(true);
     expect(mailer.sent.length).toBeGreaterThan(0);
+  });
+
+  it("a report the parallel run scored is listed for release once the run ends, and delivered only when released", async () => {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ parallel_run: true })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    const mailer = new FakeMailer();
+    const [scored] = await pipeline(mailer).run();
+    const service = new CoachService(Database, mailer as any);
+    const listed = async () =>
+      (await service.listPipelineFailures()).sessions.find(
+        (f) => f.sourceSessionId === "ff-pipe-1",
+      );
+    expect(await listed()).toBeUndefined();
+
+    await endParallelRun(Database);
+    expect(await pipeline(mailer).run()).toEqual([]);
+    expect(mailer.sent).toEqual([]);
+    expect(await listed()).toMatchObject({
+      state: "scored",
+      action: "release",
+      parallelRun: false,
+      reason: NOT_SENT_AFTER_SCORING,
+    });
+
+    const released = await service.releaseHeldReport(scored.reportId as string);
+    expect(released.delivered).toBe(true);
+    expect(mailer.sent.length).toBeGreaterThan(0);
+    expect(await listed()).toBeUndefined();
+  });
+
+  it("the report's duration is whole minutes and its date reads like a host report's", async () => {
+    class FractionalMinutes extends FakeClient {
+      override async getTranscript() {
+        const detail = await super.getTranscript();
+        return detail && { ...detail, duration: 144.61000061035156 };
+      }
+    }
+    const svc = new CoachPipelineService(
+      Database,
+      new FractionalMinutes(),
+      null,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: noFrames as any,
+      },
+    );
+    const [result] = await svc.run();
+    const row = await conn
+      .selectFrom("coach_reports")
+      .select("summary")
+      .where("id", "=", result.reportId as string)
+      .executeTakeFirstOrThrow();
+    expect(row.summary).toMatchObject({
+      duration: "145 min",
+      dateLabel: "August 22, 2026",
+    });
   });
 
   it("a delivered session an admin re-attributes is scored again and held, not mailed", async () => {
