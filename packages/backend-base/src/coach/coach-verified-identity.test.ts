@@ -509,9 +509,8 @@ describe("a confirmation is cleared only where a rename could have put it", () =
     expect(await confirmed(id)).toBe(false);
   });
 
-  it("one link for another address among links for its own is enough to clear, and that link is removed", async () => {
+  it("one link for another address among links for its own is enough to clear, and on a password account that link is removed", async () => {
     const id = await confirmedBeforeDeploy(LEADER, {
-      password: false,
       links: [LEADER, OTHER],
     });
     await addLeader();
@@ -524,9 +523,8 @@ describe("a confirmation is cleared only where a rename could have put it", () =
     expect(links.map((l) => l.email)).toEqual([LEADER]);
   });
 
-  it("a cleared account's link for another address is removed, so it cannot sign in through it after the owner confirms", async () => {
+  it("a cleared password account's link for another address is removed, so it cannot sign in through it after the owner confirms", async () => {
     const id = await confirmedBeforeDeploy(LEADER, {
-      password: false,
       links: [OTHER],
     });
     await addLeader();
