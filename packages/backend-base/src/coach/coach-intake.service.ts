@@ -71,6 +71,7 @@ export interface PollResult {
   alreadySeen: number;
   /** Of the newly observed, how many could not be attributed to a leader. */
   unresolved: number;
+  floorSkipped: number;
 }
 
 export class CoachIntakeService {
@@ -129,7 +130,7 @@ export class CoachIntakeService {
     }
 
     if (transcripts.length === 0) {
-      return { observed: 0, alreadySeen: 0, unresolved: 0 };
+      return { observed: 0, alreadySeen: 0, unresolved: 0, floorSkipped: 0 };
     }
 
     const conn = this.db.getOrCreateConnection();
@@ -152,13 +153,19 @@ export class CoachIntakeService {
 
     const fresh = transcripts.filter((t) => !known.has(t.id));
     if (fresh.length === 0) {
-      return { observed: 0, alreadySeen: transcripts.length, unresolved: 0 };
+      return {
+        observed: 0,
+        alreadySeen: transcripts.length,
+        unresolved: 0,
+        floorSkipped: 0,
+      };
     }
 
     const roster = await loadAttributionRoster(this.db);
     const rotating = await loadRotatingClasses(this.db);
     const parallelRun = !coachPipelineLive();
     let unresolved = 0;
+    let floorSkipped = 0;
     // Counted from what was actually INSERTED, not from what the provider
     // returned: reporting a skipped session as observed would have the log
     // claim a session was ingested when nothing was written for it.
@@ -187,7 +194,10 @@ export class CoachIntakeService {
           : rotating.find((c) => c.id === match.rotatingClassId)?.leaders ?? [],
         date,
       );
-      if (host.newest && date < host.newest) continue;
+      if (host.newest && date < host.newest) {
+        floorSkipped += 1;
+        continue;
+      }
       const duplicateOf = parallelRun ? null : host.sameDay;
       await sql`
         INSERT INTO coach_intake_sessions
@@ -211,6 +221,7 @@ export class CoachIntakeService {
       observed,
       alreadySeen: transcripts.length - fresh.length,
       unresolved,
+      floorSkipped,
     };
   }
 }
