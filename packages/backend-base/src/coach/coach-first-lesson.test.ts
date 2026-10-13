@@ -337,6 +337,19 @@ describe("Memory Reinforcement is not applicable on a study's first lesson (task
     expect(spelled.result.firstLessonLine).toBeNull();
   });
 
+  it("a yes that cites only a chapter range is not a first lesson, with a hyphen or an en dash", async () => {
+    for (const title of ["Amos 1-2", "Amos 1–2", "Amos 1 - 2"]) {
+      const { result } = await score(title, CONTINUING, {
+        answer: true,
+        line: title,
+      });
+      expect({ title, line: result.firstLessonLine }).toEqual({
+        title,
+        line: null,
+      });
+    }
+  });
+
   it("a yes citing a line that is in neither the title nor the transcript is not a first lesson", async () => {
     const { result } = await score("Jonah 1", CONTINUING, {
       answer: true,
