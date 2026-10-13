@@ -33,7 +33,7 @@ import {
  * No operator need be present at any point.
  */
 
-export const DEFAULT_SCORING_MODEL = "gpt-5";
+export const DEFAULT_SCORING_MODEL = "gpt-6-astra";
 
 export const SCORING_REQUEST = {
   textMaxTokens: 32000,
@@ -48,6 +48,87 @@ export const SCORING_SETTINGS = {
   temperature: null,
   reasoningEffort: null,
 } as const;
+
+export const SCORING_LEVELS: Readonly<Record<number, readonly string[]>> = {
+  1: [
+    "5: Follows the 10-step blueprint cleanly, with smooth transitions and good pacing",
+    "3: Covers most steps, but with rough transitions, timing issues or tangents",
+    "1: No clear structure; jumps between topics without organization",
+    "Time to first scripture runs from the end of the introductions, never from the prayer: welcome minutes are ministry, not overhead (target: the first reading within about 10 minutes of the lesson starting). Pacing counts as self-managed only when the leader caught and corrected it; a session whose pace a mentor or peer had to redirect scores no more than 3.",
+  ],
+  2: [
+    "5: 7-25 minutes, with member testimonies before the newcomer introductions",
+    "3: A brief acknowledgment of newcomers, but no testimony-based welcome",
+    "1: No welcome, or newcomers ignored",
+    "Welcome time never counts against any time measure (talk ratio, time to scripture, lesson length).",
+  ],
+  3: [
+    "5: 6+ cross-references; parallel text reading; deep textual engagement",
+    "3: 2-4 cross-references; stays mostly in the primary text",
+    "1: Reads one passage with minimal exploration",
+  ],
+  4: [
+    "Lower emphasis on raw talk time. Leader talk is only a problem when it crowds out discussion that should have happened: substantive teaching the group is engaged with is NOT a deduction. Mark it down only when the leader monologued past needed discussion or answered their own questions. The talk share and its target are evidence for that judgement, never the score by themselves.",
+    "5: Discussion happens where it matters; the leader resists answering their own questions; by-name engagement",
+    "4: Mostly facilitative; good teaching blocks balanced with regular questions",
+    "3: Some discussion, but the leader fills space that should have gone to the group",
+    "1: Pure lecture; questions the leader answers themselves",
+    "Leave newcomer-welcome content (member testimonies, the leader's testimony, The Guarantee) and vulnerability monologues out of the talk count: the discussion-only ratio is the one to read.",
+  ],
+  5: [
+    "5: 5+ questions woven throughout, connecting the text to daily life",
+    "3: 2-4 questions, mostly grouped at the end",
+    "1: No application questions; purely academic or historical teaching",
+    'Grade DOK on Big Idea questions only: scaffolding and reading prompts ("What does verse 3 say?") are tools, not endpoints. Normalize the question count by session type: a framework-building session naturally has fewer questions than a narrative one. Depth is not DOK: also weigh how many answers were first-person and confessional (a named failure or burden; target 2 or more) and how often the leader probed for a first-person answer after a conceptual one (target 3 or more). A high-DOK session whose answers all stay prescriptive does not earn full marks.',
+  ],
+  6: [
+    "5: 70% or more of attendees contribute substantively (about half in a room of 25 or more); rotates readers; draws out quiet members",
+    "3: About 50% contribute substantively in a room under 25; some name usage; the same voices dominate",
+    "1: 1-2 people talk substantively; no effort to include others",
+    "Count substantive contributors only: members invited to respond, interpret or apply. Reading scripture aloud when called on is a navigational act, not engagement. Judge the share against the size of the room, and never mark a leader down because the group is large.",
+  ],
+  7: [
+    "5: Slides, maps, on-screen word studies, whiteboard, colour coding, video clips",
+    "3: 1-2 visual tools (whiteboard or slides only)",
+    "1: No visual aids; text only",
+    "Word-study tools are tool-agnostic: an on-screen Greek or Hebrew lookup counts whichever tool shows it.",
+  ],
+  8: [
+    "Score the authenticity function, not the drama of one disclosure: did the leader model honest, costly self-disclosure that fits this session, and did the room reach a safety level where members disclosed (member vulnerability is evidence the leader built the trust)? Weight by depth (personal cost or risk), not by count.",
+    "5: A sustained pattern of costly, authentic self-disclosure; consistently creates safety others step into",
+    "3: Occasional personal references, but surface-level",
+    "1: No personal sharing; purely positional authority",
+    "Reserve 5 for exceptionally high-cost or clearly sustained authenticity, never a single disclosure.",
+  ],
+  9: [
+    "5: A cumulative Big Ideas recitation at the start; new themes crystallized",
+    "3: Some review of previous content, but no formal Big Ideas framework",
+    "1: No review; each session starts from scratch",
+  ],
+  10: [
+    '5: Multiple references to homework with urgency; "The Guarantee" or an equivalent',
+    "3: Mentions that homework exists; references the workbook occasionally",
+    "1: No homework references",
+  ],
+  11: [
+    "5: Delegated opening and closing; prayer request time; prayer chain",
+    "4: Opening and closing delegated; no formal request time",
+    "3: The leader prays; no delegation; no request time",
+    "1: No prayer",
+    "An opening prayer the recording shows was held before it started never counts against the leader.",
+  ],
+  12: [
+    "5: Actively coaching others to lead; the apprenticeship model is visible",
+    "3: Distributes tasks, but develops no one",
+    "1: Has a mentor, co-leader or apprentice in the session and keeps every part to themselves; no multiplication",
+    "A leader alone with the group, with no mentor or apprentice in the session, is null under the rules below, whatever else the session shows.",
+    "Score in-session signals only: a named apprentice, a delegated facilitation window, or visible real-time coaching. Development behind the scenes (mid-week preparation, debriefs, mentoring over coffee) cannot be scored unless the leader says it in the session. A second co-equal teacher sharing the front of the room is not a signal by itself: credit only an actual hand-off, apprentice or public coaching.",
+  ],
+};
+
+function levelsOf(n: number): string {
+  return (SCORING_LEVELS[n] ?? []).map((line) => `\n   ${line}`).join("");
+}
 
 export interface ScoringVersion {
   languageModel: string;
@@ -305,7 +386,7 @@ export class CoachScoringService {
   static buildInstructions(): string {
     const dims = DIMENSIONS.map(
       (d) =>
-        `${d.n}. ${d.name}, ${d.what}\n   Research-backed target: ${d.target}\n   Cluster: ${d.cluster}`,
+        `${d.n}. ${d.name}, ${d.what}\n   Research-backed target: ${d.target}\n   Cluster: ${d.cluster}${levelsOf(d.n)}`,
     ).join("\n");
     const clusters = CLUSTERS.map((c) => `${c.name} (${c.weight} points)`).join(
       ", ",
@@ -315,7 +396,9 @@ export class CoachScoringService {
       "",
       `Weighted clusters: ${clusters}.`,
       "",
-      "Score EACH of these twelve dimensions from 1 to 5 (whole numbers):",
+      "Score EACH of these twelve dimensions from 1 to 5 (whole numbers). The",
+      "numbered levels under each one anchor the scale; a score between two",
+      "anchors sits between what they describe.",
       dims,
       "",
       "Rules you must follow:",
@@ -333,16 +416,31 @@ export class CoachScoringService {
       "  benchmarks only.",
       "- Score what the session shows. When the leader had the occasion for what a",
       "  dimension measures and the session shows little or none of it, thin or",
-      "  absent evidence is the finding: score it low (1 when there is none, 2 when",
-      "  there is a trace) and say in the rationale that the evidence is thin.",
+      "  absent evidence is the finding: score it low (the level 1 anchor when there",
+      "  is none, 2 when there is a trace short of the level 3 anchor) and say in the",
+      "  rationale that the evidence is thin.",
+      "- Co-teaching is score-neutral. When a mentor or co-teacher shares the",
+      "  front of the room, judge their talk and the leader's as one leadership",
+      "  side, and score each content dimension on what was delivered, whichever",
+      "  of them delivered it.",
+      "- Group size never lowers a score; a larger room is harder to lead.",
+      "  Framework-building passages are harder than narrative ones: weigh that",
+      "  when judging question count and pacing.",
+      "- Score Vulnerability / Authenticity for this session as you find it. Its",
+      "  limit against the leader's earlier sessions is applied afterwards.",
       "- Set score to null only when the session gave the leader no occasion for",
       "  what the dimension measures, and say what was missing. The occasions:",
       "  Newcomer Welcome when no newcomers are present; Memory Reinforcement on",
       "  the first lesson of a new study; Scripture Engagement, Application",
       "  Questions or Homework References in a week the group announced would",
       "  have none of it; Leader Development when the leader leads alone, with",
-      "  no mentor or apprentice in the session; any dimension whose part of the",
-      "  session was held off the recording. Every other dimension gets a score.",
+      "  no mentor or apprentice in the session; Prayer only when the recording",
+      "  shows the opening prayer happened before it started (someone refers to",
+      "  it, or the recording begins after it) and no other prayer is on the",
+      "  recording, since a recorded closing prayer or prayer requests are scored",
+      "  and the unrecorded opening is not counted against the leader; any",
+      "  dimension whose part of the session was held off the recording. Every",
+      "  other dimension gets a score.",
       "- Do not compute a total, a percentage or a composite. Scores and reasons only.",
       "",
       "- Also report `newcomers`: how many first-timers were welcomed as such in",
@@ -462,7 +560,7 @@ export class CoachScoringService {
     return [
       "Score ONE dimension of a Bible-study session from sampled frames.",
       `${dimension?.n}. ${dimension?.name}, ${dimension?.what}`,
-      `Research-backed target: ${dimension?.target}`,
+      `Research-backed target: ${dimension?.target}${levelsOf(VISUAL_AIDS_DIMENSION)}`,
       "",
       "Score 1-5 from what you can SEE. If the frames show the session and",
       "there is no visual aid in any of them, score 1 and say so. Set score to",

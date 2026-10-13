@@ -2,15 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
+import coachLeaderMapJson from "./coach-leader-map.json";
 import { CoachReviewService } from "./coach-review.service";
 import {
   CoachScoringService,
+  DEFAULT_SCORING_MODEL,
   MAX_TRANSCRIPT_CHARS,
+  SCORING_LEVELS,
   SCORING_REQUEST,
   authenticityBaseline,
   promptVersion,
 } from "./coach-scoring.service";
 import type { TimedLine } from "./coach-transcript";
+import coachDataJson from "./coach.data.json";
 import { DIMENSIONS, RUBRIC_MODEL_VERSION, composeBaseScore } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
@@ -1201,5 +1205,119 @@ describe("Thin evidence scores low, not not-applicable", () => {
     expect(vision).toMatch(
       /set score to null only when no frame shows the session/i,
     );
+  });
+});
+
+describe("the scoring model", () => {
+  it("scores on gpt-6-astra, and the text, vision and leader-cue calls all use it", async () => {
+    const models: string[] = [];
+    class Models extends VisionFours {
+      override async chatComplete(opts: AiChatOptions) {
+        models.push(opts.model ?? "");
+        if (opts.messages.some((m) => m.content.includes("CLASS_LEADERS")))
+          return { content: JSON.stringify({ cues: [] }), model: "fake" };
+        return super.chatComplete(opts);
+      }
+    }
+    const svc = new CoachScoringService(Database, new Models(ALL_FOURS));
+    await svc.scoreSession({ ...INPUT, frames: [new Uint8Array([1])] });
+    await svc.nameRotatingLeader({
+      transcript: INPUT.transcript,
+      leaders: [{ slug: "leader-a", name: "Leader A" }],
+    });
+    expect(DEFAULT_SCORING_MODEL).toBe("gpt-6-astra");
+    expect(models).toEqual(["gpt-6-astra", "gpt-6-astra", "gpt-6-astra"]);
+  });
+});
+
+describe("the scoring prompt follows the v3 rules", () => {
+  const scoring = CoachScoringService.buildInstructions().replace(/\s+/g, " ");
+
+  it("anchors each dimension's levels with the v3 numbers", () => {
+    for (const anchor of [
+      /6\+ cross-references/,
+      /2-4 cross-references/,
+      /5\+ questions woven throughout/,
+      /70% or more of attendees contribute substantively/,
+      /About 50% contribute substantively in a room under 25/,
+      /70% or more of attendees contribute substantively \(about half in a room of 25 or more\)/,
+      /4: Opening and closing delegated; no formal request time/,
+      /4: Mostly facilitative/,
+    ])
+      expect(scoring).toMatch(anchor);
+  });
+
+  it("does not deduct substantive teaching from Facilitation", () => {
+    expect(scoring).toMatch(
+      /substantive teaching the group is engaged with is NOT a deduction/,
+    );
+  });
+
+  it("carries the context adjustments", () => {
+    for (const adjustment of [
+      /co-teaching is score-neutral/i,
+      /discussion-only ratio is the one to read/i,
+      /DOK on Big Idea questions only/i,
+      /normalize the question count by session type/i,
+      /never mark a leader down because the group is large/i,
+      /first-person/i,
+      /pace a mentor or peer had to redirect scores no more than 3/i,
+      /Prayer only when the recording shows the opening prayer happened before it started/,
+    ])
+      expect(scoring).toMatch(adjustment);
+  });
+
+  it("a solo leader's Leader Development is null, never the level 1 anchor", () => {
+    expect(scoring).not.toMatch(/1: Does everything alone/);
+    expect(scoring).toMatch(
+      /A leader alone with the group, with no mentor or apprentice in the session, is null under the rules below, whatever else the session shows/,
+    );
+  });
+
+  it("Prayer is null only when the opening was off the recording and no other prayer is on it", () => {
+    expect(scoring).toMatch(
+      /Prayer only when the recording shows the opening prayer happened before it started \(someone refers to it, or the recording begins after it\) and no other prayer is on the recording/,
+    );
+  });
+
+  it("a trace scores 2 only when it is short of the level 3 anchor", () => {
+    expect(scoring).toMatch(
+      /the level 1 anchor when there is none, 2 when there is a trace short of the level 3 anchor/,
+    );
+  });
+
+  it("every dimension has its level 5 and level 1 anchors, and the vision prompt carries Visual Aids'", () => {
+    for (const d of DIMENSIONS) {
+      const levels = SCORING_LEVELS[d.n] ?? [];
+      expect({ n: d.n, five: levels.some((l) => l.startsWith("5: ")) }).toEqual(
+        { n: d.n, five: true },
+      );
+      expect({ n: d.n, one: levels.some((l) => l.startsWith("1: ")) }).toEqual({
+        n: d.n,
+        one: true,
+      });
+    }
+    const vision = CoachScoringService.buildVisionInstructions();
+    for (const line of SCORING_LEVELS[7]) expect(vision).toContain(line);
+  });
+
+  it("no prompt the scoring service sends names a leader from the roster or quotes a benchmark leader", () => {
+    const prompts = [
+      CoachScoringService.buildInstructions(),
+      CoachScoringService.buildVisionInstructions(),
+      CoachScoringService.buildLeaderCueInstructions(),
+    ].join("\n");
+    const names = new Set<string>();
+    for (const name of [
+      ...coachDataJson.coaches.flatMap((c) => [c.name, c.coachName ?? ""]),
+      ...coachLeaderMapJson.coaches.map((c) => c.leader),
+    ])
+      for (const word of name.split(/[^\p{L}]+/u))
+        if (word.length >= 2 && word.toLowerCase() !== "and") names.add(word);
+    const named = [...names].filter((word) =>
+      new RegExp(`\\b${word}\\b`, "i").test(prompts),
+    );
+    expect(named).toEqual([]);
+    expect(prompts).not.toMatch(/'s benchmark/i);
   });
 });
