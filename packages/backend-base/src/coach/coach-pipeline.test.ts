@@ -260,6 +260,8 @@ async function priorReport(
   date: string,
   authenticity: number,
   corrected?: number,
+  held = false,
+  source = `ff-pipe-prior-${id}`,
 ) {
   await conn
     .insertInto("coach_reports")
@@ -267,7 +269,8 @@ async function priorReport(
       id,
       coach_id: COACH,
       session_date: date,
-      source_session_id: `ff-pipe-prior-${id}`,
+      held,
+      source_session_id: source,
       legacy_ids: [],
       summary: {},
       metrics: JSON.stringify({
@@ -639,7 +642,7 @@ describe("a retained session reaches a delivered report", () => {
     expect(mailer.sent).toEqual([]);
   });
 
-  it("The benchmark leader's machine report compares with his history, from his earlier reports", async () => {
+  it("The benchmark leader's machine report compares with his history, one report per date, the delivered one", async () => {
     await conn
       .updateTable("coach_leaders")
       .set({ is_benchmark: true })
@@ -661,6 +664,26 @@ describe("a retained session reaches a delivered report", () => {
           body: {},
         })
         .execute();
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: "pipe-history-parallel",
+        coach_id: COACH,
+        session_date: "2026-08-08",
+        source_session_id: "ff-pipe-history-parallel",
+        legacy_ids: [],
+        summary: {},
+        metrics: JSON.stringify({
+          dimensions: DIMENSIONS.map((d) => ({ n: d.n, score: 1 })),
+        }),
+        body: {},
+      })
+      .execute();
+    await conn
+      .updateTable("coach_reports")
+      .set({ source_session_id: "legacy:pipe-history-1" })
+      .where("id", "=", "pipe-history-1")
+      .execute();
     const [result] = await pipeline(null).run();
     const body = (
       await conn
@@ -673,7 +696,7 @@ describe("a retained session reaches a delivered report", () => {
       (s) => s.title === "Session-Over-Session Comparison",
     );
     expect(sos?.bullets).toContain(
-      "Participant Engagement: 4 this session against 2 over the last 3 sessions ↑",
+      "Participant Engagement: 4 this session against 2 over the last 2 sessions ↑",
     );
     expect(body.sections.some((s) => s.title === "Drift Check")).toBe(true);
   });
@@ -1000,6 +1023,23 @@ describe("a retained session reaches a delivered report", () => {
     await priorReport("prior-corrected", "2026-08-15", 2, 4);
     await pipeline(new FakeMailer()).run();
     expect(await storedAuthenticity()).toMatchObject({ score: 4 });
+  });
+
+  it("the baseline takes one report per date, the delivered one, and leaves held reports out", async () => {
+    await priorReport(
+      "prior-host",
+      "2026-07-01",
+      4,
+      undefined,
+      false,
+      "legacy:pipe-host",
+    );
+    await priorReport("prior-parallel", "2026-07-01", 1);
+    await priorReport("prior-held-a", "2026-07-15", 1, undefined, true);
+    await priorReport("prior-held-b", "2026-08-15", 1, undefined, true);
+    await pipeline(new FakeMailer()).run();
+    expect(await storedAuthenticity()).toMatchObject({ score: 4 });
+    expect((await storedAuthenticity()).rationale).not.toContain("held at");
   });
 
   it("a later session is not a baseline for an earlier one", async () => {
