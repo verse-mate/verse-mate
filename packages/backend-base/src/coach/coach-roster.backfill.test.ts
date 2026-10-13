@@ -321,6 +321,47 @@ describe("roster and monthly backfill (DB)", () => {
     expect(rows).toEqual([{ slug: target.id, name: target.name }]);
   });
 
+  it("a leader added outside the bundle with no slug is given one from the name, with a suffix on collision", async () => {
+    await clear();
+    const added = [
+      "added-1@example.test",
+      "added-2@example.test",
+      "added-3@example.test",
+    ];
+    const target = bundle.coaches[0];
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("email", "in", added)
+      .execute();
+    await conn
+      .insertInto("coach_leaders")
+      .values([
+        { email: added[0], name: "Added Leader" },
+        { email: added[1], name: "Added Leader" },
+        { email: added[2], name: target.name },
+      ])
+      .execute();
+
+    const result = await backfillCoachRoster();
+
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["email", "slug"])
+      .where("email", "in", added)
+      .orderBy("email")
+      .execute();
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("email", "in", added)
+      .execute();
+    expect(result.slugsAssigned).toBe(3);
+    expect(rows.map((r) => r.slug).sort()).toEqual([
+      "added-leader",
+      "added-leader-2",
+      `${leaderSlug(target.name)}-2`,
+    ]);
+  });
+
   it("after cutover the roster backfill still runs, and the bundle it reloads changes no leader", async () => {
     await clear();
     await backfillCoachRoster();

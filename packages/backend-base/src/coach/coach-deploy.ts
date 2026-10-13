@@ -46,11 +46,7 @@ export async function runCoachDeployStep(
       try {
         await step("roster backfill", async () => {
           const r = await backfillCoachRoster(dataset, leaderMap);
-          const unkeyed =
-            r.leadersWithoutKeywords.length > 0
-              ? `; no attribution keywords for: ${r.leadersWithoutKeywords.join(", ")}`
-              : "";
-          return `${r.leaders} leaders, ${r.admins} admin(s) in the bundle, ${r.leaderSummaries} leader-month summaries${unkeyed}`;
+          return `${r.leaders} leaders, ${r.admins} admin(s) in the bundle, ${r.leaderSummaries} leader-month summaries, ${r.slugsAssigned} leader(s) given a slug, ${r.leadersWithoutKeywords.length} leader(s) with no attribution keywords`;
         });
         await step("report backfill", async () => {
           const r = await backfillCoachStore(dataset);

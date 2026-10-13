@@ -45,6 +45,7 @@ const BENCHMARK_LEADER_SLUG = "bryan-bailey";
 export interface RosterBackfillResult {
   leaders: number;
   leadersWithoutKeywords: string[];
+  slugsAssigned: number;
   admins: number;
   narrativeMonths: number;
   leaderSummaries: number;
@@ -117,6 +118,8 @@ export async function backfillCoachRoster(
     `.execute(conn);
   }
 
+  const slugsAssigned = await assignMissingSlugs(conn, bundle);
+
   const hasAdmins = await conn
     .selectFrom("coach_admins")
     .select("email")
@@ -168,8 +171,45 @@ export async function backfillCoachRoster(
   return {
     leaders: bundle.coaches.length,
     leadersWithoutKeywords: leadersWithoutKeywords.sort(),
+    slugsAssigned,
     admins: (bundle.admins ?? []).length,
     narrativeMonths: narratives.length,
     leaderSummaries,
   };
+}
+
+async function assignMissingSlugs(
+  conn: ReturnType<typeof Database.getOrCreateConnection>,
+  bundle: Bundle,
+): Promise<number> {
+  const slugless = await conn
+    .selectFrom("coach_leaders")
+    .select(["id", "name"])
+    .where("slug", "is", null)
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  if (slugless.length === 0) return 0;
+  const taken = new Set([
+    ...bundle.coaches.map((c) => c.id),
+    ...(
+      await conn
+        .selectFrom("coach_leaders")
+        .select("slug")
+        .where("slug", "is not", null)
+        .execute()
+    ).map((r) => r.slug as string),
+  ]);
+  for (const leader of slugless) {
+    const base = leaderSlug(leader.name) || "leader";
+    let slug = base;
+    for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+    taken.add(slug);
+    await conn
+      .updateTable("coach_leaders")
+      .set({ slug })
+      .where("id", "=", leader.id)
+      .execute();
+  }
+  return slugless.length;
 }
