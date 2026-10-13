@@ -373,6 +373,15 @@ describe("OpenAiProvider chatComplete", () => {
     expect(sent).not.toHaveProperty("reasoning");
   });
 
+  it("later reasoning families get the requested effort, and their chat variants get none", async () => {
+    for (const model of ["gpt-6-astra", "gpt-6.1-sol", "gpt-5.5", "o4-mini"])
+      expect(
+        (await sentFor({ model, reasoningEffort: "low" })).reasoning,
+      ).toEqual({ effort: "low", summary: "auto" });
+    for (const model of ["gpt-5.1-chat-latest", "chat-latest", "gpt-4.1"])
+      expect(await sentFor({ model })).not.toHaveProperty("reasoning");
+  });
+
   it("the idle limit does not run while the request waits for its response to start, which the SDK's own timeout covers", async () => {
     const provider = new OpenAiProvider("test-key", { idleMs: 20 });
     (provider as unknown as { client: unknown }).client = {
