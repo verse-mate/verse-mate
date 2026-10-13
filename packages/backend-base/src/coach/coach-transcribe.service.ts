@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import type { AiProvider } from "../shared/ai";
 import { mediaInput } from "./coach-media-input";
+import { coachModel } from "./coach-models";
 import type { TimedLine } from "./coach-transcript";
 import {
   type Transcriber,
@@ -13,7 +14,6 @@ import {
 
 export const SPEECH_PART_MAX_BYTES = 24 * 1024 ** 2;
 export const SPEECH_PART_SECONDS = 3000;
-export const SPEECH_MODEL = "whisper-1";
 
 export interface AudioPart {
   path: string;
@@ -99,7 +99,7 @@ export function speechToText(
             );
           const heard = await ai.transcribeAudio({
             file: open(part.path),
-            model: SPEECH_MODEL,
+            model: coachModel("COACH_TRANSCRIBE_MODEL"),
           });
           for (const segment of heard.segments) {
             const text = segment.text.trim();

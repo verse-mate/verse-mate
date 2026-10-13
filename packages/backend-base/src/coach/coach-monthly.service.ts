@@ -14,6 +14,7 @@ import {
   noOwnAddress,
 } from "./coach-delivery.service";
 import { checkBenchmarkName, normalizeQuote } from "./coach-governance.service";
+import { coachModel } from "./coach-models";
 import { groupAddresses } from "./coach-rotating.service";
 import { rowToReport } from "./coach-store.transform";
 import { MODEL_INITIATIVES_MAX } from "./coach.schema";
@@ -26,7 +27,6 @@ import {
 } from "./coach.service";
 import { CLUSTERS, DIMENSIONS, STATUS_BANDS, statusForScore } from "./rubric";
 
-export const MONTHLY_MODEL = "gpt-5";
 export const MONTHLY_MAX_TOKENS = 8000;
 
 export type MonthlyState =
@@ -135,7 +135,7 @@ export class CoachMonthlyService {
     private readonly db: db,
     private readonly provider: AiProvider | (() => AiProvider),
     private readonly mailer: CoachMailer | null,
-    private readonly model: string = MONTHLY_MODEL,
+    private readonly model: string = coachModel("COACH_MONTHLY_MODEL"),
   ) {}
 
   private get ai(): AiProvider {
