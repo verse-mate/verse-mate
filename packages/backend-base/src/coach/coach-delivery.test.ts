@@ -182,6 +182,10 @@ describe("the subject is derived, not invented", () => {
 });
 
 describe("the reply-to address is one plain address", () => {
+  it("with nothing configured, replies go to the legacy coach inbox", () => {
+    expect(replyToAddress(undefined)).toBe("coach@versemate.org");
+  });
+
   it("trims a configured address and keeps it", () => {
     expect(replyToAddress(" replies@example.test ")).toBe(
       "replies@example.test",
@@ -192,7 +196,7 @@ describe("the reply-to address is one plain address", () => {
     const logged = spyOn(console, "error").mockImplementation(() => {});
     try {
       expect(replyToAddress("VerseMate <replies@example.test>")).toBe(
-        "coach@versemate.app",
+        "coach@versemate.org",
       );
       expect(logged).toHaveBeenCalledTimes(1);
     } finally {

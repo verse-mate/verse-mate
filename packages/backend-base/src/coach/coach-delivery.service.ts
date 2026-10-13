@@ -30,8 +30,7 @@ import type { CoachMailer, CoachSendResult } from "./coach.service";
  * is a single path rather than a convention.
  */
 
-/** Where a leader's reply should land, now that the coach mailbox sends nothing. */
-const DEFAULT_REPLY_TO = "coach@versemate.app";
+const DEFAULT_REPLY_TO = "coach@versemate.org";
 
 export function replyToAddress(configured: string | undefined): string {
   const address = (configured ?? DEFAULT_REPLY_TO).trim();
