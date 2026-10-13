@@ -38,9 +38,6 @@ export interface FirefliesTranscriptDetail extends FirefliesTranscript {
   audio_url: string | null;
   video_url: string | null;
   transcript_url: string | null;
-  /** Participant COUNT only, see below. */
-  participantCount: number;
-  summary: { overview?: string } | null;
   /**
    * PSEUDONYMOUS. Speakers are numbered, never named.
    *
@@ -97,7 +94,8 @@ query Transcripts($fromDate: DateTime, $limit: Int, $skip: Int) {
 // Deliberately WITHOUT `participants` and `meeting_attendees { displayName
 // email }`, which the host's query asked for. Open question 4 is answered: no
 // participant name is stored, and the cheapest way to keep that true is to
-// never receive them. Only a count is derived, from the speaker list.
+// never receive them. The provider's summary is not asked for either: it is
+// generated prose that names the people who spoke.
 const Q_TRANSCRIPT = `
 query Transcript($id: String!) {
   transcript(id: $id) {
@@ -110,8 +108,6 @@ query Transcript($id: String!) {
     audio_url
     video_url
     transcript_url
-    speakers { id }
-    summary { overview }
     sentences { index speaker_name text start_time end_time }
   }
 }
@@ -126,6 +122,27 @@ query MeetingLink($id: String!) {
 `;
 
 export class FirefliesError extends Error {}
+
+const words = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}']+/gu, " ")
+    .split(" ")
+    .filter(Boolean);
+
+export function isLeaderLabel(label: string, leaderName: string): boolean {
+  const said = words(label);
+  if (said.length === 0) return false;
+  return [leaderName, ...leaderName.split(/&|\band\b/i)]
+    .map(words)
+    .filter((name) => name.length > 0)
+    .some(
+      (name) =>
+        said.join(" ") === name.join(" ") ||
+        (said.length === 1 && said[0] === name[0]) ||
+        (name.length === 1 && said[0] === name[0]),
+    );
+}
 
 async function query<T>(
   document: string,
@@ -191,8 +208,7 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
   ): Promise<FirefliesTranscriptDetail | null> {
     const data = await query<{
       transcript:
-        | (Omit<FirefliesTranscriptDetail, "participantCount" | "sentences"> & {
-            speakers?: Array<{ id: string }> | null;
+        | (Omit<FirefliesTranscriptDetail, "sentences"> & {
             sentences?: Array<{
               index: number;
               speaker_name: string | null;
@@ -205,7 +221,7 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
     }>(Q_TRANSCRIPT, { id });
     const t = data.transcript;
     if (!t) return null;
-    const { speakers, sentences, ...rest } = t;
+    const { sentences, ...rest } = t;
 
     // Names are resolved to pseudonyms HERE and go no further. A stable number
     // per distinct name keeps the two speaker-aware dimensions computable while
@@ -221,12 +237,7 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
       return {
         index: s.index,
         speakerId: pseudonyms.get(key) as string,
-        // Substring both ways: the provider labels a speaker "Bryan" where the
-        // roster says "Bryan Bailey", and sometimes the reverse.
-        isLeader:
-          leader.length > 0 &&
-          key.length > 0 &&
-          (key.includes(leader) || leader.includes(key)),
+        isLeader: isLeaderLabel(key, leader),
         text: s.text,
         start_time: s.start_time,
         end_time: s.end_time,
@@ -237,9 +248,6 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
       ...rest,
       meeting_link: await this.meetingLink(id),
       sentences: pseudonymised,
-      // A count, never names (open question 4). Derived from the speaker list
-      // because that is the only participant signal the query still asks for.
-      participantCount: (speakers ?? []).length,
     };
   }
 }

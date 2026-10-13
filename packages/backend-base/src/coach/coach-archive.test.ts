@@ -60,8 +60,6 @@ function detail(
     audio_url: "https://provider.test/audio.mp3",
     video_url: "https://provider.test/video.mp4",
     transcript_url: "https://provider.test/t.json",
-    participantCount: 9,
-    summary: { overview: "ok" },
     sentences: [
       {
         index: 0,
@@ -377,8 +375,6 @@ describe("a report's evidence outlives the provider's share link", () => {
       "title",
       "dateString",
       "duration",
-      "participantCount",
-      "summary",
       "sentences",
     ]);
     for (const sentence of parsed.sentences) {

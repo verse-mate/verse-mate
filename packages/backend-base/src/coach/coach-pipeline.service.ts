@@ -348,7 +348,6 @@ export class CoachPipelineService {
   ): Promise<{
     sentences: FirefliesTranscriptDetail["sentences"];
     duration: number | null;
-    participantCount: number | null;
   } | null> {
     if (session.source !== "upload")
       return this.fireflies.getTranscript(
@@ -366,7 +365,6 @@ export class CoachPipelineService {
     return {
       sentences: parsed.sentences ?? [],
       duration: parsed.duration ?? null,
-      participantCount: null,
     };
   }
 
@@ -446,6 +444,7 @@ export class CoachPipelineService {
 
   private async runOne(session: {
     source_session_id: string;
+    retry_count: number;
     coach_id: string | null;
     title: string;
     date: string;
@@ -483,10 +482,21 @@ export class CoachPipelineService {
     const recordingKey = CoachArchiveService.recordingKey(
       session.source_session_id,
     );
+    const lastAttempt = session.retry_count + 1 >= PIPELINE_ATTEMPT_LIMIT;
+    let framesFailed: string | null = null;
     const frames = await this.frames
       .extract(recordingKey)
       .then((f) => f.map((x) => x.data))
-      .catch(() => [] as Uint8Array[]);
+      .catch((error: unknown) => {
+        framesFailed = `frames could not be taken from the recording: ${error instanceof Error ? error.message : String(error)}`;
+        return [] as Uint8Array[];
+      });
+    if (framesFailed && !lastAttempt)
+      return {
+        sourceSessionId: session.source_session_id,
+        outcome: "scoring-failed",
+        detail: `${framesFailed}; retrying`,
+      };
 
     const transcript = timedLinesFrom(detail.sentences);
     const scored = await this.scoring.scoreSession({
@@ -507,12 +517,20 @@ export class CoachPipelineService {
       };
     }
 
+    const unobserved = framesFailed ?? scored.visualsUnobserved;
+    if (unobserved && !lastAttempt)
+      return {
+        sourceSessionId: session.source_session_id,
+        outcome: "scoring-failed",
+        detail: `Visual Aids not observed, ${unobserved}; retrying`,
+      };
+
     const dimensions = scored.dimensions;
     const generated = await this.body.generate({
       sessionTitle: session.title,
       sessionDate: session.date,
       duration: `${detail.duration ?? 0} min`,
-      attendees: detail.participantCount ?? null,
+      attendees: scored.attendees ?? null,
       newcomers: scored.newcomers ?? 0,
       transcript,
       dimensions,
@@ -530,6 +548,9 @@ export class CoachPipelineService {
     const holdReason =
       [
         scored.reviewReason,
+        unobserved
+          ? `held for review: Visual Aids not observed, ${unobserved}`
+          : null,
         await this.uploadedByAnother(session, coachId),
         generated.issues.length > 0
           ? `held for review: report body: ${generated.issues.join("; ")}`
@@ -560,7 +581,7 @@ export class CoachPipelineService {
             keyMoments: generated.body.keyMoments,
             contextLine: generated.body.contextLine,
             topic: generated.body.topic,
-            attendees: detail.participantCount ?? null,
+            attendees: scored.attendees ?? null,
             newcomers: scored.newcomers ?? 0,
             duration: `${detail.duration ?? 0} min`,
             holdReason,

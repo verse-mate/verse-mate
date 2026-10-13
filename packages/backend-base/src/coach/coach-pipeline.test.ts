@@ -163,8 +163,6 @@ class FakeClient implements FirefliesDetailClient {
       audio_url: null,
       video_url: "https://cdn.fireflies.ai/rec/abc.mp4",
       transcript_url: null,
-      participantCount: 9,
-      summary: { overview: "ok" },
       sentences: bodySentences(),
     };
   }
@@ -181,6 +179,9 @@ class FakeMailer {
 
 /** No ffmpeg, no bucket. */
 const noFrames = { extract: async () => [] };
+const oneFrameService = {
+  extract: async () => [{ data: new Uint8Array([1]), index: 0 }],
+};
 
 class RationaleMomentsPublish extends CoachPublishService {
   override async publish(
@@ -403,6 +404,115 @@ describe("a retained session reaches a delivered report", () => {
     const [result] = await pipeline(mailer).run();
     expect(result.outcome).toBe("scored-and-delivered");
     expect(mailer.sent.length).toBeGreaterThan(0);
+  });
+
+  it("the head count comes from the frames, never from speaker labels: the title page and the size bonus use it", async () => {
+    class CountingRoom extends FakeAi {
+      override async chatComplete(opts: AiChatOptions) {
+        const answer = await super.chatComplete(opts);
+        if (!opts.messages.some((m) => m.images?.length)) return answer;
+        return {
+          ...answer,
+          content: JSON.stringify({
+            ...JSON.parse(answer.content),
+            attendees: 21,
+          }),
+        };
+      }
+    }
+    const svc = new CoachPipelineService(Database, new FakeClient(), null, {
+      scoring: new CoachScoringService(Database, new CountingRoom()),
+      frames: oneFrameService as any,
+    });
+    const [result] = await svc.run();
+    const row = await conn
+      .selectFrom("coach_reports")
+      .select(["summary", "metrics", "body"])
+      .where("id", "=", result.reportId as string)
+      .executeTakeFirstOrThrow();
+    expect((row.summary as { attendees: number }).attendees).toBe(21);
+    expect((row.metrics as { sizeBonus: number }).sizeBonus).toBe(3);
+    expect(JSON.stringify(row.body)).toContain(`"Attendees: 21"`);
+  });
+
+  it("with no frames there is no head count: no Attendees row and no size bonus", async () => {
+    const [result] = await pipeline(null).run();
+    const row = await conn
+      .selectFrom("coach_reports")
+      .select(["summary", "metrics", "body"])
+      .where("id", "=", result.reportId as string)
+      .executeTakeFirstOrThrow();
+    expect((row.summary as { attendees: number | null }).attendees).toBeNull();
+    expect((row.metrics as { sizeBonus: number }).sizeBonus).toBe(0);
+    expect(JSON.stringify(row.body)).not.toContain(`"Attendees:`);
+  });
+
+  it("frames that cannot be taken are retried, not scored as no visual aids, and the last attempt holds the report for review", async () => {
+    const broken = {
+      extract: async () => {
+        throw new Error("the recording is not in storage");
+      },
+    };
+    const ai = new CountingAi();
+    const svc = new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      new FakeMailer() as any,
+      {
+        scoring: new CoachScoringService(Database, ai),
+        frames: broken as any,
+      },
+    );
+    const [first] = await svc.run();
+    expect(first.outcome).toBe("scoring-failed");
+    expect(first.detail).toContain("not in storage");
+    expect(ai.calls).toBe(0);
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ retry_count: PIPELINE_ATTEMPT_LIMIT - 1, state: "retained" })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    const mailer = new FakeMailer();
+    const [last] = await new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      mailer as any,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: broken as any,
+      },
+    ).run();
+    expect(last.outcome).toBe("scored-awaiting-review");
+    expect(mailer.sent).toEqual([]);
+    const held = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("hold_reason")
+      .where("source_session_id", "=", "ff-pipe-1")
+      .executeTakeFirstOrThrow();
+    expect(held.hold_reason).toContain("Visual Aids not observed");
+  });
+
+  it("a vision provider error is retried the same way, never delivered as Visual Aids not applicable", async () => {
+    class VisionDown extends FakeAi {
+      override async chatComplete(opts: AiChatOptions) {
+        if (opts.messages.some((m) => m.images?.length))
+          throw new Error("vision 503");
+        return super.chatComplete(opts);
+      }
+    }
+    const mailer = new FakeMailer();
+    const [result] = await new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      mailer as any,
+      {
+        scoring: new CoachScoringService(Database, new VisionDown()),
+        frames: oneFrameService as any,
+      },
+    ).run();
+    expect(result.outcome).toBe("scoring-failed");
+    expect(result.detail).toContain("the vision model could not be reached");
+    expect(mailer.sent).toEqual([]);
   });
 
   it("every dimension the pipeline stores names the language model, prompt version and settings that produced it, and Visual Aids names no model when no vision call was made", async () => {

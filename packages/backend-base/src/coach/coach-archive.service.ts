@@ -331,8 +331,6 @@ export class CoachArchiveService {
       title: detail.title,
       dateString: detail.dateString,
       duration: detail.duration,
-      participantCount: detail.participantCount,
-      summary: detail.summary,
       sentences: detail.sentences,
     });
     await this.storage.putGlobalObject({

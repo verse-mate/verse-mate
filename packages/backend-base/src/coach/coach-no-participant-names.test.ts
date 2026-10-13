@@ -48,12 +48,12 @@ describe("no participant name is captured anywhere", () => {
     expect(names).not.toContain("attendee_names");
   });
 
-  it("the intake detail type exposes a COUNT, not a list", async () => {
+  it("the intake detail type carries no participant list, head count or provider summary", async () => {
     const source = await Bun.file(
       new URL("./fireflies.client.ts", import.meta.url).pathname,
     ).text();
-    expect(source).toMatch(/participantCount: number/);
-    expect(source).not.toMatch(/participantNames/);
+    expect(source).not.toMatch(/participantNames|participantCount/);
+    expect(source).not.toMatch(/summary \{ overview \}/);
   });
 
   it("the retained transcript is PSEUDONYMOUS, speakers numbered, not named", async () => {

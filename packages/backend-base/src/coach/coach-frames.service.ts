@@ -80,10 +80,9 @@ export class CoachFrameService {
     this.runFfmpeg = deps.runFfmpeg ?? defaultRunFfmpeg;
   }
 
-  /** Up to FRAME_SAMPLE_COUNT frames, or an empty list if there is no video. */
   async extract(storageKey: string): Promise<ExtractedFrame[]> {
     const stream = await this.storage.getGlobalObjectStream(storageKey);
-    if (!stream) return [];
+    if (!stream) throw new Error("the recording is not in storage");
 
     const frames = await this.runFfmpeg(stream, [
       ...mediaInput(),

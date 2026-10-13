@@ -67,8 +67,6 @@ function detail(): FirefliesTranscriptDetail {
     audio_url: null,
     video_url: "https://provider.test/video.mp4",
     transcript_url: null,
-    participantCount: 9,
-    summary: { overview: "ok" },
     sentences: [
       {
         index: 0,
