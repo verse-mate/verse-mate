@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import { jwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
@@ -271,6 +271,33 @@ describe("the coaching gate asks for a fresh confirmation", () => {
         .execute();
       await conn.deleteFrom("user").where("email", "=", stale).execute();
     }
+  });
+});
+
+describe("the confirm-email answer does not depend on the roster", () => {
+  const outsider = "happy-outsider@example.test";
+  afterEach(async () => {
+    await conn.deleteFrom("user").where("email", "=", outsider).execute();
+  });
+
+  it("an unconfirmed account on no roster or admin row is told to confirm, like a leader would be", async () => {
+    const id = await account(outsider);
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    expect(await call(outsider, "GET", "me")).toMatchObject({
+      status: 403,
+      body: { details: { refusal: "confirm-email" } },
+    });
+  });
+
+  it("once confirmed, the same account is told it is not a coaching account", async () => {
+    await account(outsider);
+    const answer = await call(outsider, "GET", "me");
+    expect(answer.status).toBe(403);
+    expect(JSON.stringify(answer.body)).not.toContain("confirm-email");
   });
 });
 
