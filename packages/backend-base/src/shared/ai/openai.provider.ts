@@ -13,7 +13,7 @@ import type {
   AiTranscription,
 } from "./ai-provider.interface";
 
-const REASONING_MODEL = /^(gpt-5(?!-chat)|o\d)/;
+const REASONING_MODEL = /^(?!.*-chat)(gpt-([5-9]|[1-9]\d)|o\d)/;
 const STREAM_IDLE_MS = 90_000;
 const STREAM_TOTAL_MS = 15 * 60_000;
 const INLINE_IMAGE = /^data:image\/(png|jpeg|webp|gif);base64,/;
