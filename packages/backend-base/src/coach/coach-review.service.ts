@@ -79,6 +79,24 @@ export interface ImprovementsEditResult {
   coldRecall?: string[];
 }
 
+export interface ProsePoint {
+  title: string;
+  paragraphs: string[];
+  evidence?: { quote: string; timestamp: string };
+}
+
+export function carryEvidence(
+  stored: unknown,
+  next: ProsePoint[],
+): ProsePoint[] {
+  const before = Array.isArray(stored) ? (stored as ProsePoint[]) : [];
+  return next.map((point) => {
+    if (point.evidence) return point;
+    const evidence = before.find((p) => p?.title === point.title)?.evidence;
+    return evidence ? { ...point, evidence } : point;
+  });
+}
+
 export class CoachReviewService {
   constructor(private readonly db: db) {}
 
@@ -217,7 +235,7 @@ export class CoachReviewService {
   async editImprovements(input: {
     reportId: string;
     improvements: string[];
-    improvementsProse?: Array<{ title: string; paragraphs: string[] }>;
+    improvementsProse?: ProsePoint[];
     byUserId: string | null;
   }): Promise<ImprovementsEditResult> {
     if (await isLegacyReport(this.db, input.reportId)) {
@@ -239,22 +257,22 @@ export class CoachReviewService {
         if (!report) return { ok: false, refusal: "unknown-report" };
         const body = (report.body ?? {}) as Record<string, unknown>;
         const previous = (body.feedback ?? {}) as Record<string, unknown>;
+        const prose = input.improvementsProse
+          ? carryEvidence(previous.improvementsProse, input.improvementsProse)
+          : undefined;
         const listOrNull = (v: unknown) =>
           JSON.stringify(Array.isArray(v) && v.length > 0 ? v : null);
         if (
           listOrNull(previous.improvements) ===
             listOrNull(input.improvements) &&
-          listOrNull(previous.improvementsProse) ===
-            listOrNull(input.improvementsProse)
+          listOrNull(previous.improvementsProse) === listOrNull(prose)
         )
           return { ok: false, refusal: "empty-edit" };
         const { improvementsProse: _cleared, ...kept } = previous;
         const feedback: Record<string, unknown> = {
           ...kept,
           improvements: input.improvements,
-          ...(input.improvementsProse
-            ? { improvementsProse: input.improvementsProse }
-            : {}),
+          ...(prose ? { improvementsProse: prose } : {}),
         };
         if (report.first_lesson) {
           const coldRecall = coldRecallInFeedback(feedback);
@@ -276,7 +294,7 @@ export class CoachReviewService {
               },
               improvementsProse: {
                 from: previous.improvementsProse ?? null,
-                to: input.improvementsProse ?? null,
+                to: prose ?? null,
               },
             }),
             edited_by: input.byUserId,

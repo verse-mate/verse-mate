@@ -718,6 +718,48 @@ describe("a delivered report can be revised", () => {
     expect(feedback.improvementsProse).toEqual(prose);
   });
 
+  it("an amended point keeps its stored evidence while its title is unchanged, and evidence sent with a point is kept as sent", async () => {
+    const stored = { quote: QUOTE, timestamp: "14:05" };
+    const sent = { quote: "Read before discussing.", timestamp: "03:10" };
+    await seed({
+      improvementsProse: [
+        { title: "Quiet members", paragraphs: ["Old."], evidence: stored },
+      ] as never,
+    });
+    const edited = await new CoachAmendService(
+      Database,
+      new FakeMailer(),
+    ).amend({
+      reportId: REPORT,
+      amendment: {
+        body: {
+          improvements: ["Call on quiet members", "Newcomers"],
+          improvementsProse: [
+            { title: "Quiet members", paragraphs: ["Call on them by name."] },
+            {
+              title: "Newcomers",
+              paragraphs: ["A first question."],
+              evidence: sent,
+            },
+          ],
+        },
+      },
+      byUserId: null,
+    });
+    expect(edited.applied).toBe(true);
+    const feedback = (
+      (await row()).body as { feedback: Record<string, unknown> }
+    ).feedback;
+    expect(feedback.improvementsProse).toEqual([
+      {
+        title: "Quiet members",
+        paragraphs: ["Call on them by name."],
+        evidence: stored,
+      },
+      { title: "Newcomers", paragraphs: ["A first question."], evidence: sent },
+    ]);
+  });
+
   it("a list amended without its prose records the cleared prose in the revision, and the kept versions show it", async () => {
     const stored = [
       { title: "Quiet members", paragraphs: ["Call on them by name."] },

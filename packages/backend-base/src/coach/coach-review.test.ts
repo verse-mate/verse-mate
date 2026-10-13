@@ -567,6 +567,44 @@ describe("an admin edits an undelivered report's improvements", () => {
     });
   });
 
+  it("a point whose title is unchanged keeps the evidence it cited, and a new point carries none", async () => {
+    const evidence = { quote: "We read it together.", timestamp: "12:30" };
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        body: JSON.stringify({
+          feedback: {
+            headline: "new study",
+            improvements: [COLD],
+            improvementsProse: [
+              { title: "No recap", paragraphs: ["Old words."], evidence },
+            ],
+          },
+        }),
+      })
+      .where("id", "=", REPORT)
+      .execute();
+    expect(
+      await svc.editImprovements({
+        reportId: REPORT,
+        improvements: ["Recap the passage", "Call on quiet members"],
+        improvementsProse: [
+          { title: "No recap", paragraphs: ["Recap the passage together."] },
+          { title: "Quiet members", paragraphs: ["Ask the quiet ones."] },
+        ],
+        byUserId: admin,
+      }),
+    ).toEqual({ ok: true });
+    expect((await feedback()).improvementsProse).toEqual([
+      {
+        title: "No recap",
+        paragraphs: ["Recap the passage together."],
+        evidence,
+      },
+      { title: "Quiet members", paragraphs: ["Ask the quiet ones."] },
+    ]);
+  });
+
   it("bullets edited without prose clear the old prose, so it cannot keep the cold recall", async () => {
     expect(
       await svc.editImprovements({

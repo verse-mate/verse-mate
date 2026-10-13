@@ -13,7 +13,12 @@ import {
   coldRecallInFeedback,
   evidenceFromBody,
 } from "./coach-governance.service";
-import { isLegacyReport, rescoreReport } from "./coach-review.service";
+import {
+  type ProsePoint,
+  carryEvidence,
+  isLegacyReport,
+  rescoreReport,
+} from "./coach-review.service";
 import {
   type BigIdeasReviewRow,
   validBigIdeasReviewRow,
@@ -48,7 +53,7 @@ export interface Amendment {
   firstLesson?: boolean;
   bigIdeasReview?: BigIdeasReviewRow;
   body?: Partial<Record<BodyTextField, string | string[]>> &
-    Partial<Record<ProseField, Array<{ title: string; paragraphs: string[] }>>>;
+    Partial<Record<ProseField, ProsePoint[]>>;
 }
 
 export type AmendRefusal =
@@ -206,7 +211,14 @@ export class CoachAmendService {
         const storedFeedback = (body.feedback ?? {}) as Record<string, unknown>;
         const feedback: Record<string, unknown> = {
           ...storedFeedback,
-          ...Object.fromEntries(bodyChanges),
+          ...Object.fromEntries(
+            bodyChanges.map(([field, value]) => [
+              field,
+              proseFields.includes(field)
+                ? carryEvidence(storedFeedback[field], value as ProsePoint[])
+                : value,
+            ]),
+          ),
         };
         const clearedProse = Object.entries(PROSE_OF)
           .filter(
