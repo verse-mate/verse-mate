@@ -225,7 +225,7 @@ PY
       WHERE \"firstName\" IN ('Google', 'Mixed') AND \"lastName\" = 'Leader';
     INSERT INTO user_sso_accounts (user_id, provider, provider_user_id, email)
       SELECT id, 'apple', 'synthetic-a-' || id, 'someone-else@example.test' FROM \"user\"
-      WHERE \"firstName\" IN ('Renamed', 'Mixed') AND \"lastName\" = 'Leader';
+      WHERE \"firstName\" IN ('Renamed', 'Mixed', 'Password') AND \"lastName\" = 'Leader';
     INSERT INTO coach_leaders (email, name) VALUES ('portal-added@example.test', 'Portal Added');
     UPDATE \"user\" SET email_verified_at = NULL;
   " -v l1="$l1" -v l2="$l2" -v l3="$l3" -v l4="$l4" -v l5="$l5" -v l6="$l6" -v admin="$admin" >/dev/null
@@ -248,10 +248,12 @@ synthetic_checks() {
     "$(q "SELECT \"emailVerified\" FROM \"user\" WHERE \"firstName\" = 'Program'")" f
   check "the portal-added leader (on the roster before the migrations) is cleared by the migration's sweep" \
     "$(q "SELECT \"emailVerified\" FROM \"user\" WHERE email = 'portal-added@example.test'")" f
-  check "links made for another address are removed from cleared accounts" \
-    "$(q "SELECT count(*) FROM user_sso_accounts WHERE email = 'someone-else@example.test'")" 0
-  check "the Mixed leader keeps its link for its own address" \
-    "$(q "SELECT count(*) FROM user_sso_accounts s JOIN \"user\" u ON u.id = s.user_id WHERE u.\"firstName\" = 'Mixed'")" 1
+  check "a link made for another address is removed from a cleared account with a password" \
+    "$(q "SELECT count(*) FROM user_sso_accounts s JOIN \"user\" u ON u.id = s.user_id WHERE u.\"firstName\" = 'Password' AND u.\"lastName\" = 'Leader'")" 0
+  check "cleared accounts with no password keep every link (Renamed 1, Mixed 2)" \
+    "$(q "SELECT string_agg(n::text, ' ' ORDER BY f) FROM (SELECT u.\"firstName\" f, count(*) n FROM user_sso_accounts s JOIN \"user\" u ON u.id = s.user_id WHERE u.\"firstName\" IN ('Mixed', 'Renamed') AND u.\"lastName\" = 'Leader' GROUP BY 1) x")" "2 1"
+  check "the Renamed leader can still sign in: its Apple sign-in finds the account through the link it kept" \
+    "$(q "SELECT u.\"firstName\" FROM user_sso_accounts s JOIN \"user\" u ON u.id = s.user_id WHERE s.provider = 'apple' AND s.provider_user_id = 'synthetic-a-' || u.id AND u.\"lastName\" = 'Leader' AND u.\"firstName\" = 'Renamed'")" Renamed
   check "no member's confirmation changed" \
     "$(q "SELECT count(*) FROM \"user\" WHERE \"firstName\" = 'Member' AND \"emailVerified\" <> (\"lastName\"::int % 3 <> 0)")" 0
 }
@@ -332,6 +334,10 @@ run() {
   q "SELECT source, lower(trim(email)), jsonb_array_length(removed_links) FROM coach_confirmation_clears
     ORDER BY 2, 1" >"$OUT/confirmation-clears.tsv"
   q "SELECT DISTINCT user_id FROM coach_confirmation_clears" | sort >"$WORK/recorded-ids.txt"
+  q "SELECT c.user_id, lower(trim(c.email)), count(s.id) FROM coach_confirmation_clears c
+    JOIN \"user\" u ON u.id = c.user_id AND u.password IS NULL
+    LEFT JOIN user_sso_accounts s ON s.user_id = c.user_id
+    GROUP BY 1, 2 ORDER BY 2" >"$OUT/passwordless-cleared.tsv"
   recorded="$(wc -l <"$WORK/recorded-ids.txt" | tr -d ' ')"
   unrecorded="$(comm -3 "$WORK/cleared-ids.txt" "$WORK/recorded-ids.txt" | wc -l | tr -d ' ')"
 
@@ -421,6 +427,7 @@ run() {
     echo "- Roster leaders: $leaders; admins: $admins; legacy reports: $legacy"
     echo "- Accounts whose confirmation changed: $changed (confirmation-changes.tsv)"
     echo "- Recorded clears (the sweep's and the roster triggers'): $(wc -l <"$OUT/confirmation-clears.tsv" | tr -d ' ') for $recorded account(s), against $turned_off confirmation(s) turned off (confirmation-clears.tsv: source, address, provider links removed)"
+    echo "- Cleared accounts with no password, which keep their provider links and sign in with them: $(wc -l <"$OUT/passwordless-cleared.tsv" | tr -d ' ') (passwordless-cleared.tsv: account, address, links kept)"
     echo "- The sweep rolled back with COACH_ROLLBACK_RESTORE_CONFIRMATIONS=1 (sweep-down.log), then applied again (sweep-up.log)"
     echo "- Accounts on roster or admin addresses that kept a confirmation without the new stamp (bind on their next Google or Apple sign-in, or the link): $kept_unstamped"
     echo

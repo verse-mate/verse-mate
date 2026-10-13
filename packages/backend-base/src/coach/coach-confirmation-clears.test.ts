@@ -6,7 +6,11 @@ import {
   clearUnprovenRosterConfirmations,
   down,
 } from "database/migrations/20261011190000-coach-clear-unproven-confirmations";
+import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 import { sql } from "kysely";
+
+import { AuthService } from "../auth/auth.service";
+import shared from "../shared/shared.plugin";
 
 const conn = Database.getOrCreateConnection();
 
@@ -257,6 +261,33 @@ describe("every cleared confirmation is recorded", () => {
           ]),
         ).toEqual([["joined", address, []]]);
       }
+    });
+  });
+
+  it("an account with no password is cleared but keeps every provider link, even one made for another address", async () => {
+    await rolledBack(async (trx) => {
+      await addLeader(trx, "clears-renamed", "clears-renamed@example.test");
+      const renamed = await confirmedBeforeDeploy(
+        trx,
+        "clears-renamed@example.test",
+        {
+          password: null,
+          links: [
+            {
+              address: "clears-private-relay@example.test",
+              providerUserId: "clears-r",
+            },
+          ],
+        },
+      );
+
+      await clearUnprovenRosterConfirmations(trx);
+
+      expect((await account(trx, renamed)).emailVerified).toBe(false);
+      expect(await links(trx, "clears-r")).toHaveLength(1);
+      expect((await records(trx, renamed)).map((r) => r.removed_links)).toEqual(
+        [[]],
+      );
     });
   });
 
@@ -533,5 +564,64 @@ describe("rolling the sweep back", () => {
       expect(await records(trx, id)).toEqual([]);
       expect(await restore(trx)).toContain("0 record(s) left");
     });
+  });
+});
+
+describe("a renamed account with no password still signs in after the deploy", () => {
+  it("its provider sign-in finds the same account through the link it kept", async () => {
+    const email = `clears-signin-${crypto.randomUUID()}@example.test`;
+    const slug = `clears-signin-${crypto.randomUUID()}`;
+    const providerUserId = `clears-signin-${crypto.randomUUID()}`;
+    const { id } = await conn
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "R",
+        lastName: "L",
+        emailVerified: true,
+        password: null,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    try {
+      await conn
+        .updateTable("user")
+        .set({ email_verified_at: null })
+        .where("id", "=", id)
+        .execute();
+      await conn
+        .insertInto("user_sso_accounts")
+        .values({
+          user_id: id,
+          provider: SsoProviderEnum.apple,
+          provider_user_id: providerUserId,
+          email: "relay-for-another-address@example.test",
+        })
+        .execute();
+      await conn
+        .insertInto("coach_leaders")
+        .values({ slug, email, name: "Renamed Leader" })
+        .execute();
+      expect((await account(conn as never, id)).emailVerified).toBe(false);
+
+      const session = await new AuthService(
+        shared.store.db,
+        shared.store.cache,
+        shared.store.notification,
+      ).loginWithSSO(
+        SsoProviderEnum.apple,
+        {
+          providerUserId,
+          email: "relay-for-another-address@example.test",
+          emailVerified: true,
+          name: "R L",
+        },
+        { sign: async (p: { sub: string }) => `token-${p.sub}` } as never,
+      );
+      expect(session.accessToken).toBe(`token-${id}`);
+    } finally {
+      await conn.deleteFrom("coach_leaders").where("slug", "=", slug).execute();
+      await conn.deleteFrom("user").where("id", "=", id).execute();
+    }
   });
 });
