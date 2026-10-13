@@ -87,6 +87,14 @@ const PARALLEL_RUN_HOLD =
 
 const NO_MAILER_HOLD = "held until delivered: no mailer is configured";
 
+const DELIVERED_FIRST = sql<boolean>`(
+  coach_reports.source_session_id LIKE 'legacy:%'
+  OR EXISTS (
+    SELECT 1 FROM coach_intake_sessions s
+    WHERE s.report_id = coach_reports.id AND s.state = 'delivered'
+  )
+)`;
+
 function newVersionHold(version: ScoringVersion | undefined): string {
   return `held for review: the first report to this leader under scoring version ${version?.languageModel ?? "unknown"} / prompt ${version?.promptVersion ?? "unknown"} / settings ${JSON.stringify(version?.settings ?? null)}`;
 }
@@ -235,10 +243,14 @@ export class CoachPipelineService {
           LIMIT 1
         )`.as("storedScore"),
       ])
+      .distinctOn("coach_reports.session_date")
       .where("coach_reports.coach_id", "=", coachId)
       .where("coach_reports.session_date", "<", sql<Date>`${sessionDate}::date`)
       .where("coach_reports.source_session_id", "!=", sourceSessionId)
+      .where("coach_reports.held", "=", false)
       .orderBy("coach_reports.session_date", "desc")
+      .orderBy(DELIVERED_FIRST, "desc")
+      .orderBy("coach_reports.updated_at", "desc")
       .execute();
     return authenticityBaseline(
       prior.map((p) => {
@@ -281,10 +293,14 @@ export class CoachPipelineService {
       .selectFrom("coach_reports")
       .select(["metrics"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
+      .distinctOn("session_date")
       .where("coach_id", "=", coachId)
       .where("session_date", "<", sql<Date>`${sessionDate}::date`)
       .where("source_session_id", "!=", sourceSessionId)
+      .where("held", "=", false)
       .orderBy("session_date", "desc")
+      .orderBy(DELIVERED_FIRST, "desc")
+      .orderBy("updated_at", "desc")
       .limit(HISTORY_SESSIONS)
       .execute();
     return prior.map((p) => ({
