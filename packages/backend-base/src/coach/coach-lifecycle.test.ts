@@ -60,8 +60,6 @@ class Provider implements FirefliesDetailClient {
       audio_url: null,
       video_url: "https://cdn.fireflies.ai/rec/life.mp4",
       transcript_url: null,
-      participantCount: 9,
-      summary: { overview: "ok" },
       sentences: bodySentences(),
     };
   }

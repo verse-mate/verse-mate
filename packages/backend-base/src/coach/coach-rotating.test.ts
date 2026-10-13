@@ -459,8 +459,6 @@ describe("naming a rotating class's leader (task 5.19)", () => {
         audio_url: null,
         video_url: null,
         transcript_url: null,
-        participantCount: 10,
-        summary: null,
         sentences: [...bodySentences(), ...extra],
       };
     }

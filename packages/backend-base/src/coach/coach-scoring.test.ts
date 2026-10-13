@@ -983,6 +983,20 @@ describe("prompts sent in OpenAI JSON mode", () => {
   });
 });
 
+describe("what the prompts say about leaders and speaker labels", () => {
+  it("scoring forbids comparing with or naming another leader, and both scoring and the body say labels can be wrong or missing", async () => {
+    const { CoachReportBodyService } = await import(
+      "./coach-report-body.service"
+    );
+    const scoring = CoachScoringService.buildInstructions();
+    expect(scoring).toContain("No comparison with any other leader");
+    for (const prompt of [scoring, CoachReportBodyService.buildInstructions()])
+      expect(prompt).toMatch(
+        /Speaker labels can be wrong or missing[\s\S]*Judge whose turn a\s+line is from what is said/,
+      );
+  });
+});
+
 describe("token budgets on a reasoning model", () => {
   it("the leader-cue and vision calls each have a budget that leaves room for reasoning, since gpt-5 counts reasoning against the limit", async () => {
     const asked: number[] = [];

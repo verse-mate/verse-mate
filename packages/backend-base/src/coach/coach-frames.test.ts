@@ -107,7 +107,7 @@ describe("frames are extracted by streaming, never via container disk", () => {
     expect(frames.length).toBe(FRAME_SAMPLE_COUNT);
   });
 
-  it("a session with no stored video yields no frames and calls no ffmpeg", async () => {
+  it("a session whose recording is missing from storage is an error, and calls no ffmpeg", async () => {
     let called = false;
     const svc = new CoachFrameService({
       storage: new FakeStorage(false),
@@ -116,7 +116,7 @@ describe("frames are extracted by streaming, never via container disk", () => {
         return [];
       },
     });
-    expect(await svc.extract("missing")).toEqual([]);
+    expect(svc.extract("missing")).rejects.toThrow("not in storage");
     expect(called).toBe(false);
   });
 });

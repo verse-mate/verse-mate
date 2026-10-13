@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 
-import { HttpFirefliesClient } from "./fireflies.client";
+import { HttpFirefliesClient, isLeaderLabel } from "./fireflies.client";
 
 /**
  * The pseudonymisation, tested by RUNNING it.
@@ -32,8 +32,6 @@ function transcriptResponse(sentences: unknown[]) {
           audio_url: null,
           video_url: "https://cdn.fireflies.ai/rec/abc.mp4",
           transcript_url: null,
-          speakers: [{ id: "s1" }, { id: "s2" }, { id: "s3" }],
-          summary: { overview: "ok" },
           sentences,
         },
       },
@@ -148,9 +146,7 @@ describe("the client pseudonymises speakers before anything downstream sees them
     expect(flags).toEqual([true, false, true, false]);
   });
 
-  it("matches a partial provider label against the roster name, both directions", async () => {
-    // The provider labels a speaker "Bryan" where the roster says "Bryan
-    // Bailey", and sometimes the reverse. Dimensions 4 and 6 depend on this.
+  it("matches a label that is the leader's first name", async () => {
     const f = spyOn(globalThis, "fetch").mockImplementation(async () =>
       transcriptResponse([
         {
@@ -192,7 +188,7 @@ describe("the client pseudonymises speakers before anything downstream sees them
     );
   });
 
-  it("participantCount is a COUNT, and no roster is requested", async () => {
+  it("asks for no roster, no speaker list and no summary, and returns no head count", async () => {
     let sentBody = "";
     const f = spyOn(globalThis, "fetch").mockImplementation(
       async (_u: unknown, init?: unknown) => {
@@ -206,7 +202,10 @@ describe("the client pseudonymises speakers before anything downstream sees them
     );
     f.mockRestore();
 
-    expect(detail?.participantCount).toBe(3);
+    expect(detail && "participantCount" in detail).toBe(false);
+    expect(detail && "summary" in detail).toBe(false);
+    expect(sentBody).not.toContain("speakers");
+    expect(sentBody).not.toContain("summary");
     expect(sentBody).not.toContain("meeting_attendees");
     expect(sentBody).not.toContain("displayName");
   });
@@ -233,6 +232,25 @@ describe("the client pseudonymises speakers before anything downstream sees them
     expect(new Set(ids).size).toBe(2);
     // And an empty label must not be read as matching the leader.
     expect((detail?.sentences ?? [])[0].isLeader).toBe(false);
+  });
+});
+
+describe("a speaker label is the leader's only when it is a whole name of theirs", () => {
+  it("the full name, or a first name equal to the label", () => {
+    expect(isLeaderLabel("Bryan Bailey", "Bryan Bailey")).toBe(true);
+    expect(isLeaderLabel("bryan", "Bryan Bailey")).toBe(true);
+    expect(isLeaderLabel("Bryan Bailey", "Bryan")).toBe(true);
+    expect(isLeaderLabel("Brendan", "Brendan & Elizabeth")).toBe(true);
+    expect(isLeaderLabel("Elizabeth", "Brendan & Elizabeth")).toBe(true);
+  });
+
+  it("a name inside another name is not the leader", () => {
+    expect(isLeaderLabel("Ryan", "Bryan Bailey")).toBe(false);
+    expect(isLeaderLabel("Bryan Baileys", "Bryan Bailey")).toBe(false);
+    expect(isLeaderLabel("Bailey", "Bryan Bailey")).toBe(false);
+    expect(isLeaderLabel("Bryan Smith", "Bryan Bailey")).toBe(false);
+    expect(isLeaderLabel("", "Bryan Bailey")).toBe(false);
+    expect(isLeaderLabel("Bryan", "")).toBe(false);
   });
 });
 

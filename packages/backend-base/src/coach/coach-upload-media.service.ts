@@ -227,8 +227,6 @@ export class CoachUploadMediaService {
       sourceSessionId: upload.sourceSessionId,
       title: upload.title,
       duration: minutes,
-      participantCount: null,
-      summary: null,
       sentences: lines.map((line, index) => ({
         index,
         speakerId: line.speakerId,
