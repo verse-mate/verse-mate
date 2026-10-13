@@ -1,6 +1,7 @@
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import { coachPipelineLive } from "./coach-cutover";
 import { datasetMeta, datasetToRows } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 
@@ -81,7 +82,27 @@ export async function backfillCoachStore(
     await assertBundleKeepsStore(trx as Executor, dataset);
 
     let changed = false;
+    const live = coachPipelineLive();
     for (const row of rows) {
+      if (live) {
+        const updated = await trx
+          .updateTable("coach_reports")
+          .set({
+            summary: row.summary,
+            metrics: row.metrics,
+            body: row.body,
+            updated_at: new Date(),
+          })
+          .where("source_session_id", "=", row.source_session_id)
+          .where(
+            sql`(coach_reports.summary, coach_reports.metrics, coach_reports.body)`,
+            "is distinct from",
+            sql`(${JSON.stringify(row.summary)}::jsonb, ${JSON.stringify(row.metrics)}::jsonb, ${JSON.stringify(row.body)}::jsonb)`,
+          )
+          .executeTakeFirst();
+        if (Number(updated.numUpdatedRows ?? 0) > 0) changed = true;
+        continue;
+      }
       const written = await trx
         .insertInto("coach_reports")
         .values({

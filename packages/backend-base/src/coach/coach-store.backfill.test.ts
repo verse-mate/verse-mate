@@ -154,6 +154,42 @@ describe("coach-store backfill (DB)", () => {
     }
     expect(await countsByCoach()).toEqual(before);
   });
+
+  it("after cutover a bundle push inserts no new host report, and still updates an existing one", async () => {
+    await clear();
+    const [first, ...rest] = bundle.coaches[0].reports;
+    const withoutFirst = structuredClone(bundle);
+    withoutFirst.coaches[0].reports = rest;
+    await backfillCoachStore(withoutFirst);
+    const before = await countsByCoach();
+
+    const edited = structuredClone(bundle) as Bundle & {
+      coaches: Array<{ reports: Array<{ id: string; topic?: string }> }>;
+    };
+    edited.coaches[0].reports[1].topic = "edited upstream";
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    try {
+      await backfillCoachStore(edited);
+    } finally {
+      delete process.env[COACH_PIPELINE_LIVE];
+    }
+    expect(await countsByCoach()).toEqual(before);
+    expect(
+      await conn
+        .selectFrom("coach_reports")
+        .select("id")
+        .where("id", "=", first.id)
+        .executeTakeFirst(),
+    ).toBeUndefined();
+    const updated = await conn
+      .selectFrom("coach_reports")
+      .select("summary")
+      .where("id", "=", rest[0].id)
+      .executeTakeFirstOrThrow();
+    expect((updated.summary as { topic?: string }).topic).toBe(
+      "edited upstream",
+    );
+  });
 });
 
 describe("The Backfill Never Shrinks The Store", () => {
