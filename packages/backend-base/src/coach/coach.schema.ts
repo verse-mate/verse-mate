@@ -592,6 +592,13 @@ export const ParallelRunComparisonSchema = t.Object({
       withinOne: t.Number(),
       comparable: t.Number(),
       flagged: t.Boolean(),
+      flagReasons: t.Array(
+        t.Union([
+          t.Literal("composite"),
+          t.Literal("dimension"),
+          t.Literal("one-sided-not-applicable"),
+        ]),
+      ),
     }),
   ),
   needsPairing: t.Array(

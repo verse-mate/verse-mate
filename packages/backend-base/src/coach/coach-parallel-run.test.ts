@@ -5,6 +5,7 @@ import { reattributeSession } from "./coach-attribution";
 import {
   type ParallelRunComparison,
   compareScores,
+  endParallelRun,
   parallelRunComparison,
 } from "./coach-parallel-run";
 import { legacySourceSessionId } from "./coach-store.transform";
@@ -143,7 +144,7 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
   });
   afterEach(clear);
 
-  it("A session both systems scored: host 78.0 with 4, 3, 5 against backend 74.5 with 4, 4, not-applicable differs by 3.5, 2 of 2 within one, not flagged", () => {
+  it("A session both systems scored: host 78.0 with 4, 3, 5 against backend 74.5 with 4, 4, not-applicable differs by 3.5, 2 of 2 within one, flagged only for the one-sided not-applicable", () => {
     const compared = compareScores(
       { composite: 78.0, dimensions: [4, 3, 5] },
       { composite: 74.5, dimensions: [4, 4, null] },
@@ -156,10 +157,11 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
     ]);
     expect(compared.withinOne).toBe(2);
     expect(compared.comparable).toBe(2);
-    expect(compared.flagged).toBe(false);
+    expect(compared.flagged).toBe(true);
+    expect(compared.flagReasons).toEqual(["one-sided-not-applicable"]);
   });
 
-  it("A session both systems scored, read from the store: host 78.0 with 4, 3, 5 against backend 74.5 with 4, 4, not-applicable differs by 3.5, 2 of 2 within one, not flagged", async () => {
+  it("A session both systems scored, read from the store: host 78.0 with 4, 3, 5 against backend 74.5 with 4, 4, not-applicable differs by 3.5, 2 of 2 within one, flagged only for the one-sided not-applicable", async () => {
     const machine = twelve([4, 4, null]);
     const { base } = composeBaseScore(
       new Map(machine.map((score, i) => [i + 1, score])),
@@ -181,7 +183,8 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
       compositeDifference: 3.5,
       withinOne: 2,
       comparable: 2,
-      flagged: false,
+      flagged: true,
+      flagReasons: ["one-sided-not-applicable"],
     });
     expect(sessions[0].dimensions.slice(0, 3)).toEqual([
       { n: 1, host: 4, backend: 4, difference: 0 },
@@ -190,7 +193,7 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
     ]);
   });
 
-  it("a dimension not-applicable on the host's side is shown and left out, and half points from the host compare as they are: 1.5 apart is neither within one nor flagged", () => {
+  it("a dimension not-applicable on the host's side is shown, left out of the share and flagged as its own reason, and half points from the host compare as they are: 1.5 apart is neither within one nor flagged", () => {
     const compared = compareScores(
       { composite: 80, dimensions: [null, 3.5, 4.5] },
       { composite: 80, dimensions: [4, 5, 4] },
@@ -202,7 +205,13 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
     ]);
     expect(compared.comparable).toBe(2);
     expect(compared.withinOne).toBe(1);
-    expect(compared.flagged).toBe(false);
+    expect(compared.flagReasons).toEqual(["one-sided-not-applicable"]);
+    expect(
+      compareScores(
+        { composite: 80, dimensions: [null, 3.5, 4.5] },
+        { composite: 80, dimensions: [null, 5, 4] },
+      ).flagged,
+    ).toBe(false);
   });
 
   it("matches the backend's session to the host's report on leader and date, using the machine scores before any admin correction", async () => {
@@ -443,5 +452,41 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
     const { sessions, unmatched } = await read();
     expect(sessions).toEqual([]);
     expect(unmatched.backend).toEqual([]);
+  });
+});
+
+describe("ending the parallel run at cutover", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  it("a session the host never reported leaves the parallel run, and one the host reported stays in it", async () => {
+    await backend("ff-parallel-reported", A, "2026-10-01", twelve([4]));
+    await host(A, "2026-10-01", 78, twelve([4]));
+    await backend("ff-parallel-unreported", A, "2026-10-08", twelve([4]));
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "ff-parallel-unattributed",
+        coach_id: null,
+        matched_by: "unresolved",
+        title: "t",
+        session_date: "2026-10-08",
+        state: "observed",
+        parallel_run: true,
+      })
+      .execute();
+
+    expect(await endParallelRun(Database)).toBe(1);
+    const rows = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["source_session_id", "parallel_run"])
+      .where("source_session_id", "like", "ff-parallel-%")
+      .orderBy("source_session_id")
+      .execute();
+    expect(rows).toEqual([
+      { source_session_id: "ff-parallel-reported", parallel_run: true },
+      { source_session_id: "ff-parallel-unattributed", parallel_run: true },
+      { source_session_id: "ff-parallel-unreported", parallel_run: false },
+    ]);
   });
 });

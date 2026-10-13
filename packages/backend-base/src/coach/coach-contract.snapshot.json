@@ -3942,6 +3942,25 @@
                   },
                   "flagged": {
                     "type": "boolean"
+                  },
+                  "flagReasons": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "const": "composite",
+                          "type": "string"
+                        },
+                        {
+                          "const": "dimension",
+                          "type": "string"
+                        },
+                        {
+                          "const": "one-sided-not-applicable",
+                          "type": "string"
+                        }
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -3953,7 +3972,8 @@
                   "dimensions",
                   "withinOne",
                   "comparable",
-                  "flagged"
+                  "flagged",
+                  "flagReasons"
                 ]
               }
             },

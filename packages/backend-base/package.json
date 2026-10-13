@@ -14,7 +14,8 @@
     "jesus:review": "bun ./src/jesus/scripts/review-jesus-content.ts",
     "coach:calibrate": "bun ./src/coach/coach-calibration.runner.ts",
     "coach:calibrate:claude": "bun ./src/coach/coach-calibration.claude-cli.ts",
-    "coach:contract": "bun ./src/coach/coach-contract.ts"
+    "coach:contract": "bun ./src/coach/coach-contract.ts",
+    "coach:end-parallel-run": "bun ./src/coach/coach-end-parallel-run.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "1.4.0",

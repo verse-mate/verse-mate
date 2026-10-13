@@ -754,6 +754,7 @@ async function botRecorded(
     .selectFrom("coach_intake_sessions")
     .select("source_session_id")
     .where("source", "=", "bot")
+    .where("parallel_run", "=", false)
     .where("class_key", "=", classKey)
     .where("session_date", "=", sql<Date>`${date}::date`)
     .where((eb) =>
