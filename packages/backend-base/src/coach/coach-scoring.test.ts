@@ -6,7 +6,6 @@ import coachLeaderMapJson from "./coach-leader-map.json";
 import { CoachReviewService } from "./coach-review.service";
 import {
   CoachScoringService,
-  DEFAULT_SCORING_MODEL,
   MAX_TRANSCRIPT_CHARS,
   SCORING_LEVELS,
   SCORING_REQUEST,
@@ -1210,6 +1209,8 @@ describe("Thin evidence scores low, not not-applicable", () => {
 
 describe("the scoring model", () => {
   it("scores on gpt-6-astra, and the text, vision and leader-cue calls all use it", async () => {
+    const setting = process.env.COACH_SCORING_MODEL;
+    process.env.COACH_SCORING_MODEL = "";
     const models: string[] = [];
     class Models extends VisionFours {
       override async chatComplete(opts: AiChatOptions) {
@@ -1220,12 +1221,12 @@ describe("the scoring model", () => {
       }
     }
     const svc = new CoachScoringService(Database, new Models(ALL_FOURS));
+    process.env.COACH_SCORING_MODEL = setting ?? "";
     await svc.scoreSession({ ...INPUT, frames: [new Uint8Array([1])] });
     await svc.nameRotatingLeader({
       transcript: INPUT.transcript,
       leaders: [{ slug: "leader-a", name: "Leader A" }],
     });
-    expect(DEFAULT_SCORING_MODEL).toBe("gpt-6-astra");
     expect(models).toEqual(["gpt-6-astra", "gpt-6-astra", "gpt-6-astra"]);
   });
 });

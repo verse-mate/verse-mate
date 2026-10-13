@@ -4,6 +4,7 @@ import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 import { type AiProvider, getAiProvider } from "../shared/ai";
 import type { db } from "../shared/shared.plugin";
+import { coachModel } from "./coach-models";
 import { type TimedLine, renderLine, spokenText } from "./coach-transcript";
 import {
   CLUSTERS,
@@ -32,8 +33,6 @@ import {
  *
  * No operator need be present at any point.
  */
-
-export const DEFAULT_SCORING_MODEL = "gpt-6-astra";
 
 export const SCORING_REQUEST = {
   textMaxTokens: 32000,
@@ -373,7 +372,7 @@ export class CoachScoringService {
   constructor(
     private readonly db: db,
     ai?: AiProvider,
-    private readonly model: string = DEFAULT_SCORING_MODEL,
+    private readonly model: string = coachModel("COACH_SCORING_MODEL"),
   ) {
     this.ai = ai ?? getAiProvider();
   }

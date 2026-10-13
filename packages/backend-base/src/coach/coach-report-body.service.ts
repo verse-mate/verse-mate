@@ -3,6 +3,7 @@ import {
   coldRecallImprovements,
   normalizeQuote,
 } from "./coach-governance.service";
+import { coachModel } from "./coach-models";
 import { SCORECARD_RATINGS, withoutBigIdeasReviewRow } from "./coach-scorecard";
 import { boundedTranscript } from "./coach-scoring.service";
 import {
@@ -16,7 +17,6 @@ import {
 } from "./coach-transcript";
 import { DIMENSIONS } from "./rubric";
 
-export const BODY_MODEL = "gpt-5";
 export const BODY_MAX_TOKENS = 64000;
 export const MAX_SESSION_ROW_CHARS = 80;
 export const MAX_KEY_MOMENTS = 5;
@@ -173,7 +173,7 @@ function mean(values: number[]): number {
 export class CoachReportBodyService {
   constructor(
     private readonly ai: AiProvider,
-    private readonly model: string = BODY_MODEL,
+    private readonly model: string = coachModel("COACH_BODY_MODEL"),
   ) {}
 
   static buildInstructions(): string {
