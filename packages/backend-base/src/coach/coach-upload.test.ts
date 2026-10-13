@@ -426,6 +426,16 @@ describe("A Leader Can Upload A Session Video (task 4.13)", () => {
     });
   });
 
+  it("each part's address is signed for that part's exact length, the last one shorter", async () => {
+    const asked = await request({ fileBytes: UPLOAD_PART_BYTES * 2 + 10 });
+    if (!asked.ok) throw new Error(asked.refusal);
+    expect(
+      [1, 2, 3].map((n) =>
+        storage.signedLengths.get(uploadPartKey(asked.uploadId, n)),
+      ),
+    ).toEqual([UPLOAD_PART_BYTES, UPLOAD_PART_BYTES, 10]);
+  });
+
   it("An upload for a date the host already reported is listed as a likely duplicate and not scored; dismissing it fails the upload and deletes its parts", async () => {
     await conn
       .insertInto("coach_reports")

@@ -18,6 +18,7 @@ export const UPLOAD_MAX_SECONDS = 4 * 60 * 60;
 export const MEDIA_ATTEMPTS = 3;
 const CLAIM_LAPSES = sql`interval '2 hours'`;
 const ABANDONED_AFTER = sql`interval '24 hours'`;
+export const ORPHAN_PART_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
 
 export interface MediaProbe {
   probe(url: string): Promise<{ hasVideo: boolean; seconds: number }>;
@@ -181,6 +182,35 @@ export class CoachUploadMediaService {
     for (const upload of abandoned)
       for (const key of partKeys(upload.id as string, upload.parts))
         await this.storage.deleteObject(key);
+    await this.sweepOrphanedParts();
+  }
+
+  async sweepOrphanedParts(now = new Date()): Promise<number> {
+    const old = (await this.storage.listGlobalObjects("coach/uploads/")).filter(
+      (o) =>
+        o.lastModified !== null &&
+        now.getTime() - o.lastModified.getTime() > ORPHAN_PART_AFTER_MS,
+    );
+    if (old.length === 0) return 0;
+    const ids = [...new Set(old.map((o) => o.key.split("/")[2] ?? ""))];
+    const live = new Set(
+      (
+        await this.db
+          .getOrCreateConnection()
+          .selectFrom("coach_uploads")
+          .select(sql<string>`id::text`.as("id"))
+          .where(sql<string>`id::text`, "in", ids)
+          .where("state", "in", ["awaiting-file", "received"])
+          .execute()
+      ).map((u) => u.id),
+    );
+    let deleted = 0;
+    for (const o of old)
+      if (!live.has(o.key.split("/")[2] ?? "")) {
+        await this.storage.deleteObject(o.key);
+        deleted += 1;
+      }
+    return deleted;
   }
 
   private async processOne(upload: {
