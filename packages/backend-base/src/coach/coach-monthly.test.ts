@@ -2,10 +2,17 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import { Value } from "@sinclair/typebox/value";
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+
 import { CoachMonthlyService } from "./coach-monthly.service";
 import { isolateTable } from "./coach-test-tables";
+import {
+  MODEL_INITIATIVES_MAX,
+  MONTHLY_INITIATIVES_MAX,
+  MonthlyReportEditSchema,
+} from "./coach.schema";
 import { CoachService } from "./coach.service";
 import {
   DIMENSIONS,
@@ -627,6 +634,32 @@ describe("The Program Owners Get A Monthly Program Report (task 6.16)", () => {
       p.initiatives.some(
         (i: string) => i.includes("Prayer") && i.includes("3 of 3 leaders"),
       ),
+    ).toBe(true);
+  });
+
+  it("every dimension weak across the program: the most initiatives the generator writes still fit the edit's limit", async () => {
+    await sentBefore();
+    for (const [leader, day] of [
+      [ANA, "03"],
+      [BEN, "04"],
+    ] as const)
+      await report(leader, `2031-09-${day}`, () => 1);
+    await service(
+      new Mailer(),
+      new MonthlyAi(undefined, (ids, f) =>
+        programProse(ids, {
+          initiatives: f
+            .slice(0, MODEL_INITIATIVES_MAX)
+            .map((figure) => ({ text: "Act on it", figure })),
+        }),
+      ),
+    ).produce("2031-09");
+    const p = (await rows()).find((r) => r.kind === "program")
+      ?.summary as Record<string, any>;
+    expect(p.initiatives.length).toBeGreaterThan(5);
+    expect(p.initiatives.length).toBeLessThanOrEqual(MONTHLY_INITIATIVES_MAX);
+    expect(
+      Value.Check(MonthlyReportEditSchema, { initiatives: p.initiatives }),
     ).toBe(true);
   });
 
