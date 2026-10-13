@@ -426,7 +426,7 @@ describe("A Leader Can Upload A Session Video (task 4.13)", () => {
     });
   });
 
-  it("An upload for a date the host already reported is listed as a likely duplicate and not scored; dismissing it fails the upload", async () => {
+  it("An upload for a date the host already reported is listed as a likely duplicate and not scored; dismissing it fails the upload and deletes its parts", async () => {
     await conn
       .insertInto("coach_reports")
       .values({
@@ -453,7 +453,9 @@ describe("A Leader Can Upload A Session Video (task 4.13)", () => {
       against: "host-report",
       canScoreInstead: false,
     });
+    expect(storage.objects.has(uploadPartKey(id, 1))).toBe(true);
     expect(await uploads.dismissDuplicate(uploadSessionId(id))).toBe(true);
+    expect(storage.objects.has(uploadPartKey(id, 1))).toBe(false);
     expect((await uploads.list(LEADER))[0]).toMatchObject({
       status: "failed",
       reason: DISMISSED_DUPLICATE,

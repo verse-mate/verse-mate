@@ -522,7 +522,7 @@ export class CoachUploadService {
           sessionDate: r.date,
           duplicateOf: r.duplicateOf,
           against:
-            r.source === "upload"
+            r.otherState === null
               ? ("host-report" as const)
               : ("upload" as const),
           canScoreInstead:
@@ -534,7 +534,8 @@ export class CoachUploadService {
   }
 
   async dismissDuplicate(sourceSessionId: string): Promise<boolean> {
-    return this.db
+    const garbage: string[] = [];
+    const dismissed = await this.db
       .getOrCreateConnection()
       .transaction()
       .execute(async (trx) => {
@@ -546,13 +547,17 @@ export class CoachUploadService {
           .where("duplicate_dismissed_at", "is", null)
           .executeTakeFirst();
         if (Number(dismissed.numUpdatedRows ?? 0) === 0) return false;
-        await trx
+        const uploads = await trx
           .updateTable("coach_uploads")
           .set({ state: "failed", failure: DISMISSED_DUPLICATE })
           .where("source_session_id", "=", sourceSessionId)
+          .returning(["id", "parts"])
           .execute();
+        for (const u of uploads) garbage.push(...partKeys(u.id, u.parts));
         return true;
       });
+    await this.collect(garbage);
+    return dismissed;
   }
 
   async scoreInstead(
