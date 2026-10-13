@@ -1,5 +1,11 @@
 import { t } from "elysia";
 
+import { DIMENSIONS } from "./rubric";
+
+export const MODEL_INITIATIVES_MAX = 3;
+export const MONTHLY_INITIATIVES_MAX =
+  MODEL_INITIATIVES_MAX + DIMENSIONS.length;
+
 // ─── Coach response schemas ────────────────────────────────────────────────
 //
 // Pure TypeBox schemas for the /coach/* responses, kept in a side-effect-free
@@ -1209,7 +1215,9 @@ export const MonthlyReportEditSchema = t.Object({
     t.Array(t.String({ maxLength: 4000 }), { maxItems: 5 }),
   ),
   initiatives: t.Optional(
-    t.Array(t.String({ maxLength: 2000 }), { maxItems: 5 }),
+    t.Array(t.String({ maxLength: 2000 }), {
+      maxItems: MONTHLY_INITIATIVES_MAX,
+    }),
   ),
   snapshots: t.Optional(t.Record(t.String(), t.String({ maxLength: 4000 }))),
 });

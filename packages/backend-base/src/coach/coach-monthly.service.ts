@@ -16,6 +16,7 @@ import {
 import { checkBenchmarkName, normalizeQuote } from "./coach-governance.service";
 import { groupAddresses } from "./coach-rotating.service";
 import { rowToReport } from "./coach-store.transform";
+import { MODEL_INITIATIVES_MAX } from "./coach.schema";
 import {
   type CoachMailer,
   type CoachReport,
@@ -715,12 +716,13 @@ export class CoachMonthlyService {
     const written = list(raw.initiatives).map(record);
     if (
       written.length < 2 ||
-      written.length > 3 ||
+      written.length > MODEL_INITIATIVES_MAX ||
       written.some((i) => !text(i.text) || !byId.has(text(i.figure)))
     )
       issues.push("initiatives: two or three, each tied to a given figure");
     const initiatives = written
       .filter((i) => text(i.text) && byId.has(text(i.figure)))
+      .slice(0, MODEL_INITIATIVES_MAX)
       .map((i) => `${text(i.text)} (${byId.get(text(i.figure))})`);
     for (const w of weak.filter((w) => w.count * 2 > active.length))
       if (!initiatives.some((i) => i.includes(byId.get(`weak-${w.d.n}`) ?? "")))
