@@ -258,8 +258,8 @@ describe("bot intake and the host's reports", () => {
       .execute();
   });
 
-  it("sessions dated before the leader's newest host report are ignored", async () => {
-    await new CoachIntakeService(
+  it("sessions dated before the leader's newest host report are ignored, and counted", async () => {
+    const result = await new CoachIntakeService(
       Database,
       new FakeFireflies([
         [
@@ -271,6 +271,7 @@ describe("bot intake and the host's reports", () => {
     expect(await sessions()).toEqual([
       { source_session_id: "ff-new", state: "observed", duplicate_of: null },
     ]);
+    expect(result).toMatchObject({ observed: 1, floorSkipped: 1 });
   });
 
   it("after cutover, a session on a date the host reported is a likely duplicate, not scored", async () => {

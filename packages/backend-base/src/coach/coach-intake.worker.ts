@@ -53,6 +53,7 @@ export interface CoachIntakeRunResult {
   observed: number;
   alreadySeen: number;
   unresolved: number;
+  floorSkipped: number;
   retrievalAttempted: number;
   retained: number;
   held: number;
@@ -94,7 +95,7 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
     console.error("[COACH-INTAKE] upload phase failed:", error);
   }
 
-  let poll = { observed: 0, alreadySeen: 0, unresolved: 0 };
+  let poll = { observed: 0, alreadySeen: 0, unresolved: 0, floorSkipped: 0 };
   let sweep = { attempted: 0, retained: 0, held: 0, failed: 0 };
   if (configured) {
     try {
@@ -135,6 +136,7 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
     observed: poll.observed,
     alreadySeen: poll.alreadySeen,
     unresolved: poll.unresolved,
+    floorSkipped: poll.floorSkipped,
     retrievalAttempted: sweep.attempted,
     retained: sweep.retained,
     held: sweep.held,
@@ -184,6 +186,7 @@ coachIntakeWorker.on("completed", (job) => {
   console.log(
     `[COACH-INTAKE] job ${job?.id} done: observed=${r?.observed} ` +
       `alreadySeen=${r?.alreadySeen} unresolved=${r?.unresolved} ` +
+      `floorSkipped=${r?.floorSkipped} ` +
       `retained=${r?.retained} held=${r?.held} failed=${r?.retrievalFailed} ` +
       `delivered=${r?.delivered} awaitingReview=${r?.awaitingReview} ` +
       `pipelineFailed=${r?.pipelineFailed} pruned=${r?.pruned}`,
