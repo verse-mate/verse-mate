@@ -5,6 +5,7 @@ type CorsEnv = Record<string, string | undefined>;
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://app.versemate.org",
   "https://admin.versemate.org",
+  "https://mobile.versemate.org",
   "https://staging.app.verse-mate.xyz",
   "https://versemate.org",
   "https://www.versemate.org",
@@ -22,6 +23,8 @@ const PREVIEW_WORKERS = [
   "verse-mate-website-preview",
   "verse-mate-website-staging",
   "verse-mate-website-production",
+  "verse-mate-mobile-web",
+  "verse-mate-mobile-web-preview",
 ];
 
 const PREVIEW_ORIGIN = new RegExp(

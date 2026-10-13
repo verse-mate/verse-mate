@@ -89,6 +89,9 @@ describe("CORS policy", () => {
       "https://v-m-preview-app.verse-mate.workers.dev",
       "https://feature-x-v-m-preview.verse-mate.workers.dev",
       "https://pr-12-verse-mate-website-preview.verse-mate.workers.dev",
+      "https://mobile.versemate.org",
+      "https://verse-mate-mobile-web.verse-mate.workers.dev",
+      "https://verse-mate-mobile-web-preview.verse-mate.workers.dev",
     ]) {
       it(`allows ${origin} with credentials`, async () => {
         const response = await get(app, { origin });
