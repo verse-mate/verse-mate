@@ -185,6 +185,7 @@ export const stuck = (eb: Sessions) =>
       eb.or([
         eb("hold_kind", "is not", null),
         eb("release_required", "=", true),
+        eb("parallel_run", "=", false),
       ]),
     ]),
     eb.and([eb("coach_id", "is", null), eb.not(awaitingLeaderCue(eb))]),

@@ -66,6 +66,7 @@ const SEEDS: Seed[] = [
   { n: 12, state: "scoring_failed", report: true },
   { n: 13, state: "delivered", report: true },
   { n: 14, state: "delivery_pending", report: true, parallel: true },
+  { n: 15, state: "scored", report: true, parallel: true },
 ];
 
 async function clear() {
@@ -160,10 +161,10 @@ describe("the session state machine", () => {
     ["scorable", scorable, [2]],
     ["claimable", claimable, [3, 4, 6, 9]],
     ["redeliverable", redeliverable, [6, 7, 9]],
-    ["unsentAfterPublish", unsentAfterPublish, [3, 5, 8, 9]],
-    ["releasable", releasable, [3, 4, 5, 7]],
+    ["unsentAfterPublish", unsentAfterPublish, [3, 5, 8, 9, 15]],
+    ["releasable", releasable, [3, 4, 5, 7, 15]],
     ["requeuable", requeuable, [10, 12]],
-    ["stuck", stuck, [1, 4, 5, 6, 7, 10, 11, 12, 14]],
+    ["stuck", stuck, [1, 3, 4, 5, 6, 7, 10, 11, 12, 14]],
   ] as Array<[string, Predicate, number[]]>)(
     "%s selects exactly its sessions",
     async (_name, predicate, expected) => {
