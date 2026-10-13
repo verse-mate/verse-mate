@@ -111,7 +111,10 @@ export class CoachPublishService {
       .executeTakeFirst();
 
     const summary = {
-      dateLabel: input.sessionDate,
+      dateLabel: new Date(`${input.sessionDate}T00:00:00Z`).toLocaleDateString(
+        "en-US",
+        { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" },
+      ),
       session: input.sessionTitle,
       topic: input.topic || input.sessionTitle,
       duration: input.duration,
