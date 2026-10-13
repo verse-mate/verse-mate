@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
@@ -664,6 +664,25 @@ describe("leaders get a reminder before each class", () => {
       .where("reminder_date", "=", sql<Date>`${"2026-09-30"}::date`)
       .executeTakeFirst();
     expect(claim).toBeUndefined();
+  });
+
+  it("a summary that throws for an admin logs a masked address, never the address", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    const mailer = new FakeMailer();
+    const send = mailer.sendEmail.bind(mailer);
+    mailer.sendEmail = async (data) => {
+      if (data.to.email === ADMIN) throw new Error("smtp down");
+      return send(data);
+    };
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await run(mailer, WEDNESDAY_6PM);
+      const lines = logged.mock.calls.map((c) => String(c[0]));
+      expect(lines.some((l) => l.includes("r***@example.test"))).toBe(true);
+      expect(lines.join("\n")).not.toContain(ADMIN);
+    } finally {
+      logged.mockRestore();
+    }
   });
 
   it("a re-run that sends a reminder the first run could not tells the admin about it", async () => {

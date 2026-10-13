@@ -3,7 +3,7 @@ import { sql } from "kysely";
 import { CoachReminder, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
-import { isPlaceholderAddress } from "./coach-delivery.service";
+import { isPlaceholderAddress, maskAddress } from "./coach-delivery.service";
 import { classDay } from "./coach-first-lesson";
 import { isGroupAddress } from "./coach-rotating.service";
 import { STALE_DELIVERY_CLAIM } from "./coach-session-state";
@@ -387,7 +387,10 @@ export class CoachReminderService {
         })) as CoachSendResult | undefined;
         any = any || sent?.delivered === true;
       } catch (error) {
-        console.error(`[COACH-REMINDER] summary to ${email} failed:`, error);
+        console.error(
+          `[COACH-REMINDER] summary to ${maskAddress(email)} failed:`,
+          error,
+        );
       }
     }
     return any;
