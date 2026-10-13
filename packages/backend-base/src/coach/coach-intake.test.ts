@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachIntakeService } from "./coach-intake.service";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
 
@@ -213,6 +214,88 @@ describe("session intake polls the recording bot, not the leader's inbox", () =>
       .executeTakeFirstOrThrow();
     expect(row.coach_id).toBeNull();
     expect(row.matched_by).toBe("unresolved");
+  });
+});
+
+describe("bot intake and the host's reports", () => {
+  const hostReport = (date: string) =>
+    conn
+      .insertInto("coach_reports")
+      .values({
+        id: `intake-host-${date}`,
+        coach_id: COACH_SLUG,
+        session_date: date,
+        source_session_id: `legacy:${COACH_SLUG}:${date}`,
+        legacy_ids: [],
+        summary: {},
+        metrics: {},
+        body: {},
+      })
+      .execute();
+  const sessions = () =>
+    conn
+      .selectFrom("coach_intake_sessions")
+      .select(["source_session_id", "state", "duplicate_of"])
+      .where("source_session_id", "like", "ff-%")
+      .orderBy("source_session_id")
+      .execute();
+
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", COACH_SLUG)
+      .execute();
+    await seedLeader();
+    await hostReport("2026-08-22");
+  });
+  afterEach(async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await clear();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", COACH_SLUG)
+      .execute();
+  });
+
+  it("sessions dated before the leader's newest host report are ignored", async () => {
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-old", { dateString: "2026-08-15T14:00:00.000Z" }),
+          transcript("ff-new", { dateString: "2026-08-29T14:00:00.000Z" }),
+        ],
+      ]),
+    ).poll();
+    expect(await sessions()).toEqual([
+      { source_session_id: "ff-new", state: "observed", duplicate_of: null },
+    ]);
+  });
+
+  it("after cutover, a session on a date the host reported is a likely duplicate, not scored", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([[transcript("ff-same")]]),
+    ).poll();
+    expect(await sessions()).toEqual([
+      {
+        source_session_id: "ff-same",
+        state: "duplicate",
+        duplicate_of: "intake-host-2026-08-22",
+      },
+    ]);
+  });
+
+  it("during the parallel run the same session is ingested, so the comparison sees it", async () => {
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([[transcript("ff-same")]]),
+    ).poll();
+    expect(await sessions()).toEqual([
+      { source_session_id: "ff-same", state: "observed", duplicate_of: null },
+    ]);
   });
 });
 
