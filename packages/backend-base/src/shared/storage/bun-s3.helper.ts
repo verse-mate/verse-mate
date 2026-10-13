@@ -339,8 +339,8 @@ const encode = (value: string) =>
     (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 
-const hmac = (key: string | Buffer, data: string) =>
-  createHmac("sha256", key).update(data).digest();
+const hmac = (key: string | Uint8Array, data: string) =>
+  new Uint8Array(createHmac("sha256", key).update(data).digest());
 
 export function signContentLength(
   presignedPut: string,
