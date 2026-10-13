@@ -1665,16 +1665,7 @@ export class CoachService {
       .select(["email", "email_verified_at"])
       .where("id", "=", userId as never)
       .executeTakeFirst();
-    if (!user?.email || user.email_verified_at) return false;
-    const email = user.email.trim().toLowerCase();
-    const unbound = await sql<{ n: number }>`
-      SELECT count(*)::int AS n FROM (
-        SELECT 1 FROM coach_leaders WHERE lower(email) = ${email} AND user_id IS NULL
-        UNION ALL
-        SELECT 1 FROM coach_admins WHERE lower(email) = ${email} AND user_id IS NULL
-      ) pending
-    `.execute(this.db.getOrCreateConnection());
-    return (unbound.rows[0]?.n ?? 0) > 0;
+    return Boolean(user?.email) && !user?.email_verified_at;
   }
 
   async isCoach(userId: string): Promise<boolean> {
