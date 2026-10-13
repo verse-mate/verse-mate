@@ -1,16 +1,20 @@
 import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
 
 import {
+  EMAIL_TIMEOUT_MS,
   EmailNotificationConsumer,
-  MAILGUN_TIMEOUT_MS,
+  GMAIL_SEND_URL,
+  GOOGLE_TOKEN_URL,
 } from "./email-notification.consumer";
 
 const ENV = { ...process.env };
 const TOUCHED = [
   "ENVIRONMENT",
   "EMAIL_FROM",
-  "MAILGUN_API_KEY",
-  "MAILGUN_DOMAIN",
+  "EMAIL_FROM_NAME",
+  "GMAIL_CLIENT_ID",
+  "GMAIL_CLIENT_SECRET",
+  "GMAIL_REFRESH_TOKEN",
 ] as const;
 afterEach(() => {
   mock.restore();
@@ -20,11 +24,17 @@ afterEach(() => {
   }
 });
 
-function consumer(): EmailNotificationConsumer {
-  process.env.ENVIRONMENT = "production";
+function configure(environment = "production") {
+  process.env.ENVIRONMENT = environment;
   process.env.EMAIL_FROM = "no-reply@example.test";
-  process.env.MAILGUN_API_KEY = "key";
-  process.env.MAILGUN_DOMAIN = "mail.example.test";
+  Reflect.deleteProperty(process.env, "EMAIL_FROM_NAME");
+  process.env.GMAIL_CLIENT_ID = "client-id";
+  process.env.GMAIL_CLIENT_SECRET = "client-secret";
+  process.env.GMAIL_REFRESH_TOKEN = "refresh-token";
+}
+
+function consumer(environment = "production"): EmailNotificationConsumer {
+  configure(environment);
   return new EmailNotificationConsumer();
 }
 
@@ -34,130 +44,329 @@ const MAIL = {
   text: "body",
 };
 
+type Call = { url: string; init: RequestInit };
+
 /**
- * Capture the request body ourselves rather than reading it back off the spy:
- * spyOn re-registers on the same global, and reading `mock.calls[0]` picked up
- * an earlier test's call, which made an assertion pass for the wrong reason.
+ * Google, faked: the token endpoint answers `token`, the send endpoint answers
+ * `send` (one response per send, the last one repeating). Every request is
+ * recorded so a test can read exactly what went out.
  */
-function mockFetch(status: number, body: unknown = { id: "ok" }) {
-  const sent: string[] = [];
+function google(
+  send: Array<{ status: number; body?: unknown }> = [{ status: 200 }],
+  token: { status: number; body?: unknown } = {
+    status: 200,
+    body: { access_token: "access-1", expires_in: 3600 },
+  },
+) {
+  const calls: Call[] = [];
+  let sends = 0;
   const spy = spyOn(globalThis, "fetch").mockImplementation(
-    async (_url: unknown, init?: unknown) => {
-      sent.push(String((init as { body?: string })?.body ?? ""));
-      return new Response(JSON.stringify(body), {
-        status,
+    async (url: unknown, init?: unknown) => {
+      calls.push({ url: String(url), init: (init ?? {}) as RequestInit });
+      const answer =
+        String(url) === GOOGLE_TOKEN_URL
+          ? token
+          : send[Math.min(sends++, send.length - 1)];
+      return new Response(JSON.stringify(answer.body ?? { id: "msg-1" }), {
+        status: answer.status,
         headers: { "content-type": "application/json" },
       });
     },
   );
-  return { spy, sent };
+  const sent = () =>
+    calls
+      .filter((c) => c.url === GMAIL_SEND_URL)
+      .map((c) => message(JSON.parse(String(c.init.body)).raw));
+  return { spy, calls, sent };
 }
 
-/** The form encoding turns spaces into "+"; decode both. */
-function readable(body: string): string {
-  return decodeURIComponent(body).replace(/\+/g, " ");
+/** The RFC 5322 message, decoded: its headers and its text/html parts. */
+function message(raw: string) {
+  const text = Buffer.from(raw, "base64url").toString("utf8");
+  const [head] = text.split("\r\n\r\n");
+  const headers = Object.fromEntries(
+    head.split("\r\n").map((line) => {
+      const i = line.indexOf(":");
+      return [line.slice(0, i).toLowerCase(), line.slice(i + 1).trim()];
+    }),
+  );
+  const parts: Record<string, string> = {};
+  for (const m of text.matchAll(
+    /Content-Type: text\/(plain|html); charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n([A-Za-z0-9+/=\r\n]+?)(?:\r\n--|\r\n$)/g,
+  ))
+    parts[m[1]] = Buffer.from(m[2].replace(/\r\n/g, ""), "base64").toString(
+      "utf8",
+    );
+  return { text, headers, parts };
+}
+
+function decodedWord(value: string): string {
+  return value.replace(/=\?UTF-8\?B\?([^?]+)\?=/g, (_, b64) =>
+    Buffer.from(b64, "base64").toString("utf8"),
+  );
 }
 
 describe("the sender reports what happened", () => {
-  it("a 200 is a delivered result", async () => {
-    const { spy } = mockFetch(200);
+  it("a 200 from Gmail is a delivered result", async () => {
+    google();
     const result = await consumer().sendEmail(MAIL);
-    expect(result.delivered).toBe(true);
-    expect(result.status).toBe(200);
-    spy.mockRestore();
+    expect(result).toEqual({ delivered: true, status: 200 });
   });
 
-  it("a non-2xx is an OBSERVABLE failure, not a console.log", async () => {
-    // Before this, a failed send was logged and the method returned normally,
-    // so no caller could tell. That makes 'confirm three sends' and 'reported
-    // rather than reported as delivered' unverifiable as written.
-    const { spy } = mockFetch(401, { message: "Forbidden" });
+  it("a non-2xx is an OBSERVABLE failure carrying Google's message", async () => {
+    google([{ status: 403, body: { error: { message: "Forbidden" } } }]);
     const result = await consumer().sendEmail(MAIL);
-    expect(result.delivered).toBe(false);
-    expect(result.status).toBe(401);
-    expect(result.error).toBe("Forbidden");
-    spy.mockRestore();
+    expect(result).toEqual({
+      delivered: false,
+      status: 403,
+      error: "Forbidden",
+    });
   });
 
   it("failure is a RESULT, never a throw", async () => {
     // auth.service.ts fires the password-reset mail WITHOUT awaiting it, so a
     // throwing sender would become an unhandled rejection on a path that is
     // otherwise fine.
-    const { spy } = mockFetch(500, { message: "boom" });
+    google([{ status: 500, body: { error: { message: "boom" } } }]);
     await expect(consumer().sendEmail(MAIL)).resolves.toMatchObject({
       delivered: false,
       status: 500,
     });
-    spy.mockRestore();
+  });
+
+  it("a refresh token Google refuses is a failed send naming the reason", async () => {
+    const { sent } = google([{ status: 200 }], {
+      status: 400,
+      body: {
+        error: "invalid_grant",
+        error_description: "Token has been expired or revoked.",
+      },
+    });
+    const result = await consumer().sendEmail(MAIL);
+    expect(result.delivered).toBe(false);
+    expect(result.error).toContain("invalid_grant");
+    expect(sent()).toEqual([]);
   });
 
   it("a non-sending environment is SUPPRESSED, never reported as delivered", async () => {
-    // Otherwise a dev run could 'confirm three sends' having sent nothing.
-    process.env.ENVIRONMENT = "development";
-    const c = new EmailNotificationConsumer();
-    const result = await c.sendEmail(MAIL);
-    expect(result.delivered).toBe(false);
-    expect(result.suppressed).toBe(true);
+    const { calls } = google();
+    const result = await consumer("development").sendEmail(MAIL);
+    expect(result).toEqual({ delivered: false, suppressed: true });
+    expect(calls).toEqual([]);
+  });
+
+  it("staging sends like production", async () => {
+    const { sent } = google();
+    const result = await consumer("staging").sendEmail(MAIL);
+    expect(result.delivered).toBe(true);
+    expect(sent()).toHaveLength(1);
+  });
+
+  it("a failure whose body is not JSON still names an error", async () => {
+    spyOn(globalThis, "fetch").mockImplementation(async (url: unknown) =>
+      String(url) === GOOGLE_TOKEN_URL
+        ? new Response(
+            JSON.stringify({ access_token: "a", expires_in: 3600 }),
+            { status: 200 },
+          )
+        : new Response("<html>Bad Gateway</html>", { status: 502 }),
+    );
+    const result = await consumer().sendEmail(MAIL);
+    expect(result).toMatchObject({ delivered: false, status: 502 });
+    expect(result.error).toBeTruthy();
   });
 });
 
-describe("Reply-To has a mechanism", () => {
-  it("sends h:Reply-To when asked", async () => {
-    // From must be the Mailgun-authenticated sending domain or the message
-    // fails SPF/DMARC and lands coaching reports in spam, so a leader's reply
-    // needs somewhere else to go.
-    const { spy, sent } = mockFetch(200);
+describe("missing mail settings never take the API down", () => {
+  it("production without them starts, logs what is missing, and every send fails without a request", async () => {
+    configure();
+    Reflect.deleteProperty(process.env, "GMAIL_REFRESH_TOKEN");
+    const lines: string[] = [];
+    spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    const { calls } = google();
+    const c = new EmailNotificationConsumer();
+    expect(lines.join("\n")).toContain("GMAIL_REFRESH_TOKEN");
+    const result = await c.sendEmail(MAIL);
+    expect(result.delivered).toBe(false);
+    expect(result.error).toContain("not configured");
+    expect(calls).toEqual([]);
+  });
+
+  it("an EMAIL_FROM that is not one address counts as missing", async () => {
+    configure();
+    process.env.EMAIL_FROM = "a@example.test, b@example.test";
+    spyOn(console, "error").mockImplementation(() => {});
+    const { calls } = google();
+    const result = await new EmailNotificationConsumer().sendEmail(MAIL);
+    expect(result.error).toContain("EMAIL_FROM");
+    expect(calls).toEqual([]);
+  });
+
+  it("a development instance needs no mail settings at all", async () => {
+    for (const key of TOUCHED) delete process.env[key];
+    process.env.ENVIRONMENT = "development";
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    const result = await new EmailNotificationConsumer().sendEmail(MAIL);
+    expect(result.suppressed).toBe(true);
+    expect(errors).not.toHaveBeenCalled();
+  });
+});
+
+describe("the Gmail API calls", () => {
+  it("the token request sends the client and the refresh token; the send carries the bearer and the message", async () => {
+    const { calls } = google();
+    await consumer().sendEmail({ ...MAIL, html: "<p>hi</p>" });
+    expect(calls.map((c) => c.url)).toEqual([GOOGLE_TOKEN_URL, GMAIL_SEND_URL]);
+    const form = new URLSearchParams(String(calls[0].init.body));
+    expect(form.get("grant_type")).toBe("refresh_token");
+    expect(form.get("client_id")).toBe("client-id");
+    expect(form.get("client_secret")).toBe("client-secret");
+    expect(form.get("refresh_token")).toBe("refresh-token");
+    expect(
+      (calls[1].init.headers as Record<string, string>).Authorization,
+    ).toBe("Bearer access-1");
+    expect(Object.keys(JSON.parse(String(calls[1].init.body)))).toEqual([
+      "raw",
+    ]);
+  });
+
+  it("the access token is reused until it is about to expire", async () => {
+    const { calls } = google();
+    const c = consumer();
+    await c.sendEmail(MAIL);
+    await c.sendEmail(MAIL);
+    expect(calls.filter((x) => x.url === GOOGLE_TOKEN_URL)).toHaveLength(1);
+    expect(calls.filter((x) => x.url === GMAIL_SEND_URL)).toHaveLength(2);
+  });
+
+  it("a 401 gets one fresh token and one retry", async () => {
+    const { calls, sent } = google([{ status: 401 }, { status: 200 }]);
+    const result = await consumer().sendEmail(MAIL);
+    expect(result.delivered).toBe(true);
+    expect(calls.filter((x) => x.url === GOOGLE_TOKEN_URL)).toHaveLength(2);
+    expect(sent()).toHaveLength(2);
+  });
+
+  it("a second 401 is the caller's to see, not a loop", async () => {
+    const { calls } = google([
+      { status: 401, body: { error: { message: "Invalid Credentials" } } },
+    ]);
+    const result = await consumer().sendEmail(MAIL);
+    expect(result).toMatchObject({
+      delivered: false,
+      status: 401,
+      error: "Invalid Credentials",
+    });
+    expect(calls.filter((x) => x.url === GMAIL_SEND_URL)).toHaveLength(2);
+  });
+});
+
+describe("the message", () => {
+  it("text only: one plain part with the headers a mail client expects", async () => {
+    const { sent } = google();
+    await consumer().sendEmail(MAIL);
+    const m = sent()[0];
+    expect(m.headers.from).toBe('"VerseMate" <no-reply@example.test>');
+    expect(m.headers.to).toBe('"Leader" <leader@example.test>');
+    expect(m.headers.subject).toBe("s");
+    expect(m.headers["mime-version"]).toBe("1.0");
+    expect(m.headers["message-id"]).toMatch(/^<[0-9a-f-]+@example\.test>$/);
+    expect(m.headers.date).toMatch(/\+0000$/);
+    expect(m.parts.plain).toBe("body");
+    expect(m.parts.html).toBeUndefined();
+  });
+
+  it("with html: text and html as alternatives", async () => {
+    const { sent } = google();
+    await consumer().sendEmail({ ...MAIL, html: "<p>hi</p>" });
+    const m = sent()[0];
+    expect(m.headers["content-type"]).toContain("multipart/alternative");
+    expect(m.parts).toEqual({ plain: "body", html: "<p>hi</p>" });
+  });
+
+  it("the From address is always EMAIL_FROM; a caller's from only names it", async () => {
+    // Gmail rewrites a From that is not the mailbox or a verified alias.
+    process.env.EMAIL_FROM_NAME = "VerseMate Team";
+    const { sent } = google();
+    configure();
+    process.env.EMAIL_FROM_NAME = "VerseMate Team";
+    const c = new EmailNotificationConsumer();
+    await c.sendEmail(MAIL);
+    await c.sendEmail({
+      ...MAIL,
+      from: { name: "Coach", email: "elsewhere@example.test" },
+    });
+    const [plain, named] = sent();
+    expect(plain.headers.from).toBe('"VerseMate Team" <no-reply@example.test>');
+    expect(named.headers.from).toBe('"Coach" <no-reply@example.test>');
+  });
+
+  it("non-ASCII subjects, names and bodies survive", async () => {
+    const { sent } = google();
     await consumer().sendEmail({
+      subject: "Raportul tău — Săptămâna 3 ✝",
+      to: { name: "Ștefan Pop", email: "stefan@example.test" },
+      text: "Bună ziua, Ștefan",
+      html: "<p>Bună ziua, Ștefan ✝</p>",
+    });
+    const m = sent()[0];
+    expect(decodedWord(m.headers.subject)).toBe("Raportul tău — Săptămâna 3 ✝");
+    expect(decodedWord(m.headers.to)).toBe("Ștefan Pop <stefan@example.test>");
+    expect(m.parts.plain).toBe("Bună ziua, Ștefan");
+    expect(m.parts.html).toBe("<p>Bună ziua, Ștefan ✝</p>");
+  });
+
+  it("Reply-To is sent when asked, and absent otherwise", async () => {
+    const { sent } = google();
+    const c = consumer();
+    await c.sendEmail({
       ...MAIL,
       replyTo: { name: "Coach", email: "coach@example.test" },
     });
-    expect(sent.length).toBe(1);
-    expect(readable(sent[0])).toContain(
-      'h:Reply-To="Coach" <coach@example.test>',
-    );
-    spy.mockRestore();
+    await c.sendEmail(MAIL);
+    const [withReply, without] = sent();
+    expect(withReply.headers["reply-to"]).toBe('"Coach" <coach@example.test>');
+    expect(without.text).not.toContain("Reply-To");
   });
 
-  it("omits the header entirely when no reply address is given", async () => {
-    const { spy, sent } = mockFetch(200);
-    await consumer().sendEmail(MAIL);
-    expect(sent.length).toBe(1);
-    expect(readable(sent[0])).not.toContain("Reply-To");
-    spy.mockRestore();
+  it("a display name with a comma or a quote stays one quoted name", async () => {
+    const { sent } = google();
+    await consumer().sendEmail({
+      ...MAIL,
+      from: { name: 'Team "A", Ops', email: "team@example.test" },
+      replyTo: { name: "Smith, J", email: "smith@example.test" },
+    });
+    const m = sent()[0];
+    expect(m.headers.from).toBe('"Team \\"A\\", Ops" <no-reply@example.test>');
+    expect(m.headers["reply-to"]).toBe('"Smith, J" <smith@example.test>');
   });
 });
 
 describe("a send cannot hang the caller", () => {
-  it("the request carries a timeout signal", async () => {
+  it("both requests carry a timeout signal", async () => {
     const timeout = spyOn(AbortSignal, "timeout");
-    let signal: unknown;
-    const spy = spyOn(globalThis, "fetch").mockImplementation(
-      async (_url: unknown, init?: unknown) => {
-        signal = (init as { signal?: unknown })?.signal;
-        return new Response(JSON.stringify({ id: "ok" }), { status: 200 });
-      },
-    );
+    const { calls } = google();
     await consumer().sendEmail(MAIL);
-    spy.mockRestore();
-    expect(signal).toBeInstanceOf(AbortSignal);
-    expect(timeout).toHaveBeenCalledWith(MAILGUN_TIMEOUT_MS);
-    expect(MAILGUN_TIMEOUT_MS).toBe(30_000);
+    expect(calls.every((c) => c.init.signal instanceof AbortSignal)).toBe(true);
+    expect(timeout).toHaveBeenCalledWith(EMAIL_TIMEOUT_MS);
+    expect(EMAIL_TIMEOUT_MS).toBe(30_000);
   });
 
   it("a request that times out or never connects is a failed send, not a throw", async () => {
-    const spy = spyOn(globalThis, "fetch").mockImplementation(async () => {
+    spyOn(globalThis, "fetch").mockImplementation(async () => {
       throw new DOMException("The operation timed out.", "TimeoutError");
     });
     const result = await consumer().sendEmail(MAIL);
-    spy.mockRestore();
     expect(result.delivered).toBe(false);
     expect(result.error).toContain("timed out");
   });
 });
 
-describe("the sender never passes Mailgun more than one recipient", () => {
+describe("the sender never sends to more than one recipient", () => {
   it("an address carrying a second recipient is refused before any request", async () => {
-    const { spy, sent } = mockFetch(200);
+    const { calls } = google();
     const result = await consumer().sendEmail({
       ...MAIL,
       to: {
@@ -167,27 +376,68 @@ describe("the sender never passes Mailgun more than one recipient", () => {
     });
     expect(result.delivered).toBe(false);
     expect(result.error).toContain("recipient");
-    expect(sent).toEqual([]);
-    spy.mockRestore();
+    expect(calls).toEqual([]);
   });
 
   it("an unusual but single address still goes out", async () => {
-    const { spy, sent } = mockFetch(200);
+    const { sent } = google();
     const result = await consumer().sendEmail({
       ...MAIL,
       to: { name: "Leader", email: "o'brien@example.test" },
     });
     expect(result.delivered).toBe(true);
-    expect(sent).toHaveLength(1);
-    spy.mockRestore();
+    expect(sent()).toHaveLength(1);
+  });
+
+  it.each([
+    [
+      "a reply-to address with a second recipient",
+      { replyTo: { name: "R", email: "r@example.test,x@example.test" } },
+      "reply-to",
+    ],
+    [
+      "a sender address with a second recipient",
+      { from: { name: "F", email: "f@example.test x@example.test" } },
+      "sender",
+    ],
+    [
+      "a reply-to name with a line break",
+      {
+        replyTo: { name: "R\r\nBcc: x@example.test", email: "r@example.test" },
+      },
+      "reply-to name",
+    ],
+    [
+      "a recipient name with a line break",
+      { to: { name: "L\r\nBcc: x@example.test", email: "l@example.test" } },
+      "recipient name",
+    ],
+    [
+      "a subject with a line break",
+      { subject: "s\r\nBcc: x@example.test" },
+      "subject",
+    ],
+  ])("%s is refused before any request", async (_label, extra, reason) => {
+    const { calls } = google();
+    const result = await consumer().sendEmail({ ...MAIL, ...extra });
+    expect(result.delivered).toBe(false);
+    expect(result.error).toContain(reason);
+    expect(calls).toEqual([]);
+  });
+
+  it("a refused address is refused in a non-sending environment too, not reported as suppressed", async () => {
+    const result = await consumer("development").sendEmail({
+      ...MAIL,
+      to: { name: "L", email: "a@example.test;b@example.test" },
+    });
+    expect(result.suppressed).toBeUndefined();
+    expect(result.error).toContain("recipient");
   });
 });
 
 describe("a non-sending environment logs only what identifies no one", () => {
   it("logs the recipient's domain and the subject's length, never the address, the subject or the body", async () => {
-    consumer();
-    process.env.ENVIRONMENT = "development";
-    const dev = new EmailNotificationConsumer();
+    const dev = consumer("development");
     const lines: string[] = [];
     const spies = (["log", "debug", "info", "warn", "error"] as const).map(
       (level) =>
@@ -215,104 +465,5 @@ describe("a non-sending environment logs only what identifies no one", () => {
     expect(logged).not.toContain("Test Leader");
     expect(logged).not.toContain("Tuesday");
     expect(logged).not.toContain("Private feedback");
-  });
-});
-
-describe("sender and reply-to are one quoted mailbox each", () => {
-  it("a display name with a comma or a quote stays one quoted name", async () => {
-    const { sent } = mockFetch(200);
-    await consumer().sendEmail({
-      ...MAIL,
-      from: { name: 'Team "A", Ops', email: "team@example.test" },
-      replyTo: { name: "Smith, J", email: "smith@example.test" },
-    });
-    const form = new URLSearchParams(sent[0]);
-    expect(form.get("from")).toBe('"Team \\"A\\", Ops" <team@example.test>');
-    expect(form.get("h:Reply-To")).toBe('"Smith, J" <smith@example.test>');
-  });
-
-  it.each([
-    [
-      "a reply-to address with a second recipient",
-      { replyTo: { name: "R", email: "r@example.test,x@example.test" } },
-      "reply-to",
-    ],
-    [
-      "a sender address with a second recipient",
-      { from: { name: "F", email: "f@example.test x@example.test" } },
-      "sender",
-    ],
-    [
-      "a reply-to name with a line break",
-      {
-        replyTo: { name: "R\r\nBcc: x@example.test", email: "r@example.test" },
-      },
-      "reply-to name",
-    ],
-    [
-      "a subject with a line break",
-      { subject: "s\r\nBcc: x@example.test" },
-      "subject",
-    ],
-  ])("%s is refused before any request", async (_label, extra, reason) => {
-    const { sent } = mockFetch(200);
-    const result = await consumer().sendEmail({ ...MAIL, ...extra });
-    expect(result.delivered).toBe(false);
-    expect(result.error).toContain(reason);
-    expect(sent).toEqual([]);
-  });
-
-  it("a refused address is refused in a non-sending environment too, not reported as suppressed", async () => {
-    consumer();
-    process.env.ENVIRONMENT = "development";
-    const result = await new EmailNotificationConsumer().sendEmail({
-      ...MAIL,
-      to: { name: "L", email: "a@example.test;b@example.test" },
-    });
-    expect(result.suppressed).toBeUndefined();
-    expect(result.error).toContain("recipient");
-  });
-});
-
-describe("the outcome of a real send", () => {
-  it("staging sends like production", async () => {
-    const { sent } = mockFetch(200);
-    consumer();
-    process.env.ENVIRONMENT = "staging";
-    const result = await new EmailNotificationConsumer().sendEmail(MAIL);
-    expect(result.delivered).toBe(true);
-    expect(sent).toHaveLength(1);
-  });
-
-  it("a failure whose body is not JSON still names an error", async () => {
-    spyOn(globalThis, "fetch").mockImplementation(
-      async () => new Response("<html>Bad Gateway</html>", { status: 502 }),
-    );
-    const result = await consumer().sendEmail(MAIL);
-    expect(result).toMatchObject({ delivered: false, status: 502 });
-    expect(result.error).toBeTruthy();
-  });
-
-  it("the request carries the message, the domain and the key", async () => {
-    let url = "";
-    let init: RequestInit = {};
-    spyOn(globalThis, "fetch").mockImplementation(
-      async (u: unknown, i?: unknown) => {
-        url = String(u);
-        init = i as RequestInit;
-        return new Response(JSON.stringify({ id: "ok" }), { status: 200 });
-      },
-    );
-    await consumer().sendEmail({ ...MAIL, html: "<p>hi</p>" });
-    const form = new URLSearchParams(String(init.body));
-    expect(url).toBe("https://api.mailgun.net/v3/mail.example.test/messages");
-    expect((init.headers as Record<string, string>).Authorization).toBe(
-      `Basic ${btoa("api:key")}`,
-    );
-    expect(form.get("from")).toBe("MyDomain <no-reply@example.test>");
-    expect(form.get("to")).toBe("leader@example.test");
-    expect(form.get("subject")).toBe("s");
-    expect(form.get("text")).toBe("body");
-    expect(form.get("html")).toBe("<p>hi</p>");
   });
 });
