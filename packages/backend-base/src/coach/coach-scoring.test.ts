@@ -984,6 +984,12 @@ describe("prompts sent in OpenAI JSON mode", () => {
 });
 
 describe("what the prompts say about leaders and speaker labels", () => {
+  it("Leader Development is not applicable when the leader leads alone, with no mentor or apprentice", () => {
+    expect(CoachScoringService.buildInstructions()).toMatch(
+      /Leader Development when the leader leads alone, with\s+no mentor or apprentice/,
+    );
+  });
+
   it("scoring forbids comparing with or naming another leader, and both scoring and the body say labels can be wrong or missing", async () => {
     const { CoachReportBodyService } = await import(
       "./coach-report-body.service"
