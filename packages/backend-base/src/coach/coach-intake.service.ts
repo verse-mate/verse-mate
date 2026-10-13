@@ -43,6 +43,27 @@ const MAX_PAGES_PER_POLL = 20;
  */
 const WATERMARK_OVERLAP_MS = 7 * 24 * 60 * 60 * 1000;
 
+async function hostCoverage(
+  database: db,
+  leaders: string[],
+  date: string,
+): Promise<{ newest: string | null; sameDay: string | null }> {
+  if (leaders.length === 0) return { newest: null, sameDay: null };
+  const row = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_reports")
+    .select([
+      sql<string | null>`to_char(max(session_date), 'YYYY-MM-DD')`.as("newest"),
+      sql<
+        string | null
+      >`min(id) FILTER (WHERE session_date = ${date}::date)`.as("sameDay"),
+    ])
+    .where("source_session_id", "like", "legacy:%")
+    .where("coach_id", "in", leaders)
+    .executeTakeFirst();
+  return { newest: row?.newest ?? null, sameDay: row?.sameDay ?? null };
+}
+
 export interface PollResult {
   /** Sessions recorded for the first time by this poll. */
   observed: number;
@@ -158,15 +179,26 @@ export class CoachIntakeService {
       // the scoring prompt, a CR/LF in a mail header is an injection
       // primitive, and this is the one boundary the title enters by.
       const title = (t.title ?? "").replace(/\p{Cc}+/gu, " ").trim();
+      const date = calendarDate(started);
+      const host = await hostCoverage(
+        this.db,
+        match.coachId
+          ? [match.coachId]
+          : rotating.find((c) => c.id === match.rotatingClassId)?.leaders ?? [],
+        date,
+      );
+      if (host.newest && date < host.newest) continue;
+      const duplicateOf = parallelRun ? null : host.sameDay;
       await sql`
         INSERT INTO coach_intake_sessions
           (source_session_id, coach_id, matched_by, title, host_email,
            session_date, session_started_at, duration_minutes, parallel_run,
-           rotating_class_id)
+           rotating_class_id, state, duplicate_of)
         VALUES (
           ${t.id}, ${match.coachId}, ${match.matchedBy}, ${title},
-          NULL, ${calendarDate(started)}::date, ${started.toISOString()}::timestamptz,
-          ${t.duration}, ${parallelRun}, ${match.rotatingClassId ?? null}
+          NULL, ${date}::date, ${started.toISOString()}::timestamptz,
+          ${t.duration}, ${parallelRun}, ${match.rotatingClassId ?? null},
+          ${duplicateOf ? "duplicate" : "observed"}, ${duplicateOf}
         )
         -- Belt and braces against two workers polling the same window: the
         -- pre-read above is not a lock.
