@@ -923,7 +923,7 @@ export class CoachMonthlyService {
       .execute();
     if (skipped.length > 0)
       console.error(
-        `[COACH-MONTHLY] ${row.kind} ${row.month} not emailed to address(es) without an owner of their own: ${skipped.join(", ")}`,
+        `[COACH-MONTHLY] ${row.kind} ${row.month} not emailed to ${skipped.length} address(es) without an owner of their own`,
       );
   }
 

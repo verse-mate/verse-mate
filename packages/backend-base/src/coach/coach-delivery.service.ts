@@ -53,6 +53,11 @@ export function isPlaceholderAddress(email: string): boolean {
   return email.trim().toLowerCase().replace(/\.+$/, "").endsWith(".invalid");
 }
 
+export function maskAddress(email: string): string {
+  const [local = "", domain = ""] = email.trim().split("@");
+  return `${local.slice(0, 1)}***@${domain}`;
+}
+
 export function noOwnAddress(email: string, groups: Set<string>): boolean {
   return isPlaceholderAddress(email) || groups.has(email.trim().toLowerCase());
 }
@@ -509,7 +514,7 @@ export class CoachDeliveryService {
     if (Number(finished.numUpdatedRows ?? 0) === 0) return fenced();
     if (skipped.length > 0)
       console.error(
-        `[COACH-DELIVERY] ${reportId} not emailed to placeholder address(es): ${skipped.join(", ")}`,
+        `[COACH-DELIVERY] ${reportId} not emailed to ${skipped.length} placeholder address(es)`,
       );
 
     return { delivered: true, sends, skipped, subject };
@@ -657,7 +662,7 @@ export class CoachDeliveryService {
     if (Number(released.numUpdatedRows ?? 0) === 0) return fenced();
     if (skipped.length > 0)
       console.error(
-        `[COACH-DELIVERY] revision ${amendment.revision} of ${reportId} not emailed to placeholder address(es): ${skipped.join(", ")}`,
+        `[COACH-DELIVERY] revision ${amendment.revision} of ${reportId} not emailed to ${skipped.length} placeholder address(es)`,
       );
     return {
       sent: allSent,
