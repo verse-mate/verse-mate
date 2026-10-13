@@ -1074,7 +1074,8 @@ describe("the parallel-run comparison route", () => {
         dimensions: expect.any(Array),
         withinOne: 12,
         comparable: 12,
-        flagged: expect.any(Boolean),
+        flagged: false,
+        flagReasons: [],
       },
     ]);
     expect(body?.needsPairing.filter(ours)).toEqual([
