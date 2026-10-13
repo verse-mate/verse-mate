@@ -1,3 +1,5 @@
+import { createHash, createHmac } from "node:crypto";
+
 import { InternalServerError } from "../../common/errors";
 
 // Bun's S3Client is a global. The TS types may need `@types/bun` >= 1.x.
@@ -40,6 +42,10 @@ declare const Bun: {
       key: string,
       opts: { method?: "GET" | "PUT" | "DELETE"; expiresIn: number },
     ): string;
+    list(opts: { prefix: string; startAfter?: string }): Promise<{
+      isTruncated?: boolean;
+      contents?: Array<{ key: string; lastModified?: string }>;
+    }>;
   };
 };
 type BunS3Client = ReturnType<
@@ -87,7 +93,7 @@ export class BunS3Helper {
     region: string,
     bucket: string,
     accessKeyId: string,
-    secretAccessKey: string,
+    private readonly secretAccessKey: string,
     /**
      * An injected client. Only the streaming tests pass one: the multipart and
      * range paths are the parts most worth covering and the ones a live bucket
@@ -295,4 +301,85 @@ export class BunS3Helper {
       expiresIn: expiresInSeconds,
     });
   }
+
+  async listObjects(
+    prefix: string,
+  ): Promise<Array<{ key: string; lastModified: Date | null }>> {
+    const found: Array<{ key: string; lastModified: Date | null }> = [];
+    let startAfter: string | undefined;
+    for (;;) {
+      const page = await this.client.list({ prefix, startAfter });
+      const contents = page.contents ?? [];
+      for (const o of contents)
+        found.push({
+          key: o.key,
+          lastModified: o.lastModified ? new Date(o.lastModified) : null,
+        });
+      if (!page.isTruncated || contents.length === 0) return found;
+      startAfter = contents[contents.length - 1].key;
+    }
+  }
+
+  presignPutOfLength(
+    key: string,
+    expiresInSeconds: number,
+    contentLength: number,
+  ): string {
+    return signContentLength(
+      this.presignUrl(key, expiresInSeconds, "PUT"),
+      contentLength,
+      this.secretAccessKey,
+    );
+  }
+}
+
+const encode = (value: string) =>
+  encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+
+const hmac = (key: string | Buffer, data: string) =>
+  createHmac("sha256", key).update(data).digest();
+
+export function signContentLength(
+  presignedPut: string,
+  contentLength: number,
+  secretAccessKey: string,
+): string {
+  const url = new URL(presignedPut);
+  const query = [...url.searchParams]
+    .filter(([name]) => name !== "X-Amz-Signature")
+    .map(([name, value]) =>
+      name === "X-Amz-SignedHeaders"
+        ? `${name}=${encode("content-length;host")}`
+        : `${encode(name)}=${encode(value)}`,
+    )
+    .sort()
+    .join("&");
+  const [, day, region, service] = (
+    url.searchParams.get("X-Amz-Credential") ?? ""
+  ).split("/");
+  const canonical = [
+    "PUT",
+    url.pathname,
+    query,
+    `content-length:${contentLength}\nhost:${url.host}\n`,
+    "content-length;host",
+    "UNSIGNED-PAYLOAD",
+  ].join("\n");
+  const toSign = [
+    "AWS4-HMAC-SHA256",
+    url.searchParams.get("X-Amz-Date") ?? "",
+    `${day}/${region}/${service}/aws4_request`,
+    createHash("sha256").update(canonical).digest("hex"),
+  ].join("\n");
+  const signingKey = hmac(
+    hmac(hmac(hmac(`AWS4${secretAccessKey}`, day), region), service),
+    "aws4_request",
+  );
+  const signature = createHmac("sha256", signingKey)
+    .update(toSign)
+    .digest("hex");
+  return `${url.origin}${url.pathname}?${query}&X-Amz-Signature=${signature}`;
 }

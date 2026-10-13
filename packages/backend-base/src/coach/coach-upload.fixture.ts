@@ -4,9 +4,18 @@ export class MemoryStorage implements UploadStorage {
   objects = new Map<string, Uint8Array>();
   sizes = new Map<string, number>();
   signed: string[] = [];
+  signedLengths = new Map<string, number | undefined>();
+  modified = new Map<string, Date>();
 
-  async getGlobalObjectUploadUrl({ key }: { key: string }) {
+  async getGlobalObjectUploadUrl({
+    key,
+    contentLength,
+  }: {
+    key: string;
+    contentLength?: number;
+  }) {
     this.signed.push(key);
+    this.signedLengths.set(key, contentLength);
     return `https://store.example.test/${key}?put`;
   }
   async getGlobalObjectUrl({ key }: { key: string }) {
@@ -46,6 +55,14 @@ export class MemoryStorage implements UploadStorage {
   async getGlobalObjectText(key: string) {
     const bytes = this.objects.get(key);
     return bytes ? Buffer.from(bytes).toString("utf8") : null;
+  }
+  async listGlobalObjects(prefix: string) {
+    return [...this.objects.keys()]
+      .filter((key) => key.startsWith(prefix))
+      .map((key) => ({
+        key,
+        lastModified: this.modified.get(key) ?? new Date(),
+      }));
   }
   async deleteObject(key: string) {
     this.sizes.delete(key);

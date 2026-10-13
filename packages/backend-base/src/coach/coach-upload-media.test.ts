@@ -329,6 +329,36 @@ describe("an uploaded video is checked and transcribed by the media worker (task
     expect(storage.objects.size).toBe(0);
   });
 
+  it("parts older than three days with no live upload are swept, and a live upload's parts are kept", async () => {
+    const asked = await new CoachUploadService(Database, storage).request({
+      coachId: LEADER,
+      classKey: `group:${LEADER}`,
+      sessionDate: "2026-10-02",
+      fileName: "session.mp4",
+      fileBytes: 3,
+      contentType: "video/mp4",
+      byUserId: null,
+      byAdmin: false,
+      today: "2026-10-08",
+    });
+    if (!asked.ok) throw new Error(asked.refusal);
+    const now = new Date("2026-10-20T00:00:00Z");
+    const old = new Date("2026-10-10T00:00:00Z");
+    const live = uploadPartKey(asked.uploadId, 1);
+    const orphan = uploadPartKey("00000000-0000-4000-8000-000000000001", 1);
+    const fresh = uploadPartKey("00000000-0000-4000-8000-000000000002", 1);
+    for (const key of [live, orphan, fresh])
+      storage.objects.set(key, new Uint8Array([1]));
+    storage.modified.set(live, old);
+    storage.modified.set(orphan, old);
+    storage.modified.set(fresh, new Date("2026-10-19T00:00:00Z"));
+
+    expect(
+      await media({ hasVideo: true, seconds: 3600 }).sweepOrphanedParts(now),
+    ).toBe(1);
+    expect([...storage.objects.keys()].sort()).toEqual([live, fresh].sort());
+  });
+
   it("a failed upload for a rotating class is listed with why it failed, not as unattributed", async () => {
     await conn
       .insertInto("coach_intake_sessions")

@@ -39,6 +39,7 @@ export type UploadStorage = Pick<
   | "getGlobalObjectText"
   | "getGlobalObjectUrl"
   | "deleteObject"
+  | "listGlobalObjects"
 >;
 
 export interface UploadClass {
@@ -275,13 +276,17 @@ export class CoachUploadService {
     if (!("id" in created) || !created.id)
       return { ok: false, refusal: created.refusal ?? "upload-exists" };
     await this.collect(garbage);
-    return { ok: true, ...(await this.partAddresses(created.id, parts)) };
+    return {
+      ok: true,
+      ...(await this.partAddresses(created.id, input.fileBytes)),
+    };
   }
 
   private async partAddresses(
     uploadId: string,
-    parts: number,
+    fileBytes: number,
   ): Promise<UploadParts> {
+    const parts = Math.ceil(fileBytes / UPLOAD_PART_BYTES);
     return {
       uploadId,
       partBytes: UPLOAD_PART_BYTES,
@@ -291,6 +296,7 @@ export class CoachUploadService {
           url: await this.storage.getGlobalObjectUploadUrl({
             key: uploadPartKey(uploadId, i + 1),
             expiresInSeconds: UPLOAD_ADDRESS_SECONDS,
+            contentLength: partLength(fileBytes, i + 1),
           }),
         })),
       ),
@@ -324,7 +330,7 @@ export class CoachUploadService {
       .set({ addresses_at: sql`now()` })
       .where("id", "=", upload.id)
       .execute();
-    return this.partAddresses(uploadId, upload.parts);
+    return this.partAddresses(uploadId, Number(upload.file_bytes));
   }
 
   async complete(
@@ -345,15 +351,10 @@ export class CoachUploadService {
     if (!upload) return { ok: false, refusal: "unknown-upload" };
     if (upload.state !== "awaiting-file")
       return { ok: false, refusal: "not-awaiting-file" };
-    const total = Number(upload.file_bytes);
     for (let part = 1; part <= upload.parts; part += 1) {
-      const expected =
-        part < upload.parts
-          ? UPLOAD_PART_BYTES
-          : total - UPLOAD_PART_BYTES * (upload.parts - 1);
       if (
         (await this.storage.objectSize(uploadPartKey(uploadId, part))) !==
-        expected
+        partLength(Number(upload.file_bytes), part)
       )
         return { ok: false, refusal: "file-incomplete" };
     }
@@ -704,6 +705,13 @@ export async function discardUpload(
     .where("id", "=", uploadId as never)
     .execute();
   return true;
+}
+
+export function partLength(fileBytes: number, part: number): number {
+  return Math.min(
+    UPLOAD_PART_BYTES,
+    fileBytes - UPLOAD_PART_BYTES * (part - 1),
+  );
 }
 
 export function partKeys(uploadId: string, parts: number): string[] {
