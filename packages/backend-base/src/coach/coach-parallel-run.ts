@@ -18,12 +18,19 @@ export interface DimensionComparison {
   difference: number | null;
 }
 
+export const FLAG_REASONS = [
+  "composite",
+  "dimension",
+  "one-sided-not-applicable",
+] as const;
+
 export interface ScoreComparison {
   compositeDifference: number | null;
   dimensions: DimensionComparison[];
   withinOne: number;
   comparable: number;
   flagged: boolean;
+  flagReasons: Array<(typeof FLAG_REASONS)[number]>;
 }
 
 export interface ComparedSession extends ScoreComparison {
@@ -82,16 +89,22 @@ export function compareScores(
     host.composite === null || backend.composite === null
       ? null
       : rounded(Math.abs(backend.composite - host.composite));
+  const flagReasons = FLAG_REASONS.filter((reason) =>
+    reason === "composite"
+      ? (compositeDifference ?? 0) > FLAG_COMPOSITE_DIFFERENCE
+      : reason === "dimension"
+        ? comparable.some(
+            (d) => (d.difference as number) >= FLAG_DIMENSION_DIFFERENCE,
+          )
+        : dimensions.some((d) => (d.host === null) !== (d.backend === null)),
+  );
   return {
     compositeDifference,
     dimensions,
     withinOne: comparable.filter((d) => (d.difference as number) <= 1).length,
     comparable: comparable.length,
-    flagged:
-      (compositeDifference ?? 0) > FLAG_COMPOSITE_DIFFERENCE ||
-      comparable.some(
-        (d) => (d.difference as number) >= FLAG_DIMENSION_DIFFERENCE,
-      ),
+    flagged: flagReasons.length > 0,
+    flagReasons,
   };
 }
 
@@ -292,4 +305,26 @@ export async function parallelRunComparison(
     unmatchedHost: out.unmatched.host.length,
   };
   return out;
+}
+
+export async function endParallelRun(database: db): Promise<number> {
+  const ended = await sql`
+    UPDATE coach_intake_sessions s
+    SET parallel_run = false, updated_at = now()
+    WHERE s.parallel_run
+      AND (s.coach_id IS NOT NULL OR s.rotating_class_id IS NOT NULL)
+      AND NOT EXISTS (
+        SELECT 1 FROM coach_reports r
+        WHERE r.source_session_id LIKE 'legacy:%'
+          AND r.session_date = s.session_date
+          AND (
+            r.coach_id = s.coach_id
+            OR r.coach_id IN (
+              SELECT leader_slug FROM coach_rotating_class_leaders
+              WHERE class_id = s.rotating_class_id
+            )
+          )
+      )
+  `.execute(database.getOrCreateConnection());
+  return Number(ended.numAffectedRows ?? 0);
 }

@@ -403,6 +403,16 @@ describe("A Leader Can Upload A Session Video (task 4.13)", () => {
     expect(await request()).toEqual({ ok: false, refusal: "already-recorded" });
   });
 
+  it("A bot session seen during the parallel run does not block an upload after cutover", async () => {
+    await botSession("up-bot-1", "scored", `class:${classIds[0]}`);
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ parallel_run: true })
+      .where("source_session_id", "=", "up-bot-1")
+      .execute();
+    expect((await request()).ok).toBe(true);
+  });
+
   it("A failed bot session does not block an upload", async () => {
     await botSession("up-bot-1", "retrieval_failed", `class:${classIds[0]}`);
     expect((await request()).ok).toBe(true);
