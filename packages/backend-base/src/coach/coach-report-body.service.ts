@@ -40,7 +40,8 @@ const DOK = [
   "Apply to life",
 ];
 const MOMENT_TYPES = ["Capitalized", "Pivot", "Missed"] as const;
-const HEAD_COUNT = /^(number of )?attendees$/i;
+const HEAD_COUNT = /attend/i;
+const NEWCOMERS = /new|first/i;
 const CLAIMED_CHANGE = /[+-−]\s?\d+(\.\d+)?|\b\d+(\.\d+)?\s*(points?|pts)\b/i;
 const SCORE_IN_LINE = /\d+(\.\d+)?\s*(\/\s*100|points?|pts)\b|\bscore[sd]?\b/i;
 
@@ -216,6 +217,7 @@ export class CoachReportBodyService {
       `  ${SCORECARD_RATINGS.join(", ")}. Scripture Focus reports the leader's talk`,
       '  ratio twice: "Leader Talk (incl. reading)" and "Leader Talk (discussion',
       '  only)". Leadership reports the count of monologues over 90 seconds only.',
+      '  The Attendees table has one row, "Number of Attendees".',
       "",
       "Return JSON:",
       JSON.stringify({
@@ -527,7 +529,10 @@ function scorecard(
       .map(record)
       .filter((r) => !/^monologue details/i.test(text(r.metric)))
       .map((r) =>
-        i === 0 && attendees !== null && HEAD_COUNT.test(text(r.metric))
+        i === 0 &&
+        attendees !== null &&
+        HEAD_COUNT.test(text(r.metric)) &&
+        !NEWCOMERS.test(text(r.metric))
           ? { ...r, value: String(attendees) }
           : r,
       );

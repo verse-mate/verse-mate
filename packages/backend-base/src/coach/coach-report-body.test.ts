@@ -181,6 +181,26 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
     );
   });
 
+  it("the head count row is filled from the frames whatever the model named it", async () => {
+    const { body } = await generate(
+      {
+        scorecard: BODY_SCORECARD.map((t, i) =>
+          i === 0
+            ? { ...t, rows: [{ ...t.rows[0], metric: "Total attendance" }] }
+            : t,
+        ),
+      },
+      { attendees: 17 },
+    );
+    expect(rows(body)).toContain("Total attendance: 17  (Target: —)  → N/A");
+  });
+
+  it("the model is told the Attendees table's one row", () => {
+    expect(CoachReportBodyService.buildInstructions()).toContain(
+      'The Attendees table has one row, "Number of Attendees"',
+    );
+  });
+
   it("with no head count from the frames, the scorecard keeps the model's", async () => {
     const { body } = await generate({}, { attendees: null });
     expect(rows(body)).toContain("Number of Attendees: 12  (Target: —)  → N/A");
