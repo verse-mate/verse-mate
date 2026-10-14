@@ -102,7 +102,7 @@ describe("frames are extracted by streaming, never via container disk", () => {
       storage: new FakeStorage(),
       runFfmpeg: async (_input, args) => {
         seenArgs = args;
-        return [];
+        return [jpeg(0x11)];
       },
     });
     await svc.extract("k", 60);
@@ -112,6 +112,14 @@ describe("frames are extracted by streaming, never via container disk", () => {
 
     await svc.extract("k", null);
     expect(seenArgs.join(" ")).toContain(`fps=${FRAME_SAMPLE_FPS}`);
+  });
+
+  it("a recording that gives no frames is an error, so Visual Aids is never scored not applicable in silence", async () => {
+    const svc = new CoachFrameService({
+      storage: new FakeStorage(),
+      runFfmpeg: async () => [],
+    });
+    await expect(svc.extract("k", 60)).rejects.toThrow("no frames");
   });
 
   it("caps the frame count even if ffmpeg returns more", async () => {
