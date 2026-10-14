@@ -600,20 +600,29 @@ describe("OpenAiProvider transcribeAudio", () => {
 function batchProvider(
   batch: Record<string, unknown>,
   files: Record<string, string> = {},
+  refuseBatch = false,
 ) {
   const provider = new OpenAiProvider("test-key");
   const uploaded: string[] = [];
+  const fileParams: Record<string, unknown>[] = [];
+  const deleted: string[] = [];
   const created: Record<string, unknown>[] = [];
   (provider as unknown as { client: unknown }).client = {
     files: {
-      create: async ({ file }: { file: File }) => {
+      create: async ({ file, ...params }: { file: File }) => {
         uploaded.push(await file.text());
+        fileParams.push(params);
         return { id: "file-in" };
       },
       content: async (id: string) => new Response(files[id] ?? ""),
+      delete: async (id: string) => {
+        deleted.push(id);
+        return { id, deleted: true };
+      },
     },
     batches: {
       create: async (body: Record<string, unknown>) => {
+        if (refuseBatch) throw new Error("batch quota reached");
         created.push(body);
         return {
           id: "batch-1",
@@ -624,7 +633,7 @@ function batchProvider(
       retrieve: async () => batch,
     },
   };
-  return { provider, uploaded, created };
+  return { provider, uploaded, fileParams, deleted, created };
 }
 
 const answerLine = (customId: string, body: Record<string, unknown>) =>
@@ -678,7 +687,29 @@ describe("OpenAiProvider chat batches", () => {
       endpoint: "/v1/responses",
       completion_window: "24h",
       metadata: { coach_session: "s1" },
+      output_expires_after: { anchor: "created_at", seconds: 3 * 86400 },
     });
+  });
+
+  it("the uploaded requests and the answers expire at OpenAI after three days, and an upload the batch never used is deleted", async () => {
+    const { provider, fileParams } = batchProvider({});
+    await provider.submitChatBatch(
+      [{ id: "text", options: { model: "gpt-5", messages: [] } }],
+      {},
+    );
+    expect(fileParams[0]).toEqual({
+      purpose: "batch",
+      expires_after: { anchor: "created_at", seconds: 3 * 86400 },
+    });
+
+    const refused = batchProvider({}, {}, true);
+    await expect(
+      refused.provider.submitChatBatch(
+        [{ id: "text", options: { model: "gpt-5", messages: [] } }],
+        {},
+      ),
+    ).rejects.toThrow("batch quota reached");
+    expect(refused.deleted).toEqual(["file-in"]);
   });
 
   it("refuses an image that is not an inline data URL before uploading anything", async () => {
@@ -737,6 +768,42 @@ describe("OpenAiProvider chat batches", () => {
     expect(await expired.provider.collectChatBatch("batch-1")).toMatchObject({
       status: "failed",
       detail: "expired",
+    });
+    const cancelled = batchProvider({ id: "batch-1", status: "cancelled" });
+    expect(await cancelled.provider.collectChatBatch("batch-1")).toMatchObject({
+      status: "failed",
+      detail: "cancelled",
+    });
+  });
+
+  it("an expired batch still gives the answers it finished, and a line that is not JSON is left out rather than failing the rest", async () => {
+    const { provider } = batchProvider(
+      {
+        id: "batch-1",
+        status: "expired",
+        output_file_id: "file-out",
+        metadata: { coach_session: "s1" },
+      },
+      {
+        "file-out": [
+          "{not json",
+          answerLine("text", {
+            status: "completed",
+            model: "m",
+            output: [
+              {
+                type: "message",
+                content: [{ type: "output_text", text: "{}" }],
+              },
+            ],
+          }),
+        ].join("\n"),
+      },
+    );
+    expect(await provider.collectChatBatch("batch-1")).toEqual({
+      status: "completed",
+      metadata: { coach_session: "s1" },
+      results: { text: { content: "{}", model: "m" } },
     });
   });
 

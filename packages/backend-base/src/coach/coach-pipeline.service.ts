@@ -17,6 +17,7 @@ import {
   AttributionChangedError,
   CoachPublishService,
 } from "./coach-publish.service";
+import { REMINDER_TIME_ZONE } from "./coach-reminder.service";
 import {
   CoachReportBodyService,
   HISTORY_SESSIONS,
@@ -85,6 +86,17 @@ export const PIPELINE_BATCH_LIMIT = 5;
 
 export const PIPELINE_ATTEMPT_LIMIT = 5;
 
+const BATCH_UNREADABLE_LIMIT_MS = 2 * 24 * 3600_000;
+
+export function monthEnding(sessionDate: string, now: Date): boolean {
+  const today = now.toLocaleDateString("en-CA", {
+    timeZone: REMINDER_TIME_ZONE,
+  });
+  const [year, month] = sessionDate.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  return today >= lastDay;
+}
+
 const PARALLEL_RUN_HOLD =
   "parallel run: kept for admin comparison, nothing is sent until cutover";
 
@@ -106,6 +118,7 @@ export class CoachPipelineService {
   private readonly delivery: CoachDeliveryService | null;
   private readonly body: CoachReportBodyService;
   private readonly storage: Pick<ObjectStorageService, "getGlobalObjectText">;
+  private readonly now: () => Date;
 
   constructor(
     private readonly db: db,
@@ -118,8 +131,10 @@ export class CoachPipelineService {
       delivery?: CoachDeliveryService;
       body?: CoachReportBodyService;
       storage?: Pick<ObjectStorageService, "getGlobalObjectText">;
+      now?: () => Date;
     } = {},
   ) {
+    this.now = deps.now ?? (() => new Date());
     this.storage = deps.storage ?? new ObjectStorageService();
     this.scoring = deps.scoring ?? new CoachScoringService(db);
     this.body = deps.body ?? new CoachReportBodyService(this.scoring.ai);
@@ -143,6 +158,7 @@ export class CoachPipelineService {
         "rotating_class_id",
         "source",
         "scoring_batch_id",
+        "scoring_batch_sent_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where(scorable)
@@ -158,10 +174,12 @@ export class CoachPipelineService {
     ];
 
     const out: PipelineResult[] = await this.redeliver();
+    let published = 0;
+    const mayPublishBatch = () => published++ < PIPELINE_BATCH_LIMIT;
     for (const session of due) {
       let result: PipelineResult;
       try {
-        result = await this.runOne(session);
+        result = await this.runOne(session, mayPublishBatch);
       } catch (error) {
         console.error(
           `[COACH-PIPELINE] ${session.source_session_id} threw:`,
@@ -348,7 +366,11 @@ export class CoachPipelineService {
     await this.db
       .getOrCreateConnection()
       .updateTable("coach_intake_sessions")
-      .set({ scoring_batch_id: batchId, updated_at: sql`NOW()` })
+      .set({
+        scoring_batch_id: batchId,
+        scoring_batch_sent_at: batchId ? this.now() : null,
+        updated_at: sql`NOW()`,
+      })
       .where("source_session_id", "=", sourceSessionId)
       .execute();
   }
@@ -472,17 +494,21 @@ export class CoachPipelineService {
       : null;
   }
 
-  private async runOne(session: {
-    source_session_id: string;
-    retry_count: number;
-    coach_id: string | null;
-    title: string;
-    date: string;
-    parallel_run: boolean;
-    source: string;
-    rotating_class_id: number | null;
-    scoring_batch_id: string | null;
-  }): Promise<PipelineResult> {
+  private async runOne(
+    session: {
+      source_session_id: string;
+      retry_count: number;
+      coach_id: string | null;
+      title: string;
+      date: string;
+      parallel_run: boolean;
+      source: string;
+      rotating_class_id: number | null;
+      scoring_batch_id: string | null;
+      scoring_batch_sent_at: Date | null;
+    },
+    mayPublishBatch: () => boolean,
+  ): Promise<PipelineResult> {
     const conn = this.db.getOrCreateConnection();
     const coachId = session.coach_id ?? (await this.nameLeader(session));
     if (!coachId)
@@ -493,20 +519,32 @@ export class CoachPipelineService {
           "the transcript did not name which of the rotating class's leaders led",
       };
 
-    const batch = session.scoring_batch_id
+    const batchId = session.scoring_batch_id;
+    const batch = batchId
       ? await this.scoring.batchScoring(
-          session.scoring_batch_id,
+          batchId,
           session.source_session_id,
+          coachId,
         )
       : null;
+    const waiting = (detail: string): PipelineResult => ({
+      sourceSessionId: session.source_session_id,
+      outcome: "scoring-in-batch",
+      detail,
+    });
     if (batch?.state === "pending")
-      return {
-        sourceSessionId: session.source_session_id,
-        outcome: "scoring-in-batch",
-        detail: `waiting on scoring batch ${session.scoring_batch_id}`,
-      };
-    if (batch) await this.setScoringBatch(session.source_session_id, null);
-    if (batch?.state === "failed")
+      return waiting(`waiting on scoring batch ${batchId}`);
+    if (batch?.state === "unreadable") {
+      const sent = session.scoring_batch_sent_at?.getTime() ?? 0;
+      if (this.now().getTime() - sent < BATCH_UNREADABLE_LIMIT_MS)
+        return waiting(`${batch.detail}; trying again next tick`);
+      await this.scoring.cancelBatch(batchId as string);
+    }
+    if (batch?.state === "done" && !mayPublishBatch())
+      return waiting(`scoring batch ${batchId} finished; published next tick`);
+    if (batch && batch.state !== "done")
+      await this.setScoringBatch(session.source_session_id, null);
+    if (batch?.state === "failed" || batch?.state === "unreadable")
       return {
         sourceSessionId: session.source_session_id,
         outcome: "scoring-failed",
@@ -528,8 +566,6 @@ export class CoachPipelineService {
       };
     }
 
-    // Visual Aids is the one dimension the transcript cannot answer, so the
-    // frames come from the recording WE retained, not from the provider.
     const lastAttempt = session.retry_count + 1 >= PIPELINE_ATTEMPT_LIMIT;
     const transcript = timedLinesFrom(detail.sentences);
     const authenticity = await this.authenticityBaselineFor(
@@ -568,19 +604,29 @@ export class CoachPipelineService {
         frames,
         authenticityBaseline: authenticity,
       };
-      const batchId = coachScoringBatch()
-        ? await this.scoring.submitBatch(input, session.source_session_id)
-        : null;
-      if (batchId) {
-        await this.setScoringBatch(session.source_session_id, batchId);
-        return {
-          sourceSessionId: session.source_session_id,
-          outcome: "scoring-in-batch",
-          detail: `sent in scoring batch ${batchId}`,
-        };
+      const sentId =
+        coachScoringBatch() && !monthEnding(session.date, this.now())
+          ? await this.scoring.submitBatch(
+              input,
+              session.source_session_id,
+              coachId,
+            )
+          : null;
+      if (sentId) {
+        console.log(
+          `[COACH-PIPELINE] ${session.source_session_id} sent in scoring batch ${sentId}`,
+        );
+        await this.setScoringBatch(session.source_session_id, sentId);
+        return waiting(`sent in scoring batch ${sentId}`);
       }
       scored = await this.scoring.scoreSession(input);
     }
+    const unobserved = framesFailed ?? scored.visualsUnobserved;
+    if (
+      batch?.state === "done" &&
+      (!scored.ok || !scored.dimensions || (unobserved && !lastAttempt))
+    )
+      await this.setScoringBatch(session.source_session_id, null);
     if (!scored.ok || !scored.dimensions) {
       return {
         sourceSessionId: session.source_session_id,
@@ -589,7 +635,6 @@ export class CoachPipelineService {
       };
     }
 
-    const unobserved = framesFailed ?? scored.visualsUnobserved;
     if (unobserved && !lastAttempt)
       return {
         sourceSessionId: session.source_session_id,
@@ -662,6 +707,11 @@ export class CoachPipelineService {
           },
           trx as CoachReportsWriter,
         );
+        await trx
+          .updateTable("coach_intake_sessions")
+          .set({ scoring_batch_id: null, scoring_batch_sent_at: null })
+          .where("source_session_id", "=", session.source_session_id)
+          .execute();
         await this.scoring.persistDimensions(
           report.reportId,
           dimensions,

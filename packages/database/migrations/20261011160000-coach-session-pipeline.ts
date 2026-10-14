@@ -69,6 +69,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     .addColumn("retry_count", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("scoring_batch_id", "text")
+    .addColumn("scoring_batch_sent_at", "timestamptz")
     .addColumn("hold_reason", "text")
     .addColumn("hold_kind", "text", (col) =>
       col.check(sql`hold_kind IS NULL OR hold_kind IN (${listed(HOLD_KINDS)})`),

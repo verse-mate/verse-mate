@@ -59,6 +59,9 @@ class BatchAi implements AiProvider {
     requests: AiChatBatchRequest[];
     metadata: Record<string, string>;
   }> = [];
+  cancelled: string[] = [];
+  bodyFailures = 0;
+  private readonly sent = new Map<string, Record<string, string>>();
   outcome: (metadata: Record<string, string>) => AiChatBatch = (metadata) => ({
     status: "pending",
     metadata,
@@ -66,7 +69,13 @@ class BatchAi implements AiProvider {
 
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
     this.chats.push(opts);
-    if (isBodyCall(opts)) return { content: bodyAnswer(), model: "fake" };
+    if (isBodyCall(opts)) {
+      if (this.bodyFailures > 0) {
+        this.bodyFailures -= 1;
+        throw new Error("body model 503");
+      }
+      return { content: bodyAnswer(), model: "fake" };
+    }
     if (opts.messages.some((m) => m.images?.length))
       return { content: visionAnswer, model: "direct" };
     return { content: textAnswer(4), model: "direct" };
@@ -76,17 +85,23 @@ class BatchAi implements AiProvider {
     metadata: Record<string, string>,
   ): Promise<string> {
     this.submitted.push({ requests, metadata });
-    return `batch-${this.submitted.length}`;
+    const id = `batch-${this.submitted.length}`;
+    this.sent.set(id, metadata);
+    return id;
   }
   async collectChatBatch(batchId: string): Promise<AiChatBatch> {
-    const known = this.submitted[Number(batchId.split("-")[1]) - 1];
     return this.outcome(
-      known?.metadata ?? {
+      this.sent.get(batchId) ?? {
         coach_session: batchId.replace("seeded-", ""),
+        coach_id: COACH,
         prompt_version: promptVersion(),
         model: MODEL,
       },
     );
+  }
+  async batchesCancel(batchId: string): Promise<never> {
+    this.cancelled.push(batchId);
+    throw new Error("already finished");
   }
   scoringChats(): AiChatOptions[] {
     return this.chats.filter((c) => !isBodyCall(c));
@@ -100,7 +115,6 @@ class BatchAi implements AiProvider {
   filesContent = () => this.no("filesContent");
   batchesCreate = () => this.no("batchesCreate");
   batchesRetrieve = () => this.no("batchesRetrieve");
-  batchesCancel = () => this.no("batchesCancel");
 }
 
 function completed(text: Answer, vision: Answer) {
@@ -142,18 +156,26 @@ const noFrames = {
   },
 };
 
+const NOW = new Date("2026-08-25T15:00:00Z");
+
 function pipeline(
   ai: AiProvider,
   client = new CountingClient(),
   frames: object = oneFrame,
+  now = NOW,
 ) {
   return new CoachPipelineService(Database, client, null, {
     scoring: new CoachScoringService(Database, ai, MODEL),
     frames: frames as never,
+    now: () => now,
   });
 }
 
-async function seed(id: string, batchId: string | null = null) {
+async function seed(
+  id: string,
+  batchId: string | null = null,
+  date = "2026-08-22",
+) {
   await conn
     .insertInto("coach_intake_sessions")
     .values({
@@ -161,9 +183,10 @@ async function seed(id: string, batchId: string | null = null) {
       coach_id: COACH,
       matched_by: "title_match",
       title: "Obadiah, Lesson 4",
-      session_date: "2026-08-22",
+      session_date: date,
       state: "retained",
       scoring_batch_id: batchId,
+      scoring_batch_sent_at: batchId ? NOW : null,
     })
     .execute();
 }
@@ -257,6 +280,7 @@ describe("coach scoring goes through the batch API", () => {
     );
     expect(metadata).toEqual({
       coach_session: "ff-batch-1",
+      coach_id: COACH,
       prompt_version: promptVersion(),
       model: MODEL,
     });
@@ -402,6 +426,7 @@ describe("coach scoring goes through the batch API", () => {
 
     expect(result.outcome).toBe("scoring-in-batch");
     expect(ai.submitted).toHaveLength(2);
+    expect(ai.cancelled).toEqual(["batch-1"]);
     expect(await row()).toMatchObject({
       retry_count: 0,
       scoring_batch_id: "batch-2",
@@ -452,5 +477,171 @@ describe("coach scoring goes through the batch API", () => {
     expect(result.outcome).toBe("scored-awaiting-review");
     expect(ai.submitted).toEqual([]);
     expect(ai.scoringChats()).toHaveLength(2);
+  });
+
+  it("a batch that cannot be read is looked at again next tick without counting an attempt, and after two days it is cancelled, forgotten and counted", async () => {
+    await seed("ff-batch-1");
+    const ai = new BatchAi();
+    await pipeline(ai).run();
+    ai.outcome = () => {
+      throw new Error("OpenAI 502");
+    };
+
+    const [waiting] = await pipeline(ai).run();
+    expect(waiting.outcome).toBe("scoring-in-batch");
+    expect(waiting.detail).toContain("OpenAI 502");
+    expect(await row()).toMatchObject({
+      retry_count: 0,
+      scoring_batch_id: "batch-1",
+    });
+
+    const later = new Date(NOW.getTime() + 49 * 3600_000);
+    const [given] = await pipeline(ai, undefined, undefined, later).run();
+    expect(given.outcome).toBe("scoring-failed");
+    expect(given.detail).toContain("OpenAI 502");
+    expect(ai.cancelled).toEqual(["batch-1"]);
+    expect(await row()).toMatchObject({
+      retry_count: 1,
+      scoring_batch_id: null,
+    });
+  });
+
+  it("a finished batch whose report body fails is read again on the next tick, with no new batch", async () => {
+    await seed("ff-batch-1");
+    const ai = new BatchAi();
+    await pipeline(ai).run();
+    ai.outcome = completed(
+      { content: textAnswer(3), model: "served" },
+      { content: visionAnswer, model: "served" },
+    );
+    ai.bodyFailures = 1;
+
+    const [failed] = await pipeline(ai).run();
+    expect(failed.outcome).toBe("scoring-failed");
+    expect(await row()).toMatchObject({
+      retry_count: 1,
+      scoring_batch_id: "batch-1",
+    });
+
+    const [published] = await pipeline(ai).run();
+    expect(published.outcome).toBe("scored-awaiting-review");
+    expect(ai.submitted).toHaveLength(1);
+    expect(ai.scoringChats()).toEqual([]);
+    expect((await row()).scoring_batch_id).toBeNull();
+  });
+
+  it("a session given to another leader while its batch runs is not published from it: the batch is cancelled and the session goes out again", async () => {
+    await seed("ff-batch-1");
+    const ai = new BatchAi();
+    await pipeline(ai).run();
+    await conn
+      .insertInto("coach_leaders")
+      .values({
+        slug: "batch-other",
+        email: "batch-other@example.test",
+        name: "Other Leader",
+      })
+      .execute();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ coach_id: "batch-other" })
+      .where("source_session_id", "=", "ff-batch-1")
+      .execute();
+    ai.outcome = completed(
+      { content: textAnswer(3), model: "served" },
+      { content: visionAnswer, model: "served" },
+    );
+
+    try {
+      const [result] = await pipeline(ai).run();
+      expect(result.outcome).toBe("scoring-in-batch");
+      expect(ai.cancelled).toEqual(["batch-1"]);
+      expect(ai.submitted[1].metadata.coach_id).toBe("batch-other");
+      expect(await row()).toMatchObject({
+        report_id: null,
+        scoring_batch_id: "batch-2",
+      });
+    } finally {
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", "batch-other")
+        .execute();
+    }
+  });
+
+  it("on the last attempt a vision answer the batch could not give still publishes, held for Visual Aids", async () => {
+    await seed("ff-batch-1");
+    const ai = new BatchAi();
+    await pipeline(ai).run();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ retry_count: 4 })
+      .where("source_session_id", "=", "ff-batch-1")
+      .execute();
+    ai.outcome = completed(
+      { content: textAnswer(4), model: "t" },
+      { error: "image too large" },
+    );
+
+    const [result] = await pipeline(ai).run();
+
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(result.detail).toContain("Visual Aids not observed");
+    expect((await row()).scoring_batch_id).toBeNull();
+  });
+
+  it("a session holding a batch the provider cannot read is a failed attempt, and the next tick scores it directly", async () => {
+    await seed("ff-batch-1", "seeded-ff-batch-1");
+    const ai = new BatchAi();
+    const direct = Object.assign(Object.create(ai), {
+      submitChatBatch: undefined,
+      collectChatBatch: undefined,
+    }) as AiProvider;
+
+    const [failed] = await pipeline(direct).run();
+    expect(failed.outcome).toBe("scoring-failed");
+    expect(failed.detail).toContain("cannot read batches");
+    expect(await row()).toMatchObject({
+      retry_count: 1,
+      scoring_batch_id: null,
+    });
+
+    const [scored] = await pipeline(direct).run();
+    expect(scored.outcome).toBe("scored-awaiting-review");
+  });
+
+  it("a session from a month that ends within a day is scored directly, so the monthly summary has it", async () => {
+    await seed("ff-batch-1", null, "2026-08-31");
+    const ai = new BatchAi();
+
+    const [result] = await pipeline(
+      ai,
+      undefined,
+      undefined,
+      new Date("2026-08-31T12:00:00Z"),
+    ).run();
+
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(ai.submitted).toEqual([]);
+  });
+
+  it("one tick publishes at most five finished batches; the rest wait for the next tick", async () => {
+    for (let i = 0; i < PIPELINE_BATCH_LIMIT + 2; i++)
+      await seed(`ff-batch-done-${i}`, `seeded-ff-batch-done-${i}`);
+    const ai = new BatchAi();
+    ai.outcome = completed(
+      { content: textAnswer(3), model: "served" },
+      { content: visionAnswer, model: "served" },
+    );
+
+    const results = await pipeline(ai).run();
+
+    expect(
+      results.filter((r) => r.outcome === "scored-awaiting-review"),
+    ).toHaveLength(PIPELINE_BATCH_LIMIT);
+    expect(
+      results.filter((r) => r.outcome === "scoring-in-batch"),
+    ).toHaveLength(2);
+    expect(ai.submitted).toEqual([]);
   });
 });

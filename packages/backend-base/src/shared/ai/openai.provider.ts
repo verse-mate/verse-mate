@@ -232,18 +232,26 @@ export class OpenAiProvider implements AiProvider {
         body: responsesBody(r.options),
       }),
     );
-    const file = await this.filesCreate({
+    const file = await this.client.files.create({
       file: new File([lines.join("\n")], "chat-batch.jsonl", {
         type: "application/jsonl",
       }),
       purpose: "batch",
+      expires_after: BATCH_FILE_EXPIRY,
     });
-    const batch = await this.batchesCreate({
-      inputFileId: file.id,
-      endpoint: "/v1/responses",
-      metadata,
-    });
-    return batch.id;
+    try {
+      const batch = await this.client.batches.create({
+        input_file_id: file.id,
+        endpoint: "/v1/responses",
+        completion_window: "24h",
+        metadata,
+        output_expires_after: BATCH_FILE_EXPIRY,
+      });
+      return batch.id;
+    } catch (error) {
+      await this.client.files.delete(file.id).catch(() => undefined);
+      throw error;
+    }
   }
 
   async collectChatBatch(batchId: string): Promise<AiChatBatch> {
@@ -251,7 +259,10 @@ export class OpenAiProvider implements AiProvider {
     const metadata = batch.metadata ?? {};
     if (BATCH_RUNNING.includes(batch.status))
       return { status: "pending", metadata };
-    if (batch.status !== "completed") {
+    const finished =
+      batch.status === "completed" ||
+      (batch.status === "expired" && batch.outputFileId !== undefined);
+    if (!finished) {
       const why = (batch.errors?.data ?? [])
         .map((e) => (e as { message?: string }).message)
         .filter(Boolean)
@@ -268,8 +279,8 @@ export class OpenAiProvider implements AiProvider {
       const text = await (await this.filesContent(fileId)).text();
       for (const line of text.split("\n")) {
         if (!line.trim()) continue;
-        const row = JSON.parse(line) as BatchRow;
-        results[row.custom_id] = batchAnswer(row);
+        const row = parsedRow(line);
+        if (row) results[row.custom_id] = batchAnswer(row);
       }
     }
     return { status: "completed", metadata, results };
@@ -324,6 +335,20 @@ interface BatchRow {
     };
   } | null;
   error?: { message?: string } | null;
+}
+
+const BATCH_FILE_EXPIRY = {
+  anchor: "created_at" as const,
+  seconds: 3 * 86400,
+};
+
+function parsedRow(line: string): BatchRow | null {
+  try {
+    const row = JSON.parse(line) as BatchRow;
+    return typeof row.custom_id === "string" ? row : null;
+  } catch {
+    return null;
+  }
 }
 
 function batchAnswer(row: BatchRow): AiChatResponse | { error: string } {
