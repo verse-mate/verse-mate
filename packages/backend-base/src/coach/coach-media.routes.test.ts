@@ -132,7 +132,8 @@ beforeAll(async () => {
       if (id === "ff-parallel") return "parallel-run-session";
       return id === "ff-parked";
     },
-    getProfileById: async () => bundledProfile,
+    getProfileById: async (id: string) =>
+      id === "nobody-here" ? null : bundledProfile,
     listPipelineFailures: async (page: unknown) => {
       failuresListed += 1;
       failurePages.push(page);
@@ -523,6 +524,16 @@ describe("the admin reads one leader's reports a page and a report at a time", (
     expect(summaryCalls).toEqual([
       ["leader-a", { limit: 10, offset: 20 }, "admin"],
     ]);
+  });
+
+  it("a leader that does not exist is a refusal the portal can tell from a missing route", async () => {
+    admin = true;
+    const res = await get("/coach/admin/coaches/nobody-here/reports/summary");
+    expect(res.status).toBe(404);
+    expect(await res.json()).toMatchObject({
+      message: "Coach not found",
+      details: { refusal: "unknown-leader" },
+    });
   });
 
   it("a signed-in non-admin is refused the page and nothing is read", async () => {
