@@ -1,4 +1,4 @@
-import { sql } from "kysely";
+import { type QueryExecutorProvider, sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import { DIMENSIONS, composeBaseScore, composeComposite } from "./rubric";
@@ -308,7 +308,7 @@ export async function parallelRunComparison(
 }
 
 export async function endParallelRun(
-  database: db,
+  database: db | QueryExecutorProvider,
   only?: string[],
 ): Promise<number> {
   if (only?.length === 0) return 0;
@@ -330,6 +330,10 @@ export async function endParallelRun(
             )
           )
       )
-  `.execute(database.getOrCreateConnection());
+  `.execute(
+    "getOrCreateConnection" in database
+      ? database.getOrCreateConnection()
+      : database,
+  );
   return Number(ended.numAffectedRows ?? 0);
 }

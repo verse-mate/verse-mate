@@ -318,7 +318,7 @@ describe("bot intake and the host's reports", () => {
   });
 });
 
-describe("a leader with no host report is bounded by their roster join and the first poll", () => {
+describe("a leader with no host report is bounded by their roster join and the week before the first poll", () => {
   const kept = async () =>
     (
       await conn
@@ -344,7 +344,7 @@ describe("a leader with no host report is bounded by their roster join and the f
   });
   afterEach(clear);
 
-  it("nothing dated before the pipeline's first poll is taken, even for a leader who joined long before", async () => {
+  it("nothing dated more than a week before the pipeline's first poll is taken, even for a leader who joined long before", async () => {
     await leaderJoined("2026-07-01");
     await pipelineFirstPolled("2026-09-15");
     const result = await new CoachIntakeService(
@@ -354,8 +354,8 @@ describe("a leader with no host report is bounded by their roster join and the f
           transcript("ff-a-before-join", {
             dateString: "2026-06-20T14:00:00.000Z",
           }),
-          transcript("ff-b-before-poll", {
-            dateString: "2026-09-10T14:00:00.000Z",
+          transcript("ff-b-week-before-poll", {
+            dateString: "2026-09-05T14:00:00.000Z",
           }),
           transcript("ff-c-after", { dateString: "2026-09-20T14:00:00.000Z" }),
         ],
@@ -404,7 +404,19 @@ describe("a leader with no host report is bounded by their roster join and the f
     expect(await kept()).toEqual(["ff-x-new"]);
   });
 
-  it("on the very first poll, only sessions from that day on are taken", async () => {
+  it("a session from the days before a first poll that took nothing is still taken when it arrives late", async () => {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await new CoachIntakeService(Database, new FakeFireflies([[]])).poll();
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [transcript("ff-late", { dateString: yesterday.toISOString() })],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-late"]);
+  });
+
+  it("on the very first poll, only the last week's sessions are taken", async () => {
     const today = new Date();
     const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     await new CoachIntakeService(
