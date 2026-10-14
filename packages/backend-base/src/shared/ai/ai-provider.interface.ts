@@ -166,6 +166,20 @@ export interface AiBatchResult {
   errors?: { object: string; data: unknown[] } | null;
 }
 
+export interface AiChatBatchRequest {
+  id: string;
+  options: AiChatOptions;
+}
+
+export type AiChatBatch =
+  | { status: "pending"; metadata: Record<string, string> }
+  | { status: "failed"; metadata: Record<string, string>; detail: string }
+  | {
+      status: "completed";
+      metadata: Record<string, string>;
+      results: Record<string, AiChatResponse | { error: string }>;
+    };
+
 export interface AiTranscription {
   segments: Array<{ start: number; end: number; text: string }>;
 }
@@ -181,6 +195,13 @@ export interface AiProvider {
 
   /** Send a chat completion request. */
   chatComplete(opts: AiChatOptions): Promise<AiChatResponse>;
+
+  submitChatBatch?(
+    requests: AiChatBatchRequest[],
+    metadata: Record<string, string>,
+  ): Promise<string>;
+
+  collectChatBatch?(batchId: string): Promise<AiChatBatch>;
 
   /**
    * Send a Responses-API style request (instructions + input). Used by admin

@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 import { sql } from "kysely";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
-import { type AiProvider, getAiProvider } from "../shared/ai";
+import {
+  type AiChatOptions,
+  type AiChatResponse,
+  type AiProvider,
+  getAiProvider,
+} from "../shared/ai";
 import type { db } from "../shared/shared.plugin";
 import { coachModel } from "./coach-models";
 import { type TimedLine, renderLine, spokenText } from "./coach-transcript";
@@ -218,6 +223,23 @@ function countOf(value: unknown): number | null {
     ? value
     : null;
 }
+
+const UNREACHED_VISION: VisualJudgement = {
+  score: {
+    n: VISUAL_AIDS_DIMENSION,
+    score: null,
+    rationale:
+      "The vision model could not be reached for this session, so visual aids were not observed.",
+    notApplicable: true,
+  },
+  unobserved: "the vision model could not be reached",
+};
+
+export type BatchScoring =
+  | { state: "pending" }
+  | { state: "stale" }
+  | { state: "failed"; detail: string }
+  | { state: "done"; score: (input: ScoringInput) => Promise<ScoringResult> };
 
 export interface ScoringInput {
   transcript: TimedLine[];
@@ -595,8 +617,8 @@ export class CoachScoringService {
     return `data:image/jpeg;base64,${Buffer.from(frame).toString("base64")}`;
   }
 
-  async scoreSession(input: ScoringInput): Promise<ScoringResult> {
-    const response = await this.ai.chatComplete({
+  private textRequest(input: ScoringInput): AiChatOptions {
+    return {
       model: this.model,
       messages: [
         { role: "system", content: CoachScoringService.buildInstructions() },
@@ -612,8 +634,95 @@ export class CoachScoringService {
       ...SCORING_SETTINGS,
       maxTokens: SCORING_REQUEST.textMaxTokens,
       responseFormat: SCORING_REQUEST.responseFormat,
-    });
+    };
+  }
 
+  private visionRequest(input: ScoringInput): AiChatOptions {
+    return {
+      model: this.model,
+      messages: [
+        {
+          role: "system",
+          content: CoachScoringService.buildVisionInstructions(),
+        },
+        {
+          role: "user",
+          content: CoachScoringService.titleMessage(input.sessionTitle),
+          images: (input.frames ?? []).map(CoachScoringService.frameUrl),
+        },
+      ],
+      ...SCORING_SETTINGS,
+      maxTokens: SCORING_REQUEST.visionMaxTokens,
+      responseFormat: SCORING_REQUEST.responseFormat,
+    };
+  }
+
+  async scoreSession(input: ScoringInput): Promise<ScoringResult> {
+    const response = await this.ai.chatComplete(this.textRequest(input));
+    return this.scoredFrom(input, response, () => this.scoreVisualAids(input));
+  }
+
+  async submitBatch(
+    input: ScoringInput,
+    sessionId: string,
+  ): Promise<string | null> {
+    if (!this.ai.submitChatBatch || !input.frames?.length) return null;
+    return this.ai.submitChatBatch(
+      [
+        { id: "text", options: this.textRequest(input) },
+        { id: "vision", options: this.visionRequest(input) },
+      ],
+      {
+        coach_session: sessionId,
+        prompt_version: promptVersion(),
+        model: this.model,
+      },
+    );
+  }
+
+  async batchScoring(
+    batchId: string,
+    sessionId: string,
+  ): Promise<BatchScoring> {
+    if (!this.ai.collectChatBatch)
+      return { state: "failed", detail: "the AI provider cannot read batches" };
+    const batch = await this.ai.collectChatBatch(batchId);
+    const { coach_session, prompt_version, model } = batch.metadata;
+    if (
+      coach_session !== sessionId ||
+      prompt_version !== promptVersion() ||
+      model !== this.model
+    )
+      return { state: "stale" };
+    if (batch.status === "pending") return { state: "pending" };
+    if (batch.status === "failed")
+      return {
+        state: "failed",
+        detail: `scoring batch ${batchId} ${batch.detail}`,
+      };
+    const text = batch.results.text;
+    if (!text || "error" in text)
+      return {
+        state: "failed",
+        detail: `scoring batch ${batchId}: ${text?.error ?? "no answer to the scoring request"}`,
+      };
+    const vision = batch.results.vision;
+    return {
+      state: "done",
+      score: (input) =>
+        this.scoredFrom(input, text, async () =>
+          vision && !("error" in vision)
+            ? this.visionJudgement(vision)
+            : UNREACHED_VISION,
+        ),
+    };
+  }
+
+  private async scoredFrom(
+    input: ScoringInput,
+    response: AiChatResponse,
+    scoreVisualAids: () => Promise<VisualJudgement>,
+  ): Promise<ScoringResult> {
     let raw: RawDimensionScore[];
     let newcomers = 0;
     let firstLessonLine: string | null = null;
@@ -642,7 +751,7 @@ export class CoachScoringService {
     // forced to not-applicable when they do not: the text model has no basis
     // for it either way, and a number produced from no evidence is worse than
     // an honest gap.
-    const visual = await this.scoreVisualAids(input);
+    const visual = await scoreVisualAids();
     const withVisual = [
       ...raw.filter((d) => d.n !== VISUAL_AIDS_DIMENSION),
       visual.score,
@@ -731,43 +840,15 @@ export class CoachScoringService {
     }
 
     try {
-      return await this.visionCall(input);
+      return this.visionJudgement(
+        await this.ai.chatComplete(this.visionRequest(input)),
+      );
     } catch {
-      // A vision provider error must not fail the whole session, eleven
-      // dimensions are still legitimately scored. The call used to sit OUTSIDE
-      // this try, so a 500 or a timeout propagated out of scoreSession and
-      // discarded all of them.
-      return {
-        score: {
-          n: VISUAL_AIDS_DIMENSION,
-          score: null,
-          rationale:
-            "The vision model could not be reached for this session, so visual aids were not observed.",
-          notApplicable: true,
-        },
-        unobserved: "the vision model could not be reached",
-      };
+      return UNREACHED_VISION;
     }
   }
 
-  private async visionCall(input: ScoringInput): Promise<VisualJudgement> {
-    const response = await this.ai.chatComplete({
-      model: this.model,
-      messages: [
-        {
-          role: "system",
-          content: CoachScoringService.buildVisionInstructions(),
-        },
-        {
-          role: "user",
-          content: CoachScoringService.titleMessage(input.sessionTitle),
-          images: (input.frames ?? []).map(CoachScoringService.frameUrl),
-        },
-      ],
-      ...SCORING_SETTINGS,
-      maxTokens: SCORING_REQUEST.visionMaxTokens,
-      responseFormat: SCORING_REQUEST.responseFormat,
-    });
+  private visionJudgement(response: AiChatResponse): VisualJudgement {
     const model = response.model || this.model;
 
     try {

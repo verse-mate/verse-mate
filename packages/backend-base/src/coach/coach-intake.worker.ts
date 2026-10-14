@@ -62,6 +62,7 @@ export interface CoachIntakeRunResult {
   /** Phase 3: sessions carried through to a report. */
   delivered: number;
   awaitingReview: number;
+  scoringInBatch: number;
   pipelineFailed: number;
   /** Phase 4: recordings pruned past the per-leader bound. */
   pruned: number;
@@ -147,6 +148,8 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
     awaitingReview: pipeline.filter(
       (p) => p.outcome === "scored-awaiting-review",
     ).length,
+    scoringInBatch: pipeline.filter((p) => p.outcome === "scoring-in-batch")
+      .length,
     pipelineFailed: pipeline.filter((p) =>
       ["scoring-failed", "delivery-blocked", "delivery-failed"].includes(
         p.outcome,
@@ -189,6 +192,7 @@ coachIntakeWorker.on("completed", (job) => {
       `floorSkipped=${r?.floorSkipped} ` +
       `retained=${r?.retained} held=${r?.held} failed=${r?.retrievalFailed} ` +
       `delivered=${r?.delivered} awaitingReview=${r?.awaitingReview} ` +
+      `scoringInBatch=${r?.scoringInBatch} ` +
       `pipelineFailed=${r?.pipelineFailed} pruned=${r?.pruned}`,
   );
 });
