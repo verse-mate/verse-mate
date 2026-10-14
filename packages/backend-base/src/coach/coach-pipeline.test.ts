@@ -256,6 +256,22 @@ async function clear() {
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
 
+async function parallelRunCopy(reportId: string, date: string) {
+  await conn
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: `ff-pipe-parallel-${reportId}`,
+      coach_id: COACH,
+      matched_by: "title_match",
+      title: "t",
+      session_date: date,
+      state: "scored",
+      report_id: reportId,
+      parallel_run: true,
+    })
+    .execute();
+}
+
 async function priorReport(
   id: string,
   date: string,
@@ -664,7 +680,7 @@ describe("a retained session reaches a delivered report", () => {
     expect(mailer.sent).toEqual([]);
   });
 
-  it("The benchmark leader's machine report compares with his history, one report per date, the delivered one", async () => {
+  it("The benchmark leader's machine report compares with his history, leaving out the parallel run's copy of a session the host reported", async () => {
     await conn
       .updateTable("coach_leaders")
       .set({ is_benchmark: true })
@@ -701,6 +717,7 @@ describe("a retained session reaches a delivered report", () => {
         body: {},
       })
       .execute();
+    await parallelRunCopy("pipe-history-parallel", "2026-08-08");
     await conn
       .updateTable("coach_reports")
       .set({ source_session_id: "legacy:pipe-history-1" })
@@ -721,6 +738,48 @@ describe("a retained session reaches a delivered report", () => {
       "Participant Engagement: 4 this session against 2 over the last 2 sessions ↑",
     );
     expect(body.sections.some((s) => s.title === "Drift Check")).toBe(true);
+  });
+
+  it("two sessions the benchmark leader held on one date are both in his history", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ is_benchmark: true })
+      .where("slug", "=", COACH)
+      .execute();
+    for (const [id, date, source] of [
+      ["pipe-history-0", "2026-08-01", "legacy:pipe-history:2026-08-01:0"],
+      ["pipe-history-1", "2026-08-08", "legacy:pipe-history:2026-08-08:0"],
+      ["pipe-history-2", "2026-08-08", "legacy:pipe-history:2026-08-08:1"],
+    ])
+      await conn
+        .insertInto("coach_reports")
+        .values({
+          id,
+          coach_id: COACH,
+          session_date: date,
+          source_session_id: source,
+          legacy_ids: [],
+          summary: {},
+          metrics: JSON.stringify({
+            dimensions: DIMENSIONS.map((d) => ({ n: d.n, score: 2 })),
+          }),
+          body: {},
+        })
+        .execute();
+    const [result] = await pipeline(null).run();
+    const body = (
+      await conn
+        .selectFrom("coach_reports")
+        .select("body")
+        .where("id", "=", result.reportId as string)
+        .executeTakeFirstOrThrow()
+    ).body as { sections: Array<{ title: string; bullets?: string[] }> };
+    expect(
+      body.sections.find((s) => s.title === "Session-Over-Session Comparison")
+        ?.bullets,
+    ).toContain(
+      "Participant Engagement: 4 this session against 2 over the last 3 sessions ↑",
+    );
   });
 
   it("any other leader's machine report carries no comparison with history, even with earlier reports", async () => {
@@ -1106,7 +1165,7 @@ describe("a retained session reaches a delivered report", () => {
     expect(await storedAuthenticity()).toMatchObject({ score: 4 });
   });
 
-  it("the baseline takes one report per date, the delivered one, and leaves held reports out", async () => {
+  it("the baseline leaves out the parallel run's copy of a session the host reported, and held reports", async () => {
     await priorReport(
       "prior-host",
       "2026-07-01",
@@ -1116,6 +1175,7 @@ describe("a retained session reaches a delivered report", () => {
       "legacy:pipe-host",
     );
     await priorReport("prior-parallel", "2026-07-01", 1);
+    await parallelRunCopy("prior-parallel", "2026-07-01");
     await priorReport("prior-held-a", "2026-07-15", 1, undefined, true);
     await priorReport("prior-held-b", "2026-08-15", 1, undefined, true);
     await pipeline(new FakeMailer()).run();

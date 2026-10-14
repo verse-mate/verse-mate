@@ -87,12 +87,9 @@ const PARALLEL_RUN_HOLD =
 
 const NO_MAILER_HOLD = "held until delivered: no mailer is configured";
 
-const DELIVERED_FIRST = sql<boolean>`(
-  coach_reports.source_session_id LIKE 'legacy:%'
-  OR EXISTS (
-    SELECT 1 FROM coach_intake_sessions s
-    WHERE s.report_id = coach_reports.id AND s.state = 'delivered'
-  )
+const NOT_A_PARALLEL_RUN_COPY = sql<boolean>`NOT EXISTS (
+  SELECT 1 FROM coach_intake_sessions s
+  WHERE s.report_id = coach_reports.id AND s.parallel_run
 )`;
 
 function newVersionHold(version: ScoringVersion | undefined): string {
@@ -243,13 +240,12 @@ export class CoachPipelineService {
           LIMIT 1
         )`.as("storedScore"),
       ])
-      .distinctOn("coach_reports.session_date")
       .where("coach_reports.coach_id", "=", coachId)
       .where("coach_reports.session_date", "<", sql<Date>`${sessionDate}::date`)
       .where("coach_reports.source_session_id", "!=", sourceSessionId)
       .where("coach_reports.held", "=", false)
+      .where(NOT_A_PARALLEL_RUN_COPY)
       .orderBy("coach_reports.session_date", "desc")
-      .orderBy(DELIVERED_FIRST, "desc")
       .orderBy("coach_reports.updated_at", "desc")
       .execute();
     return authenticityBaseline(
@@ -293,13 +289,12 @@ export class CoachPipelineService {
       .selectFrom("coach_reports")
       .select(["metrics"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
-      .distinctOn("session_date")
       .where("coach_id", "=", coachId)
       .where("session_date", "<", sql<Date>`${sessionDate}::date`)
       .where("source_session_id", "!=", sourceSessionId)
       .where("held", "=", false)
+      .where(NOT_A_PARALLEL_RUN_COPY)
       .orderBy("session_date", "desc")
-      .orderBy(DELIVERED_FIRST, "desc")
       .orderBy("updated_at", "desc")
       .limit(HISTORY_SESSIONS)
       .execute();
