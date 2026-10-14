@@ -173,6 +173,19 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
     expect(issues.join(" ")).toContain("scorecard");
   });
 
+  it("the scorecard's head count is the one counted on the frames, the same as the title page", async () => {
+    const { body } = await generate({}, { attendees: 17 });
+    expect(rows(body)).toContain("Number of Attendees: 17  (Target: —)  → N/A");
+    expect(section(body, /^Session Details$/)?.bullets).toContain(
+      "Attendees: 17",
+    );
+  });
+
+  it("with no head count from the frames, the scorecard keeps the model's", async () => {
+    const { body } = await generate({}, { attendees: null });
+    expect(rows(body)).toContain("Number of Attendees: 12  (Target: —)  → N/A");
+  });
+
   it("Talk ratio is reported with and without scripture reading: a scorecard missing either is incomplete", async () => {
     const { issues } = await generate({
       scorecard: BODY_SCORECARD.map((t, i) =>
