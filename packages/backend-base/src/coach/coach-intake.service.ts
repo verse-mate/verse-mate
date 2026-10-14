@@ -7,7 +7,7 @@ import {
   reattributeUnresolved,
 } from "./coach-attribution";
 import { coachPipelineLive } from "./coach-cutover";
-import { calendarDate } from "./coach-reminder.service";
+import { REMINDER_TIME_ZONE, calendarDate } from "./coach-reminder.service";
 import { loadRotatingClasses } from "./coach-rotating.service";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
 
@@ -62,6 +62,34 @@ async function hostCoverage(
     .where("coach_id", "in", leaders)
     .executeTakeFirst();
   return { newest: row?.newest ?? null, sameDay: row?.sameDay ?? null };
+}
+
+function chicagoDate(column: string) {
+  return sql<
+    string | null
+  >`to_char(${sql.ref(column)} AT TIME ZONE 'UTC' AT TIME ZONE ${REMINDER_TIME_ZONE}, 'YYYY-MM-DD')`;
+}
+
+async function firstPollDate(database: db): Promise<string> {
+  const row = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_intake_sessions")
+    .select(chicagoDate("observed_at").as("first"))
+    .where("source", "=", "bot")
+    .orderBy("observed_at")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.first ?? calendarDate(new Date());
+}
+
+async function rosterJoinDates(database: db): Promise<Map<string, string>> {
+  const rows = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_leaders")
+    .select(["slug", chicagoDate("created_at").as("joined")])
+    .where("slug", "is not", null)
+    .execute();
+  return new Map(rows.map((r) => [r.slug as string, r.joined as string]));
 }
 
 export interface PollResult {
@@ -164,6 +192,8 @@ export class CoachIntakeService {
     const roster = await loadAttributionRoster(this.db);
     const rotating = await loadRotatingClasses(this.db);
     const parallelRun = !coachPipelineLive();
+    const pipelineStart = await firstPollDate(this.db);
+    const joined = await rosterJoinDates(this.db);
     let unresolved = 0;
     let floorSkipped = 0;
     // Counted from what was actually INSERTED, not from what the provider
@@ -194,7 +224,13 @@ export class CoachIntakeService {
           : rotating.find((c) => c.id === match.rotatingClassId)?.leaders ?? [],
         date,
       );
-      if (host.newest && date < host.newest) {
+      const leaderJoined = match.coachId ? joined.get(match.coachId) : null;
+      const floor =
+        host.newest ??
+        (leaderJoined && leaderJoined > pipelineStart
+          ? leaderJoined
+          : pipelineStart);
+      if (date < floor) {
         floorSkipped += 1;
         continue;
       }

@@ -37,6 +37,7 @@ import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const SESSION = "ff-life-1";
+const FIRST_POLL = "ff-life-first-poll";
 const COACH = "quillon-lifecycle";
 const EMAIL = "quillon-lifecycle@example.test";
 const NAME = "Quillon Lifecycle";
@@ -125,7 +126,7 @@ async function clear() {
     .execute();
   await conn
     .deleteFrom("coach_intake_sessions")
-    .where("source_session_id", "=", SESSION)
+    .where("source_session_id", "in", [SESSION, FIRST_POLL])
     .execute();
   await conn
     .deleteFrom("coach_reports")
@@ -146,7 +147,23 @@ beforeEach(async () => {
   await clear();
   await conn
     .insertInto("coach_leaders")
-    .values({ slug: COACH, email: EMAIL, name: NAME })
+    .values({
+      slug: COACH,
+      email: EMAIL,
+      name: NAME,
+      created_at: "2026-01-01 00:00:00",
+    })
+    .execute();
+  await conn
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: FIRST_POLL,
+      source: "bot",
+      matched_by: "unresolved",
+      title: "first poll",
+      session_date: "2026-01-01",
+      observed_at: "2026-01-01 15:00:00",
+    })
     .execute();
   leaderUser = (
     await conn
