@@ -532,19 +532,27 @@ export class CoachPipelineService {
       outcome: "scoring-in-batch",
       detail,
     });
-    if (batch?.state === "pending")
+    const closing = monthEnding(session.date, this.now());
+    const unfinished =
+      batch?.state === "pending" || batch?.state === "unreadable";
+    if (closing && unfinished) {
+      await this.scoring.cancelBatch(batchId as string);
+    } else if (batch?.state === "pending") {
       return waiting(`waiting on scoring batch ${batchId}`);
-    if (batch?.state === "unreadable") {
+    } else if (batch?.state === "unreadable") {
       const sent = session.scoring_batch_sent_at?.getTime() ?? 0;
       if (this.now().getTime() - sent < BATCH_UNREADABLE_LIMIT_MS)
         return waiting(`${batch.detail}; trying again next tick`);
       await this.scoring.cancelBatch(batchId as string);
     }
-    if (batch?.state === "done" && !mayPublishBatch())
+    if (batch?.state === "done" && !closing && !mayPublishBatch())
       return waiting(`scoring batch ${batchId} finished; published next tick`);
     if (batch && batch.state !== "done")
       await this.setScoringBatch(session.source_session_id, null);
-    if (batch?.state === "failed" || batch?.state === "unreadable")
+    if (
+      !(closing && unfinished) &&
+      (batch?.state === "failed" || batch?.state === "unreadable")
+    )
       return {
         sourceSessionId: session.source_session_id,
         outcome: "scoring-failed",
@@ -605,7 +613,7 @@ export class CoachPipelineService {
         authenticityBaseline: authenticity,
       };
       const sentId =
-        coachScoringBatch() && !monthEnding(session.date, this.now())
+        coachScoringBatch() && !closing
           ? await this.scoring.submitBatch(
               input,
               session.source_session_id,
