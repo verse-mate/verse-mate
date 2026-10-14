@@ -501,6 +501,7 @@ describe("a parallel-run session attributed after cutover leaves the parallel ru
         email: `${A}@example.test`,
         name: "Parallel Leader",
         title_match: ["harbor study"],
+        created_at: "2026-01-01 00:00:00",
       })
       .onConflict((oc) => oc.column("email").doNothing())
       .execute();

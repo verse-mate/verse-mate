@@ -70,16 +70,21 @@ function chicagoDate(column: string) {
   >`to_char(${sql.ref(column)} AT TIME ZONE 'UTC' AT TIME ZONE ${REMINDER_TIME_ZONE}, 'YYYY-MM-DD')`;
 }
 
-async function firstPollDate(database: db): Promise<string> {
+async function pipelineStartFloor(database: db): Promise<string> {
   const row = await database
     .getOrCreateConnection()
     .selectFrom("coach_intake_sessions")
-    .select(chicagoDate("observed_at").as("first"))
+    .select(
+      sql<string>`to_char(
+        (COALESCE(min(observed_at) AT TIME ZONE 'UTC', now())
+          - make_interval(secs => ${WATERMARK_OVERLAP_MS / 1000}))
+          AT TIME ZONE ${REMINDER_TIME_ZONE},
+        'YYYY-MM-DD'
+      )`.as("floor"),
+    )
     .where("source", "=", "bot")
-    .orderBy("observed_at")
-    .limit(1)
-    .executeTakeFirst();
-  return row?.first ?? calendarDate(new Date());
+    .executeTakeFirstOrThrow();
+  return row.floor;
 }
 
 async function rosterJoinDates(database: db): Promise<Map<string, string>> {
@@ -192,7 +197,7 @@ export class CoachIntakeService {
     const roster = await loadAttributionRoster(this.db);
     const rotating = await loadRotatingClasses(this.db);
     const parallelRun = !coachPipelineLive();
-    const pipelineStart = await firstPollDate(this.db);
+    const pipelineStart = await pipelineStartFloor(this.db);
     const joined = await rosterJoinDates(this.db);
     let unresolved = 0;
     let floorSkipped = 0;

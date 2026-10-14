@@ -61,6 +61,11 @@ async function leaders() {
       },
     ])
     .execute();
+  await conn
+    .updateTable("coach_leaders")
+    .set({ created_at: "2026-01-01 00:00:00" })
+    .where("slug", "in", [RIGHT, WRONG])
+    .execute();
 }
 
 async function session(id: string, over: Record<string, unknown> = {}) {
@@ -677,5 +682,37 @@ describe("a session is assigned only to a coaching leader", () => {
       await reattributeSession(Database, SESSIONS[0], RIGHT, null),
     ).toEqual({ ok: false, refusal: "unknown-leader" });
     expect(await intake(SESSIONS[0])).toMatchObject({ coach_id: null });
+  });
+});
+
+describe("a keyword sweep leaves out sessions dated before a leader with no host report joined", () => {
+  beforeEach(async () => {
+    await clear();
+    await leaders();
+    await conn
+      .updateTable("coach_leaders")
+      .set({ created_at: "2026-09-20 15:00:00" })
+      .where("slug", "=", RIGHT)
+      .execute();
+  });
+  afterEach(clear);
+
+  it("the session from before the join stays unresolved, the one after is attributed", async () => {
+    await session("ff-reattr-1", { session_date: "2026-09-10" });
+    await session("ff-reattr-2", { session_date: "2026-09-25" });
+    await setLeaderAttribution(Database, RIGHT, {
+      titleMatch: ["zephaniah circle"],
+      altEmails: [],
+    });
+    const rows = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["source_session_id", "coach_id"])
+      .where("source_session_id", "in", ["ff-reattr-1", "ff-reattr-2"])
+      .orderBy("source_session_id")
+      .execute();
+    expect(rows).toEqual([
+      { source_session_id: "ff-reattr-1", coach_id: null },
+      { source_session_id: "ff-reattr-2", coach_id: RIGHT },
+    ]);
   });
 });

@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
 import { endParallelRun } from "./coach-parallel-run";
+import { REMINDER_TIME_ZONE } from "./coach-reminder.service";
 import {
   type RotatingClass,
   loadRotatingClasses,
@@ -186,7 +187,6 @@ export async function reattributeUnresolved(
   const roster = await loadAttributionRoster(database);
   const rotating = await loadRotatingClasses(database);
   let resolved = 0;
-  const attributed: string[] = [];
   for (const session of unresolved) {
     const match = attributeSession(
       { title: session.title, host_email: null, organizer_email: null },
@@ -194,35 +194,55 @@ export async function reattributeUnresolved(
       rotating,
     );
     if (match.rotatingClassId !== undefined) {
-      await conn
+      const rotatingClassId = match.rotatingClassId;
+      await conn.transaction().execute(async (trx) => {
+        await trx
+          .updateTable("coach_intake_sessions")
+          .set({
+            matched_by: "rotating_class",
+            rotating_class_id: rotatingClassId,
+            updated_at: sql`NOW()`,
+          })
+          .where("source_session_id", "=", session.source_session_id)
+          .where("coach_id", "is", null)
+          .execute();
+        if (coachPipelineLive())
+          await endParallelRun(trx, [session.source_session_id]);
+      });
+      continue;
+    }
+    const coachId = match.coachId;
+    if (!coachId) continue;
+    resolved += await conn.transaction().execute(async (trx) => {
+      const updated = await trx
         .updateTable("coach_intake_sessions")
         .set({
-          matched_by: "rotating_class",
-          rotating_class_id: match.rotatingClassId,
+          coach_id: coachId,
+          matched_by: match.matchedBy,
+          release_required: true,
           updated_at: sql`NOW()`,
         })
         .where("source_session_id", "=", session.source_session_id)
         .where("coach_id", "is", null)
-        .execute();
-      attributed.push(session.source_session_id);
-      continue;
-    }
-    if (!match.coachId) continue;
-    const updated = await conn
-      .updateTable("coach_intake_sessions")
-      .set({
-        coach_id: match.coachId,
-        matched_by: match.matchedBy,
-        release_required: true,
-        updated_at: sql`NOW()`,
-      })
-      .where("source_session_id", "=", session.source_session_id)
-      .where("coach_id", "is", null)
-      .executeTakeFirst();
-    resolved += Number(updated.numUpdatedRows ?? 0);
-    attributed.push(session.source_session_id);
+        .where(
+          sql<boolean>`(
+            EXISTS (
+              SELECT 1 FROM coach_reports r
+              WHERE r.coach_id = ${coachId} AND r.source_session_id LIKE 'legacy:%'
+            )
+            OR session_date >= (
+              SELECT (l.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${REMINDER_TIME_ZONE})::date
+              FROM coach_leaders l WHERE l.slug = ${coachId}
+            )
+          )`,
+        )
+        .executeTakeFirst();
+      const count = Number(updated.numUpdatedRows ?? 0);
+      if (count > 0 && coachPipelineLive())
+        await endParallelRun(trx, [session.source_session_id]);
+      return count;
+    });
   }
-  if (coachPipelineLive()) await endParallelRun(database, attributed);
   return resolved;
 }
 
@@ -368,7 +388,7 @@ export async function reattributeSession(
         | "already-assigned";
     }
 > {
-  const result = await database
+  return database
     .getOrCreateConnection()
     .transaction()
     .execute(async (trx) => {
@@ -463,9 +483,7 @@ export async function reattributeSession(
         trx as CoachReportsWriter,
         sourceSessionId,
       );
+      if (coachPipelineLive()) await endParallelRun(trx, [sourceSessionId]);
       return { ok: true, state: duplicate ? "duplicate" : state } as const;
     });
-  if (result.ok && coachPipelineLive())
-    await endParallelRun(database, [sourceSessionId]);
-  return result;
 }
