@@ -1,5 +1,5 @@
 export const COACH_MODEL_DEFAULTS = {
-  COACH_SCORING_MODEL: "gpt-6-astra",
+  COACH_SCORING_MODEL: "gpt-6.1-sol",
   COACH_BODY_MODEL: "gpt-5",
   COACH_MONTHLY_MODEL: "gpt-5",
   COACH_TRANSCRIBE_MODEL: "whisper-1",
