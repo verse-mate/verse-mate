@@ -96,6 +96,24 @@ describe("frames are extracted by streaming, never via container disk", () => {
     expect(seenArgs.join(" ")).toContain(`fps=${FRAME_SAMPLE_FPS}`);
   });
 
+  it("the frames are spread across the whole recording, from its duration", async () => {
+    let seenArgs: string[] = [];
+    const svc = new CoachFrameService({
+      storage: new FakeStorage(),
+      runFfmpeg: async (_input, args) => {
+        seenArgs = args;
+        return [];
+      },
+    });
+    await svc.extract("k", 60);
+    expect(seenArgs.join(" ")).toContain(`fps=${FRAME_SAMPLE_COUNT}/3600`);
+    expect(seenArgs.join(" ")).toContain(`-frames:v ${FRAME_SAMPLE_COUNT}`);
+    expect(seenArgs.join(" ")).toContain("-skip_frame nokey -i pipe:0");
+
+    await svc.extract("k", null);
+    expect(seenArgs.join(" ")).toContain(`fps=${FRAME_SAMPLE_FPS}`);
+  });
+
   it("caps the frame count even if ffmpeg returns more", async () => {
     // Every extra frame is a vision-model call nobody asked for.
     const svc = new CoachFrameService({
