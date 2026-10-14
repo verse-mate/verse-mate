@@ -1,6 +1,8 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { coachPipelineLive } from "./coach-cutover";
+import { endParallelRun } from "./coach-parallel-run";
 import {
   type RotatingClass,
   loadRotatingClasses,
@@ -184,6 +186,7 @@ export async function reattributeUnresolved(
   const roster = await loadAttributionRoster(database);
   const rotating = await loadRotatingClasses(database);
   let resolved = 0;
+  const attributed: string[] = [];
   for (const session of unresolved) {
     const match = attributeSession(
       { title: session.title, host_email: null, organizer_email: null },
@@ -201,6 +204,7 @@ export async function reattributeUnresolved(
         .where("source_session_id", "=", session.source_session_id)
         .where("coach_id", "is", null)
         .execute();
+      attributed.push(session.source_session_id);
       continue;
     }
     if (!match.coachId) continue;
@@ -216,7 +220,9 @@ export async function reattributeUnresolved(
       .where("coach_id", "is", null)
       .executeTakeFirst();
     resolved += Number(updated.numUpdatedRows ?? 0);
+    attributed.push(session.source_session_id);
   }
+  if (coachPipelineLive()) await endParallelRun(database, attributed);
   return resolved;
 }
 
@@ -362,7 +368,7 @@ export async function reattributeSession(
         | "already-assigned";
     }
 > {
-  return database
+  const result = await database
     .getOrCreateConnection()
     .transaction()
     .execute(async (trx) => {
@@ -459,4 +465,7 @@ export async function reattributeSession(
       );
       return { ok: true, state: duplicate ? "duplicate" : state } as const;
     });
+  if (result.ok && coachPipelineLive())
+    await endParallelRun(database, [sourceSessionId]);
+  return result;
 }

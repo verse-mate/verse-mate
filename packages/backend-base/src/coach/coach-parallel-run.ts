@@ -307,12 +307,17 @@ export async function parallelRunComparison(
   return out;
 }
 
-export async function endParallelRun(database: db): Promise<number> {
+export async function endParallelRun(
+  database: db,
+  only?: string[],
+): Promise<number> {
+  if (only?.length === 0) return 0;
   const ended = await sql`
     UPDATE coach_intake_sessions s
     SET parallel_run = false, updated_at = now()
     WHERE s.parallel_run
       AND (s.coach_id IS NOT NULL OR s.rotating_class_id IS NOT NULL)
+      ${only ? sql`AND s.source_session_id IN (${sql.join(only)})` : sql``}
       AND NOT EXISTS (
         SELECT 1 FROM coach_reports r
         WHERE r.source_session_id LIKE 'legacy:%'

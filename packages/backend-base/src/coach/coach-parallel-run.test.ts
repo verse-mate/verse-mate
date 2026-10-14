@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
-import { reattributeSession } from "./coach-attribution";
+import { reattributeSession, reattributeUnresolved } from "./coach-attribution";
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import {
   type ParallelRunComparison,
   compareScores,
@@ -488,5 +489,81 @@ describe("ending the parallel run at cutover", () => {
       { source_session_id: "ff-parallel-unattributed", parallel_run: true },
       { source_session_id: "ff-parallel-unreported", parallel_run: false },
     ]);
+  });
+});
+
+describe("a parallel-run session attributed after cutover leaves the parallel run", () => {
+  async function unattributed(id: string) {
+    await conn
+      .insertInto("coach_leaders")
+      .values({
+        slug: A,
+        email: `${A}@example.test`,
+        name: "Parallel Leader",
+        title_match: ["harbor study"],
+      })
+      .onConflict((oc) => oc.column("email").doNothing())
+      .execute();
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: id,
+        coach_id: null,
+        matched_by: "unresolved",
+        title: "Harbor study week 3",
+        session_date: "2026-10-08",
+        state: "observed",
+        parallel_run: true,
+      })
+      .execute();
+  }
+  const parallelRun = async (id: string) =>
+    (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["coach_id", "parallel_run"])
+        .where("source_session_id", "=", id)
+        .executeTakeFirstOrThrow()
+    ).parallel_run;
+
+  beforeEach(clear);
+  afterEach(async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await clear();
+  });
+
+  it("attributed by its keywords after cutover, it can be released", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await unattributed("ff-parallel-late");
+    await reattributeUnresolved(Database);
+    expect(await parallelRun("ff-parallel-late")).toBe(false);
+  });
+
+  it("assigned by an admin after cutover, it can be released", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await unattributed("ff-parallel-late");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ title: "untitled" })
+      .where("source_session_id", "=", "ff-parallel-late")
+      .execute();
+    expect(
+      await reattributeSession(Database, "ff-parallel-late", A, null),
+    ).toMatchObject({ ok: true });
+    expect(await parallelRun("ff-parallel-late")).toBe(false);
+  });
+
+  it("attributed during the parallel run, it stays in it", async () => {
+    await unattributed("ff-parallel-late");
+    await reattributeUnresolved(Database);
+    expect(await parallelRun("ff-parallel-late")).toBe(true);
+  });
+
+  it("attributed after cutover to a leader the host reported that day, it stays in it", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await unattributed("ff-parallel-late");
+    await host(A, "2026-10-08", 78, twelve([4]));
+    await reattributeUnresolved(Database);
+    expect(await parallelRun("ff-parallel-late")).toBe(true);
   });
 });
