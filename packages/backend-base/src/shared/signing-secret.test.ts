@@ -18,22 +18,25 @@ const exampleSecrets = [
   return (line ?? "").slice("AUTH_ACCESS_TOKEN_SECRET=".length).trim();
 });
 
-function start(environment: string, secret: string) {
-  const run = Bun.spawnSync(
-    [
+function startCommand(environment: string, secret: string) {
+  return {
+    cmd: [
       process.execPath,
       "-e",
       `await import(${JSON.stringify(plugin)}); process.exit(0);`,
     ],
-    {
-      env: {
-        ...process.env,
-        ENVIRONMENT: environment,
-        AUTH_ACCESS_TOKEN_SECRET: secret,
-      },
-      cwd: join(import.meta.dir, "../.."),
+    env: {
+      ...process.env,
+      ENVIRONMENT: environment,
+      AUTH_ACCESS_TOKEN_SECRET: secret,
     },
-  );
+    cwd: join(import.meta.dir, "../.."),
+  };
+}
+
+function start(environment: string, secret: string) {
+  const { cmd, ...options } = startCommand(environment, secret);
+  const run = Bun.spawnSync(cmd, options);
   const stderr = run.stderr.toString();
   const reason =
     stderr.split("\n").find((line) => line.startsWith("error:")) ?? "";
@@ -69,10 +72,22 @@ describe("the session signing secret at startup", () => {
     expect(start("production", unique).exitCode).toBe(0);
   });
 
-  it("development and tests keep starting with a short or example secret", () => {
-    for (const environment of ["development", "test"])
-      for (const secret of ["test-secret", ...exampleSecrets])
-        expect(start(environment, secret).exitCode).toBe(0);
+  it("development and tests keep starting with a short or example secret", async () => {
+    const secrets = [...new Set(["test-secret", ...exampleSecrets])];
+    const exits = await Promise.all(
+      ["development", "test"].flatMap((environment) =>
+        secrets.map(
+          (secret) =>
+            Bun.spawn({
+              ...startCommand(environment, secret),
+              stdout: "ignore",
+              stderr: "ignore",
+            }).exited,
+        ),
+      ),
+    );
+    expect(exits).toEqual(exits.map(() => 0));
+    expect(exits).toHaveLength(secrets.length * 2);
   });
 });
 
