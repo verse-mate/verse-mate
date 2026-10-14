@@ -107,6 +107,7 @@ export class CoachFrameService {
     // Cap here too, not only in the ffmpeg args: a long session can produce
     // more frames than -frames:v bounds if the filter graph rounds up, and
     // every extra frame is a vision-model call nobody asked for.
+    if (frames.length === 0) throw new Error("the recording gave no frames");
     return frames
       .slice(0, FRAME_SAMPLE_COUNT)
       .map((data, index) => ({ data, index }));
