@@ -40,6 +40,7 @@ const DOK = [
   "Apply to life",
 ];
 const MOMENT_TYPES = ["Capitalized", "Pivot", "Missed"] as const;
+const HEAD_COUNT = /^(number of )?attendees$/i;
 const CLAIMED_CHANGE = /[+-−]\s?\d+(\.\d+)?|\b\d+(\.\d+)?\s*(points?|pts)\b/i;
 const SCORE_IN_LINE = /\d+(\.\d+)?\s*(\/\s*100|points?|pts)\b|\bscore[sd]?\b/i;
 
@@ -374,7 +375,7 @@ function assemble(raw: Raw, input: BodyInput): BodyResult {
     paragraphs: body.contextLine ? [body.contextLine] : [],
   });
 
-  body.sections.push(...scorecard(raw.scorecard, issues));
+  body.sections.push(...scorecard(raw.scorecard, issues, input.attendees));
 
   const used = {
     quotes: new Map<string, string>(),
@@ -511,7 +512,11 @@ function assemble(raw: Raw, input: BodyInput): BodyResult {
   return { body: result, issues };
 }
 
-function scorecard(raw: unknown, issues: string[]): BodySection[] {
+function scorecard(
+  raw: unknown,
+  issues: string[],
+  attendees: number | null,
+): BodySection[] {
   const tables = list(raw).map(record);
   if (tables.length !== SCORECARD_TABLES.length)
     issues.push(
@@ -520,7 +525,12 @@ function scorecard(raw: unknown, issues: string[]): BodySection[] {
   const sections = tables.slice(0, SCORECARD_TABLES.length).map((table, i) => {
     const rows = list(table.rows)
       .map(record)
-      .filter((r) => !/^monologue details/i.test(text(r.metric)));
+      .filter((r) => !/^monologue details/i.test(text(r.metric)))
+      .map((r) =>
+        i === 0 && attendees !== null && HEAD_COUNT.test(text(r.metric))
+          ? { ...r, value: String(attendees) }
+          : r,
+      );
     if (rows.length === 0) issues.push(`scorecard table ${i + 1}: no rows`);
     for (const r of rows)
       if (
