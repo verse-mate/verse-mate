@@ -451,6 +451,27 @@ describe("a retained session reaches a delivered report", () => {
     expect(JSON.stringify(row.body)).not.toContain(`"Attendees:`);
   });
 
+  it("the frames are taken knowing the recording's duration, so they span all of it", async () => {
+    const asked: Array<number | null | undefined> = [];
+    const svc = new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      null as any,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: {
+          extract: async (_key: string, minutes?: number | null) => {
+            asked.push(minutes);
+            return [];
+          },
+        } as any,
+        publish: new RationaleMomentsPublish(Database),
+      },
+    );
+    await svc.run();
+    expect(asked).toEqual([62]);
+  });
+
   it("frames that cannot be taken are retried, not scored as no visual aids, and the last attempt holds the report for review", async () => {
     const broken = {
       extract: async () => {

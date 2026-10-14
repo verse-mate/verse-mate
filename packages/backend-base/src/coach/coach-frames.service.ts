@@ -80,16 +80,21 @@ export class CoachFrameService {
     this.runFfmpeg = deps.runFfmpeg ?? defaultRunFfmpeg;
   }
 
-  async extract(storageKey: string): Promise<ExtractedFrame[]> {
+  async extract(
+    storageKey: string,
+    durationMinutes?: number | null,
+  ): Promise<ExtractedFrame[]> {
     const stream = await this.storage.getGlobalObjectStream(storageKey);
     if (!stream) throw new Error("the recording is not in storage");
 
     const frames = await this.runFfmpeg(stream, [
       ...mediaInput(),
+      "-skip_frame",
+      "nokey",
       "-i",
       "pipe:0",
       "-vf",
-      `fps=${FRAME_SAMPLE_FPS}`,
+      `fps=${sampleRate(durationMinutes)}`,
       "-frames:v",
       String(FRAME_SAMPLE_COUNT),
       "-f",
@@ -106,6 +111,11 @@ export class CoachFrameService {
       .slice(0, FRAME_SAMPLE_COUNT)
       .map((data, index) => ({ data, index }));
   }
+}
+
+function sampleRate(durationMinutes?: number | null): string | number {
+  const seconds = Math.round((durationMinutes ?? 0) * 60);
+  return seconds > 0 ? `${FRAME_SAMPLE_COUNT}/${seconds}` : FRAME_SAMPLE_FPS;
 }
 
 /**

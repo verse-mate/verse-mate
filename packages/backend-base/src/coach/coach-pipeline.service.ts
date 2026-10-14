@@ -501,7 +501,7 @@ export class CoachPipelineService {
     const lastAttempt = session.retry_count + 1 >= PIPELINE_ATTEMPT_LIMIT;
     let framesFailed: string | null = null;
     const frames = await this.frames
-      .extract(recordingKey)
+      .extract(recordingKey, detail.duration)
       .then((f) => f.map((x) => x.data))
       .catch((error: unknown) => {
         framesFailed = `frames could not be taken from the recording: ${error instanceof Error ? error.message : String(error)}`;
