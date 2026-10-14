@@ -50,9 +50,9 @@ const used = {
 };
 
 describe("each coach model is its own setting", () => {
-  it("the defaults are unchanged from the code: scoring gpt-6-astra, body and monthly gpt-5, transcription whisper-1", () => {
+  it("the defaults are unchanged from the code: scoring gpt-6.1-sol, body and monthly gpt-5, transcription whisper-1", () => {
     expect(COACH_MODEL_DEFAULTS).toEqual({
-      COACH_SCORING_MODEL: "gpt-6-astra",
+      COACH_SCORING_MODEL: "gpt-6.1-sol",
       COACH_BODY_MODEL: "gpt-5",
       COACH_MONTHLY_MODEL: "gpt-5",
       COACH_TRANSCRIBE_MODEL: "whisper-1",

@@ -1208,7 +1208,7 @@ describe("Thin evidence scores low, not not-applicable", () => {
 });
 
 describe("the scoring model", () => {
-  it("scores on gpt-6-astra, and the text, vision and leader-cue calls all use it", async () => {
+  it("scores on gpt-6.1-sol, and the text, vision and leader-cue calls all use it", async () => {
     const setting = process.env.COACH_SCORING_MODEL;
     process.env.COACH_SCORING_MODEL = "";
     const models: string[] = [];
@@ -1227,7 +1227,7 @@ describe("the scoring model", () => {
       transcript: INPUT.transcript,
       leaders: [{ slug: "leader-a", name: "Leader A" }],
     });
-    expect(models).toEqual(["gpt-6-astra", "gpt-6-astra", "gpt-6-astra"]);
+    expect(models).toEqual(["gpt-6.1-sol", "gpt-6.1-sol", "gpt-6.1-sol"]);
   });
 });
 
