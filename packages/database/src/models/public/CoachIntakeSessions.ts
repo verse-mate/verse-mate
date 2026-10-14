@@ -141,6 +141,12 @@ export default interface CoachIntakeSessionsTable {
     string | null | undefined,
     string | null
   >;
+
+  scoring_batch_id: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
 }
 
 export type CoachIntakeSessions = Selectable<CoachIntakeSessionsTable>;

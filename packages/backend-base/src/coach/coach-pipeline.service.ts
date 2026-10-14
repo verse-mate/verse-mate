@@ -12,6 +12,7 @@ import {
 import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
 import { storedEvidence } from "./coach-governance.service";
+import { coachScoringBatch } from "./coach-models";
 import {
   AttributionChangedError,
   CoachPublishService,
@@ -24,6 +25,7 @@ import { rescoreReport } from "./coach-review.service";
 import {
   AUTHENTICITY_DIMENSION,
   CoachScoringService,
+  type ScoringResult,
   type ScoringVersion,
   authenticityBaseline,
 } from "./coach-scoring.service";
@@ -64,6 +66,7 @@ import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 export type PipelineOutcome =
   | "scored-and-delivered"
   | "scored-awaiting-review"
+  | "scoring-in-batch"
   | "scoring-failed"
   | "delivery-blocked"
   | "delivery-failed"
@@ -128,7 +131,7 @@ export class CoachPipelineService {
 
   /** Carry every session whose material is retained through to a report. */
   async run(opts: { uploadsOnly?: boolean } = {}): Promise<PipelineResult[]> {
-    const due = await this.db
+    const sessions = this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
       .select([
@@ -139,16 +142,20 @@ export class CoachPipelineService {
         "parallel_run",
         "rotating_class_id",
         "source",
+        "scoring_batch_id",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where(scorable)
       .$if(opts.uploadsOnly === true, (q) => q.where("source", "=", "upload"))
       .orderBy("retry_count")
-      .orderBy("observed_at")
-      // Bounded: each session is a model call plus a frame extraction, so an
-      // unbounded tick could spend an unbounded amount of money.
-      .limit(PIPELINE_BATCH_LIMIT)
-      .execute();
+      .orderBy("observed_at");
+    const due = [
+      ...(await sessions.where("scoring_batch_id", "is not", null).execute()),
+      ...(await sessions
+        .where("scoring_batch_id", "is", null)
+        .limit(PIPELINE_BATCH_LIMIT)
+        .execute()),
+    ];
 
     const out: PipelineResult[] = await this.redeliver();
     for (const session of due) {
@@ -334,6 +341,18 @@ export class CoachPipelineService {
       .execute();
   }
 
+  private async setScoringBatch(
+    sourceSessionId: string,
+    batchId: string | null,
+  ): Promise<void> {
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({ scoring_batch_id: batchId, updated_at: sql`NOW()` })
+      .where("source_session_id", "=", sourceSessionId)
+      .execute();
+  }
+
   private async countScoringFailure(
     sourceSessionId: string,
     retryCount: number,
@@ -462,6 +481,7 @@ export class CoachPipelineService {
     parallel_run: boolean;
     source: string;
     rotating_class_id: number | null;
+    scoring_batch_id: string | null;
   }): Promise<PipelineResult> {
     const conn = this.db.getOrCreateConnection();
     const coachId = session.coach_id ?? (await this.nameLeader(session));
@@ -471,6 +491,26 @@ export class CoachPipelineService {
         outcome: "attribution-unresolved",
         detail:
           "the transcript did not name which of the rotating class's leaders led",
+      };
+
+    const batch = session.scoring_batch_id
+      ? await this.scoring.batchScoring(
+          session.scoring_batch_id,
+          session.source_session_id,
+        )
+      : null;
+    if (batch?.state === "pending")
+      return {
+        sourceSessionId: session.source_session_id,
+        outcome: "scoring-in-batch",
+        detail: `waiting on scoring batch ${session.scoring_batch_id}`,
+      };
+    if (batch) await this.setScoringBatch(session.source_session_id, null);
+    if (batch?.state === "failed")
+      return {
+        sourceSessionId: session.source_session_id,
+        outcome: "scoring-failed",
+        detail: batch.detail,
       };
 
     const leader = await conn
@@ -490,36 +530,57 @@ export class CoachPipelineService {
 
     // Visual Aids is the one dimension the transcript cannot answer, so the
     // frames come from the recording WE retained, not from the provider.
-    const recordingKey = CoachArchiveService.recordingKey(
+    const lastAttempt = session.retry_count + 1 >= PIPELINE_ATTEMPT_LIMIT;
+    const transcript = timedLinesFrom(detail.sentences);
+    const authenticity = await this.authenticityBaselineFor(
+      coachId,
+      session.date,
       session.source_session_id,
     );
-    const lastAttempt = session.retry_count + 1 >= PIPELINE_ATTEMPT_LIMIT;
     let framesFailed: string | null = null;
-    const frames = await this.frames
-      .extract(recordingKey, detail.duration)
-      .then((f) => f.map((x) => x.data))
-      .catch((error: unknown) => {
-        framesFailed = `frames could not be taken from the recording: ${error instanceof Error ? error.message : String(error)}`;
-        return [] as Uint8Array[];
+    let scored: ScoringResult;
+    if (batch?.state === "done") {
+      scored = await batch.score({
+        transcript,
+        sessionTitle: session.title,
+        authenticityBaseline: authenticity,
       });
-    if (framesFailed && !lastAttempt)
-      return {
-        sourceSessionId: session.source_session_id,
-        outcome: "scoring-failed",
-        detail: `${framesFailed}; retrying`,
-      };
-
-    const transcript = timedLinesFrom(detail.sentences);
-    const scored = await this.scoring.scoreSession({
-      transcript,
-      sessionTitle: session.title,
-      frames,
-      authenticityBaseline: await this.authenticityBaselineFor(
-        coachId,
-        session.date,
+    } else {
+      const recordingKey = CoachArchiveService.recordingKey(
         session.source_session_id,
-      ),
-    });
+      );
+      const frames = await this.frames
+        .extract(recordingKey, detail.duration)
+        .then((f) => f.map((x) => x.data))
+        .catch((error: unknown) => {
+          framesFailed = `frames could not be taken from the recording: ${error instanceof Error ? error.message : String(error)}`;
+          return [] as Uint8Array[];
+        });
+      if (framesFailed && !lastAttempt)
+        return {
+          sourceSessionId: session.source_session_id,
+          outcome: "scoring-failed",
+          detail: `${framesFailed}; retrying`,
+        };
+      const input = {
+        transcript,
+        sessionTitle: session.title,
+        frames,
+        authenticityBaseline: authenticity,
+      };
+      const batchId = coachScoringBatch()
+        ? await this.scoring.submitBatch(input, session.source_session_id)
+        : null;
+      if (batchId) {
+        await this.setScoringBatch(session.source_session_id, batchId);
+        return {
+          sourceSessionId: session.source_session_id,
+          outcome: "scoring-in-batch",
+          detail: `sent in scoring batch ${batchId}`,
+        };
+      }
+      scored = await this.scoring.scoreSession(input);
+    }
     if (!scored.ok || !scored.dimensions) {
       return {
         sourceSessionId: session.source_session_id,

@@ -68,6 +68,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
         .check(sql`state IN (${listed(BOT_STATES)})`),
     )
     .addColumn("retry_count", "integer", (col) => col.notNull().defaultTo(0))
+    .addColumn("scoring_batch_id", "text")
     .addColumn("hold_reason", "text")
     .addColumn("hold_kind", "text", (col) =>
       col.check(sql`hold_kind IS NULL OR hold_kind IN (${listed(HOLD_KINDS)})`),
