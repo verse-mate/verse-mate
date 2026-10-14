@@ -41,6 +41,7 @@ import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const SLUGS = ["rot-ana", "rot-ben", "rot-cy", "rot-solo"];
+const JOINED = "2026-01-01 00:00:00";
 const GROUP = "rot-group@example.test";
 
 async function clear() {
@@ -61,20 +62,43 @@ async function clear() {
 
 async function seedLeaders() {
   await conn
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: "rot-first-poll",
+      source: "bot",
+      matched_by: "unresolved",
+      title: "first poll",
+      session_date: "2026-01-01",
+      observed_at: "2026-01-01 15:00:00",
+    })
+    .execute();
+  await conn
     .insertInto("coach_leaders")
     .values([
-      { slug: "rot-ana", email: "rot-ana@example.test", name: "Ana Pell" },
-      { slug: "rot-ben", email: "rot-ben@example.test", name: "Ben Ostrow" },
+      {
+        slug: "rot-ana",
+        email: "rot-ana@example.test",
+        created_at: JOINED,
+        name: "Ana Pell",
+      },
+      {
+        slug: "rot-ben",
+        email: "rot-ben@example.test",
+        created_at: JOINED,
+        name: "Ben Ostrow",
+      },
       {
         slug: "rot-cy",
         email: "rot-cy@needs-real-email.invalid",
         name: "Cy Danner",
+        created_at: JOINED,
       },
       {
         slug: "rot-solo",
         email: "rot-solo@example.test",
         name: "Sol Ruiz",
         title_match: ["sol ruiz study"],
+        created_at: JOINED,
       },
     ])
     .execute();

@@ -4,12 +4,15 @@ import { sql } from "kysely";
 
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachIntakeService } from "./coach-intake.service";
+import { calendarDate } from "./coach-reminder.service";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
 
 const conn = Database.getOrCreateConnection();
 
 const COACH_EMAIL = "intake-leader@example.test";
 const COACH_SLUG = "intake-leader";
+const TODAY = calendarDate(new Date());
+const HOST_DAY = "2026-08-22T14:00:00.000Z";
 
 function transcript(
   id: string,
@@ -20,7 +23,7 @@ function transcript(
     title: "Avery — Saturday Morning, Cedar Hollow",
     host_email: "fred@fireflies.ai",
     organizer_email: "fred@fireflies.ai",
-    dateString: "2026-08-22T14:00:00.000Z",
+    dateString: `${TODAY}T17:00:00.000Z`,
     duration: 62,
     ...over,
   };
@@ -52,6 +55,20 @@ async function clear() {
     .execute();
 }
 
+async function pipelineFirstPolled(on: string) {
+  await conn
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: "ff-first-poll",
+      source: "bot",
+      matched_by: "unresolved",
+      title: "first poll",
+      session_date: on,
+      observed_at: `${on} 15:00:00`,
+    })
+    .execute();
+}
+
 async function seedLeader() {
   await conn
     .insertInto("coach_leaders")
@@ -60,6 +77,7 @@ async function seedLeader() {
       email: COACH_EMAIL,
       name: "Avery Hollis",
       title_match: ["cedar hollow", "saturday morning"],
+      created_at: "2026-01-01 00:00:00",
     })
     .execute();
 }
@@ -182,8 +200,8 @@ describe("session intake polls the recording bot, not the leader's inbox", () =>
     // preserve. There is one intake path now, so 'first path wins' is gone.
     const client = new FakeFireflies([
       [
-        transcript("ff-morning", { dateString: "2026-08-22T14:00:00.000Z" }),
-        transcript("ff-evening", { dateString: "2026-08-22T23:00:00.000Z" }),
+        transcript("ff-morning", { dateString: `${TODAY}T15:00:00.000Z` }),
+        transcript("ff-evening", { dateString: `${TODAY}T22:00:00.000Z` }),
       ],
     ]);
     const service = new CoachIntakeService(Database, client);
@@ -278,7 +296,7 @@ describe("bot intake and the host's reports", () => {
     process.env[COACH_PIPELINE_LIVE] = "true";
     await new CoachIntakeService(
       Database,
-      new FakeFireflies([[transcript("ff-same")]]),
+      new FakeFireflies([[transcript("ff-same", { dateString: HOST_DAY })]]),
     ).poll();
     expect(await sessions()).toEqual([
       {
@@ -292,11 +310,115 @@ describe("bot intake and the host's reports", () => {
   it("during the parallel run the same session is ingested, so the comparison sees it", async () => {
     await new CoachIntakeService(
       Database,
-      new FakeFireflies([[transcript("ff-same")]]),
+      new FakeFireflies([[transcript("ff-same", { dateString: HOST_DAY })]]),
     ).poll();
     expect(await sessions()).toEqual([
       { source_session_id: "ff-same", state: "observed", duplicate_of: null },
     ]);
+  });
+});
+
+describe("a leader with no host report is bounded by their roster join and the first poll", () => {
+  const kept = async () =>
+    (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select("source_session_id")
+        .where("source_session_id", "like", "ff-%")
+        .where("source_session_id", "!=", "ff-first-poll")
+        .orderBy("source_session_id")
+        .execute()
+    ).map((r) => r.source_session_id);
+
+  async function leaderJoined(on: string) {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ created_at: `${on} 15:00:00` })
+      .where("email", "=", COACH_EMAIL)
+      .execute();
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await seedLeader();
+  });
+  afterEach(clear);
+
+  it("nothing dated before the pipeline's first poll is taken, even for a leader who joined long before", async () => {
+    await leaderJoined("2026-07-01");
+    await pipelineFirstPolled("2026-09-15");
+    const result = await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-a-before-join", {
+            dateString: "2026-06-20T14:00:00.000Z",
+          }),
+          transcript("ff-b-before-poll", {
+            dateString: "2026-09-10T14:00:00.000Z",
+          }),
+          transcript("ff-c-after", { dateString: "2026-09-20T14:00:00.000Z" }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-c-after"]);
+    expect(result).toMatchObject({ observed: 1, floorSkipped: 2 });
+  });
+
+  it("nothing dated before the leader joined the roster is taken when they joined after the first poll", async () => {
+    await pipelineFirstPolled("2026-09-01");
+    await leaderJoined("2026-09-20");
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-a-before-join", {
+            dateString: "2026-09-10T14:00:00.000Z",
+          }),
+          transcript("ff-b-join-day", {
+            dateString: "2026-09-20T14:00:00.000Z",
+          }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-b-join-day"]);
+  });
+
+  it("an unattributed session dated before the first poll is not taken", async () => {
+    await pipelineFirstPolled("2026-09-15");
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-x-old", {
+            title: "Some unrelated meeting",
+            dateString: "2026-09-01T14:00:00.000Z",
+          }),
+          transcript("ff-x-new", {
+            title: "Some unrelated meeting",
+            dateString: "2026-09-16T14:00:00.000Z",
+          }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-x-new"]);
+  });
+
+  it("on the very first poll, only sessions from that day on are taken", async () => {
+    const today = new Date();
+    const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-a-last-month", {
+            dateString: lastMonth.toISOString(),
+          }),
+          transcript("ff-b-today", { dateString: today.toISOString() }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-b-today"]);
   });
 });
 
@@ -371,6 +493,7 @@ describe("the poll reads the whole history, not the first page", () => {
     // which filters the provider's session date. A session recorded three weeks
     // ago but first observed today pushed the window to "now minus a week",
     // excluding its still-unobserved neighbours forever.
+    await pipelineFirstPolled("2026-01-01");
     const client = new FakeFireflies([
       [transcript("ff-old", { dateString: "2026-06-01T10:00:00.000Z" })],
       [],
@@ -442,6 +565,7 @@ describe("a session's date is the America/Chicago calendar date of its start", (
   });
 
   it("a Thursday 7pm class in daylight time is stored as Thursday", async () => {
+    await pipelineFirstPolled("2026-01-01");
     const client = new FakeFireflies([
       [transcript("ff-cdt", { dateString: "2026-10-02T00:00:00.000Z" })],
     ]);
