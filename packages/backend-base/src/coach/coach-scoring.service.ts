@@ -685,7 +685,9 @@ export class CoachScoringService {
   }
 
   async cancelBatch(batchId: string): Promise<void> {
-    await this.ai.batchesCancel(batchId).catch(() => undefined);
+    try {
+      await this.ai.batchesCancel(batchId);
+    } catch {}
   }
 
   async batchScoring(

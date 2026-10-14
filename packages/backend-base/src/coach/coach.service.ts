@@ -682,6 +682,8 @@ export class CoachService {
         attempted_to: sql`ARRAY[]::text[]`,
         hold_reason: null,
         hold_kind: null,
+        scoring_batch_id: sql`CASE WHEN scoring_batch_sent_at > NOW() - interval '3 days' THEN scoring_batch_id END`,
+        scoring_batch_sent_at: sql`CASE WHEN scoring_batch_sent_at > NOW() - interval '3 days' THEN scoring_batch_sent_at END`,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", sourceSessionId)

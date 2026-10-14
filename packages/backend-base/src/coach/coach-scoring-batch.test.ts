@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import type {
   AiChatBatch,
@@ -20,6 +21,7 @@ import {
 } from "./coach-report-body.fixture";
 import { CoachScoringService, promptVersion } from "./coach-scoring.service";
 import { isolateTable } from "./coach-test-tables";
+import { CoachService } from "./coach.service";
 import type {
   FirefliesDetailClient,
   FirefliesTranscript,
@@ -643,5 +645,70 @@ describe("coach scoring goes through the batch API", () => {
       results.filter((r) => r.outcome === "scoring-in-batch"),
     ).toHaveLength(2);
     expect(ai.submitted).toEqual([]);
+  });
+
+  it("a session from the month's second-to-last day still goes out in a batch", async () => {
+    await seed("ff-batch-1", null, "2026-08-30");
+    const ai = new BatchAi();
+
+    const [result] = await pipeline(
+      ai,
+      undefined,
+      undefined,
+      new Date("2026-08-30T12:00:00Z"),
+    ).run();
+
+    expect(result.outcome).toBe("scoring-in-batch");
+    expect(ai.submitted).toHaveLength(1);
+  });
+
+  it("a batch still running when its month comes to an end is cancelled and the session is scored directly", async () => {
+    await seed("ff-batch-1", "seeded-ff-batch-1", "2026-08-30");
+    const ai = new BatchAi();
+
+    const [result] = await pipeline(
+      ai,
+      undefined,
+      undefined,
+      new Date("2026-08-31T12:00:00Z"),
+    ).run();
+
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(ai.cancelled).toEqual(["seeded-ff-batch-1"]);
+    expect(ai.submitted).toEqual([]);
+    expect(ai.scoringChats()).toHaveLength(2);
+  });
+
+  it("an admin's re-queue forgets a batch whose files OpenAI no longer keeps, and keeps a recent one", async () => {
+    await seed("ff-batch-old", "batch-old");
+    await seed("ff-batch-recent", "batch-recent");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "scoring_failed", retry_count: 5 })
+      .where("source_session_id", "in", ["ff-batch-old", "ff-batch-recent"])
+      .execute();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ scoring_batch_sent_at: sql`NOW() - interval '4 days'` })
+      .where("source_session_id", "=", "ff-batch-old")
+      .execute();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ scoring_batch_sent_at: sql`NOW() - interval '1 day'` })
+      .where("source_session_id", "=", "ff-batch-recent")
+      .execute();
+
+    const service = new CoachService(Database);
+    expect(await service.requeuePipelineFailure("ff-batch-old")).toBe(true);
+    expect(await service.requeuePipelineFailure("ff-batch-recent")).toBe(true);
+
+    expect(await row("ff-batch-old")).toMatchObject({
+      state: "retained",
+      scoring_batch_id: null,
+    });
+    expect(await row("ff-batch-recent")).toMatchObject({
+      state: "retained",
+      scoring_batch_id: "batch-recent",
+    });
   });
 });
