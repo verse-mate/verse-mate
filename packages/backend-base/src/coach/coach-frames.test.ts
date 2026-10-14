@@ -116,7 +116,7 @@ describe("frames are extracted by streaming, never via container disk", () => {
         return [];
       },
     });
-    expect(svc.extract("missing")).rejects.toThrow("not in storage");
+    await expect(svc.extract("missing")).rejects.toThrow("not in storage");
     expect(called).toBe(false);
   });
 });
