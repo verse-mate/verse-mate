@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 import {
+  type AiChatBatch,
   type AiChatOptions,
   type AiChatResponse,
   type AiProvider,
@@ -238,6 +239,7 @@ const UNREACHED_VISION: VisualJudgement = {
 export type BatchScoring =
   | { state: "pending" }
   | { state: "stale" }
+  | { state: "unreadable"; detail: string }
   | { state: "failed"; detail: string }
   | { state: "done"; score: (input: ScoringInput) => Promise<ScoringResult> };
 
@@ -665,6 +667,7 @@ export class CoachScoringService {
   async submitBatch(
     input: ScoringInput,
     sessionId: string,
+    coachId: string,
   ): Promise<string | null> {
     if (!this.ai.submitChatBatch || !input.frames?.length) return null;
     return this.ai.submitChatBatch(
@@ -674,26 +677,43 @@ export class CoachScoringService {
       ],
       {
         coach_session: sessionId,
+        coach_id: coachId,
         prompt_version: promptVersion(),
         model: this.model,
       },
     );
   }
 
+  async cancelBatch(batchId: string): Promise<void> {
+    await this.ai.batchesCancel(batchId).catch(() => undefined);
+  }
+
   async batchScoring(
     batchId: string,
     sessionId: string,
+    coachId: string,
   ): Promise<BatchScoring> {
     if (!this.ai.collectChatBatch)
       return { state: "failed", detail: "the AI provider cannot read batches" };
-    const batch = await this.ai.collectChatBatch(batchId);
-    const { coach_session, prompt_version, model } = batch.metadata;
+    let batch: AiChatBatch;
+    try {
+      batch = await this.ai.collectChatBatch(batchId);
+    } catch (error) {
+      return {
+        state: "unreadable",
+        detail: `scoring batch ${batchId} could not be read: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+    const { coach_session, coach_id, prompt_version, model } = batch.metadata;
     if (
       coach_session !== sessionId ||
+      coach_id !== coachId ||
       prompt_version !== promptVersion() ||
       model !== this.model
-    )
+    ) {
+      await this.cancelBatch(batchId);
       return { state: "stale" };
+    }
     if (batch.status === "pending") return { state: "pending" };
     if (batch.status === "failed")
       return {
