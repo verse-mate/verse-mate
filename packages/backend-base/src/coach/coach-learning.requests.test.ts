@@ -429,6 +429,99 @@ describe("answering a request", () => {
     expect(mailer.sent).toEqual([]);
   });
 
+  it("Approve and decline at once: one answer wins whole, never a leader on a declined request", async () => {
+    const id = await requested(learner);
+    const [approved, declined] = await Promise.all([
+      as(admin).post(`admin/learning/requests/${id}/approve`, {}),
+      as(admin).post(`admin/learning/requests/${id}/decline`, {
+        reason: "Not now",
+      }),
+    ]);
+    expect([approved.status, declined.status].sort()).toEqual([200, 409]);
+    const row = await conn
+      .selectFrom("coach_learning_join_requests")
+      .select("status")
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+    const leaders = await conn
+      .selectFrom("coach_leaders")
+      .select("slug")
+      .where("email", "=", EMAILS[1])
+      .execute();
+    if (approved.status === 200) {
+      expect(row.status).toBe("approved");
+      expect(leaders).toHaveLength(1);
+      expect(mailer.sent).toEqual([EMAILS[1]]);
+    } else {
+      expect(row.status).toBe("declined");
+      expect(leaders).toEqual([]);
+      expect(mailer.sent).toEqual([]);
+    }
+  });
+
+  it("Two approvals at once: one leader, one invitation, the request approved", async () => {
+    const id = await requested(learner);
+    const results = await Promise.all([
+      as(admin).post(`admin/learning/requests/${id}/approve`, {}),
+      as(admin).post(`admin/learning/requests/${id}/approve`, {}),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(results.find((r) => r.status === 409)?.body?.details).toMatchObject({
+      refusal: "not-open",
+      status: "approved",
+    });
+    expect(mailer.sent).toEqual([EMAILS[1]]);
+  });
+
+  it("The address changed after the admin opened the request: no leader, stays open, the new address shown", async () => {
+    const id = await requested(learner);
+    const res = await as(admin).post(`admin/learning/requests/${id}/approve`, {
+      email: "an-older-address@example.test",
+    });
+    expect(res.status).toBe(409);
+    expect(res.body?.details).toEqual({
+      refusal: "address-changed",
+      email: EMAILS[1],
+    });
+    expect(mailer.sent).toEqual([]);
+    expect((await as(learner).get("learning")).body?.request.status).toBe(
+      "open",
+    );
+  });
+
+  it("Two requests sent at once: one stands, the other is refused", async () => {
+    await complete(learner);
+    const results = await Promise.all([
+      as(learner).post("learning/join-request", { note: "one" }),
+      as(learner).post("learning/join-request", { note: "two" }),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(results.find((r) => r.status === 409)?.body?.details.refusal).toBe(
+      "request-exists",
+    );
+    const rows = await conn
+      .selectFrom("coach_learning_join_requests")
+      .select("id")
+      .where("user_id", "=", learner.id as never)
+      .execute();
+    expect(rows).toHaveLength(1);
+  });
+
+  it("A request answered while the program is closed keeps its answer when it reopens", async () => {
+    const id = await requested(learner);
+    await as(admin).post(`admin/learning/modules/${moduleId}/unpublish`);
+    expect((await as(learner).get("learning")).body?.open).toBe(false);
+    const res = await as(admin).post(`admin/learning/requests/${id}/decline`, {
+      reason: "Next term",
+    });
+    expect(res.status).toBe(200);
+    await as(admin).post(`admin/learning/modules/${moduleId}/publish`);
+    expect((await as(learner).get("learning")).body?.request).toMatchObject({
+      status: "declined",
+      reason: "Next term",
+    });
+  });
+
   it("Declining with a reason: it leaves the open list and the learner sees the reason", async () => {
     const id = await requested(learner);
     const res = await as(admin).post(`admin/learning/requests/${id}/decline`, {

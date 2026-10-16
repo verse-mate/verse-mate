@@ -133,8 +133,10 @@ export async function account(
 }
 
 export async function resetLimits(...who: Account[]) {
-  for (const a of who)
+  for (const a of who) {
     await redisClient.delete(`rate-limit:coach-learning:${a.id}`);
+    await redisClient.delete(`rate-limit:coach-learning-check:${a.id}`);
+  }
 }
 
 export async function dropAccounts(emails: string[]) {
