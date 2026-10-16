@@ -1,5 +1,5 @@
 import { sql } from "kysely";
-import { parseBibleData } from "../bible/bible";
+import { loadBible } from "../bible/bible";
 import {
   ConflictError,
   ForbiddenError,
@@ -13,6 +13,7 @@ import type { CoachService } from "./coach.service";
 
 export const VIDEO_MAX_BYTES = 2 * 1024 ** 3;
 export const VIDEO_URL_SECONDS = 60 * 60;
+export const VIDEO_UPLOAD_URL_SECONDS = 15 * 60;
 export const VIDEO_TYPES = ["video/mp4", "video/webm"] as const;
 export type VideoType = (typeof VIDEO_TYPES)[number];
 export const LEARNERS_PAGE = 25;
@@ -51,10 +52,7 @@ type BookShape = { name: string; verses: number[] };
 let books: Promise<Map<number, BookShape>> | null = null;
 
 function bibleShape(): Promise<Map<number, BookShape>> {
-  books ??= parseBibleData(
-    Bun.file(`${import.meta.dir}/../bible/data/NASB1995.json`),
-    Bun.file(`${import.meta.dir}/../bible/data/key_english.json`),
-  ).then(
+  books ??= loadBible().then(
     (bible) =>
       new Map(
         bible.books.map((b) => [
@@ -67,6 +65,10 @@ function bibleShape(): Promise<Map<number, BookShape>> {
           },
         ]),
       ),
+    (error) => {
+      books = null;
+      throw error;
+    },
   );
   return books;
 }
@@ -166,6 +168,11 @@ export function videoTypeOf(head: Uint8Array | null): VideoType | null {
 const videoSlot = (lessonId: number, current: string | null) =>
   `coach-learning/lessons/${lessonId}/${current?.endsWith("/a") ? "b" : "a"}`;
 
+const videoSlots = (lessonId: number) => [
+  `coach-learning/lessons/${lessonId}/a`,
+  `coach-learning/lessons/${lessonId}/b`,
+];
+
 type StepState = "locked" | "open" | "done";
 type CheckState = "locked" | "open" | "passed";
 
@@ -243,6 +250,12 @@ export function derivePath(
     passed: path.filter((m) => m.state === "passed").length,
   };
 }
+
+const checkChanged = () =>
+  refuse(
+    "check-changed",
+    "The check changed while you were answering it. Here it is as it stands now.",
+  );
 
 const percent = (correct: number, total: number) =>
   total === 0 ? 0 : Math.round((correct * 10000) / total) / 100;
@@ -564,11 +577,7 @@ export class CoachLearningService {
     },
   ) {
     const { module } = await this.openCheck(userId, moduleId);
-    if (input.version !== module.check_version)
-      throw refuse(
-        "check-changed",
-        "The check changed while you were answering it. Here it is as it stands now.",
-      );
+    if (input.version !== module.check_version) throw checkChanged();
     const questions = await this.questions(moduleId);
     const answers = new Map(input.answers.map((a) => [a.questionId, a.option]));
     if (
@@ -586,16 +595,14 @@ export class CoachLearningService {
       .filter((n) => n > 0);
     const correct = questions.length - wrong.length;
     const passed = correct * 100 >= module.pass_mark * questions.length;
-    await this.conn
-      .insertInto("coach_learning_submissions")
-      .values({
-        user_id: userId as never,
-        module_id: moduleId,
-        correct,
-        total: questions.length,
-        passed,
-      })
-      .execute();
+    const inserted = await sql`
+      insert into coach_learning_submissions (user_id, module_id, correct, total, passed)
+      select ${userId}, id, ${correct}, ${questions.length}, ${passed}
+      from coach_learning_modules
+      where id = ${moduleId} and check_version = ${input.version}`.execute(
+      this.conn,
+    );
+    if (!inserted.numAffectedRows) throw checkChanged();
     const facts = await this.facts(userId);
     return {
       score: percent(correct, questions.length),
@@ -709,76 +716,95 @@ export class CoachLearningService {
     }));
   }
 
-  private async requestRow(id: number) {
-    const row = await this.conn
-      .selectFrom("coach_learning_join_requests")
-      .select(["id", "user_id", "status", "reason"])
-      .where("id", "=", id)
-      .executeTakeFirst();
-    if (!row) throw refuse("unknown-request", "No such request", 404);
-    if (row.status !== "open")
-      throw refuse("not-open", "That request was already answered", 409, {
-        status: row.status,
-        reason: row.reason,
-      });
-    return row;
-  }
-
-  private answer(
+  private answerRequest<T>(
     id: number,
     adminId: string,
-    status: "approved" | "declined" | "already-in-program",
-    reason: string | null,
+    act: (
+      userId: string,
+      answer: (
+        status: "approved" | "declined" | "already-in-program",
+        reason?: string | null,
+      ) => Promise<unknown>,
+    ) => Promise<T>,
   ) {
-    return this.conn
-      .updateTable("coach_learning_join_requests")
-      .set({
-        status,
-        reason,
-        answered_at: sql`now()`,
-        answered_by: adminId as never,
-      })
-      .where("id", "=", id)
-      .where("status", "=", "open")
-      .executeTakeFirst();
+    return this.conn.transaction().execute(async (trx) => {
+      const row = await trx
+        .selectFrom("coach_learning_join_requests")
+        .select(["user_id", "status", "reason"])
+        .where("id", "=", id)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!row) throw refuse("unknown-request", "No such request", 404);
+      if (row.status !== "open")
+        throw refuse("not-open", "That request was already answered", 409, {
+          status: row.status,
+          reason: row.reason,
+        });
+      return act(row.user_id, (status, reason = null) =>
+        trx
+          .updateTable("coach_learning_join_requests")
+          .set({
+            status,
+            reason,
+            answered_at: sql`now()`,
+            answered_by: adminId as never,
+          })
+          .where("id", "=", id)
+          .execute(),
+      );
+    });
   }
 
-  async approve(
+  approve(
     adminId: string,
     id: number,
-    input: { name?: string; group?: string; coachName?: string },
+    input: {
+      email?: string;
+      name?: string;
+      group?: string;
+      coachName?: string;
+    },
     coach: CoachService,
   ) {
-    const row = await this.requestRow(id);
-    const account = await this.account(row.user_id);
-    if (!account.confirmed || !account.email)
-      throw refuse(
-        "address-unconfirmed",
-        "The requester's current address is not confirmed, so no leader was added. They confirm it first.",
-      );
-    const added = await coach.addLeader(adminId, {
-      email: account.email,
-      name: input.name?.trim() || account.name || undefined,
-      group: input.group,
-      coachName: input.coachName,
-    });
-    if (added.ok) {
-      await this.answer(id, adminId, "approved", null);
-      return { status: "approved" as const, leaderId: added.coach.id };
-    }
-    if (added.reason === "duplicate") {
-      await this.answer(id, adminId, "already-in-program", null);
-      return { status: "already-in-program" as const, leaderId: null };
-    }
-    throw refuse("add-refused", addRefusalText(added), 409, {
-      addRefusal: added.reason,
+    return this.answerRequest(id, adminId, async (userId, answer) => {
+      const account = await this.account(userId);
+      if (!account.confirmed || !account.email)
+        throw refuse(
+          "address-unconfirmed",
+          "The requester's current address is not confirmed, so no leader was added. They confirm it first.",
+        );
+      if (input.email && input.email !== account.email)
+        throw refuse(
+          "address-changed",
+          `The requester's address changed to ${account.email} since you opened this request, so no leader was added. Review it again.`,
+          409,
+          { email: account.email },
+        );
+      const added = await coach.addLeader(adminId, {
+        email: account.email,
+        name: input.name?.trim() || account.name || undefined,
+        group: input.group,
+        coachName: input.coachName,
+      });
+      if (added.ok) {
+        await answer("approved");
+        return { status: "approved" as const, leaderId: added.coach.id };
+      }
+      if (added.reason === "duplicate") {
+        await answer("already-in-program");
+        return { status: "already-in-program" as const, leaderId: null };
+      }
+      throw refuse("add-refused", addRefusalText(added), 409, {
+        addRefusal: added.reason,
+      });
     });
   }
 
-  async decline(adminId: string, id: number, reason: string) {
-    await this.requestRow(id);
-    await this.answer(id, adminId, "declined", reason.trim() || null);
-    return { status: "declined" as const };
+  decline(adminId: string, id: number, reason: string) {
+    return this.answerRequest(id, adminId, async (_, answer) => {
+      await answer("declined", reason.trim() || null);
+      return { status: "declined" as const };
+    });
   }
 
   async learners(input: { q?: string; limit?: number; offset?: number }) {
@@ -1099,8 +1125,7 @@ export class CoachLearningService {
         .where("id", "=", id)
         .execute();
     });
-    for (const l of lessons)
-      if (l.video_key) await this.storage.deleteObject(l.video_key);
+    for (const l of lessons) await this.deleteVideos(l.id);
   }
 
   async reorderModules(ids: number[]) {
@@ -1241,7 +1266,12 @@ export class CoachLearningService {
       .deleteFrom("coach_learning_lessons")
       .where("id", "=", id)
       .execute();
-    if (lesson.video_key) await this.storage.deleteObject(lesson.video_key);
+    await this.deleteVideos(id);
+  }
+
+  private async deleteVideos(lessonId: number) {
+    for (const key of videoSlots(lessonId))
+      await this.storage.deleteObject(key);
   }
 
   private bumpCheck(moduleId: number) {
@@ -1322,7 +1352,7 @@ export class CoachLearningService {
     return {
       uploadUrl: await this.storage.getGlobalObjectUploadUrl({
         key,
-        expiresInSeconds: VIDEO_URL_SECONDS,
+        expiresInSeconds: VIDEO_UPLOAD_URL_SECONDS,
         contentLength: input.size,
       }),
     };
@@ -1361,14 +1391,13 @@ export class CoachLearningService {
   }
 
   async removeVideo(lessonId: number) {
-    const lesson = await this.lessonOf(lessonId);
-    if (!lesson.video_key) return;
+    await this.lessonOf(lessonId);
     await this.conn
       .updateTable("coach_learning_lessons")
       .set({ video_key: null, video_type: null })
       .where("id", "=", lessonId)
       .execute();
-    await this.storage.deleteObject(lesson.video_key);
+    await this.deleteVideos(lessonId);
   }
 }
 

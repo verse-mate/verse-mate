@@ -155,8 +155,10 @@ const QuestionBody = t.Object({
   correct: t.Integer(),
 });
 
+const RowId = { minimum: 1, maximum: 2147483647 };
+
 const OrderBody = t.Object({
-  ids: t.Array(t.Integer(), { maxItems: 500 }),
+  ids: t.Array(t.Integer(RowId), { maxItems: 500 }),
 });
 
 const AdminTreeSchema = t.Object({
@@ -228,7 +230,7 @@ const LearnersSchema = t.Object({
 
 const Ok = t.Object({ ok: t.Boolean() });
 const Created = t.Object({ id: t.Number() });
-const IdParam = t.Object({ id: t.Numeric() });
+const IdParam = t.Object({ id: t.Numeric({ ...RowId, multipleOf: 1 }) });
 const ok = { ok: true };
 
 const learningRateLimit = createRateLimit({
@@ -237,6 +239,13 @@ const learningRateLimit = createRateLimit({
   keyGenerator: (context) =>
     `coach-learning:${context.currentUserId ?? `ip:${clientBucket(context.request, context.server)}`}`,
   message: "Too many requests, please try again in a minute",
+});
+
+const checkRateLimit = createRateLimit({
+  windowSeconds: 60,
+  max: 10,
+  keyGenerator: (context) => `coach-learning-check:${context.currentUserId}`,
+  message: "Too many attempts, please try again in a minute",
 });
 
 const signedIn = (currentUserId: string | null | undefined): string => {
@@ -260,7 +269,9 @@ const plugin = new Elysia()
           (store as unknown as { coachService?: CoachService }).coachService ??
           store.learningCoach,
       }))
-      .derive(async ({ currentUserId, coach, path }) => {
+      .derive(async (context) => {
+        const { currentUserId, coach, path } = context;
+        await learningRateLimit(context);
         const userId = signedIn(currentUserId);
         if (
           path.startsWith("/coach/admin/") &&
@@ -269,7 +280,6 @@ const plugin = new Elysia()
           throw new ForbiddenError("Admin access required");
         return { userId };
       })
-      .onBeforeHandle(learningRateLimit)
       .get(
         "/learning",
         ({ store: { learningService }, currentUserId, coach }) =>
@@ -345,11 +355,15 @@ const plugin = new Elysia()
         ({ store: { learningService }, currentUserId, params, body }) =>
           learningService.submit(signedIn(currentUserId), params.id, body),
         {
+          beforeHandle: checkRateLimit,
           params: IdParam,
           body: t.Object({
             version: t.Integer(),
             answers: t.Array(
-              t.Object({ questionId: t.Integer(), option: t.Integer() }),
+              t.Object({
+                questionId: t.Integer(RowId),
+                option: t.Integer({ minimum: 0, maximum: 100 }),
+              }),
               { maxItems: 100 },
             ),
           }),
@@ -603,6 +617,7 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: t.Object({
+            email: t.Optional(t.String({ maxLength: 320 })),
             name: t.Optional(t.String({ maxLength: 200 })),
             group: t.Optional(t.String({ maxLength: 200 })),
             coachName: t.Optional(t.String({ maxLength: 200 })),

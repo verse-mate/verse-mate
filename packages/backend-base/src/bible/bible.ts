@@ -34,6 +34,12 @@ async function loadBookMetadata(
   return metadataMap;
 }
 
+export const loadBible = () =>
+  parseBibleData(
+    Bun.file(`${import.meta.dir}/data/NASB1995.json`),
+    Bun.file(`${import.meta.dir}/data/key_english.json`),
+  );
+
 export async function parseBibleData(
   file: BunFile,
   metadataFile: BunFile,

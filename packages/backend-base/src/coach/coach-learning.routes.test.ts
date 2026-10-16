@@ -248,6 +248,40 @@ describe("authoring", () => {
     expect(tree.body?.modules[0].lessons[0].used).toBe(true);
   });
 
+  it("Deleting a module whose lessons were marked done, with no check taken, is refused", async () => {
+    const m = await module("Read", { lessons: 1 });
+    await as(learner).post("learning/enrol");
+    await finishLessons(learner, m.lessons);
+    const res = await as(admin).del(`admin/learning/modules/${m.id}`);
+    expect(res.status).toBe(409);
+    expect(res.body?.details.refusal).toBe("in-use");
+  });
+
+  it("Deleting an unused module deletes its lessons and their video files", async () => {
+    const m = await module("Unused", { lessons: 1, publish: false });
+    await as(admin).post(
+      `admin/learning/lessons/${m.lessons[0]}/video/upload`,
+      {
+        size: MP4.byteLength,
+        type: "video/mp4",
+      },
+    );
+    const key = videos.signed.at(-1)?.key as string;
+    videos.objects.set(key, MP4);
+    await as(admin).post(`admin/learning/lessons/${m.lessons[0]}/video/attach`);
+    expect((await as(admin).del(`admin/learning/modules/${m.id}`)).status).toBe(
+      200,
+    );
+    expect(videos.objects.has(key)).toBe(false);
+    expect(
+      await conn
+        .selectFrom("coach_learning_lessons")
+        .select("id")
+        .where("module_id", "=", m.id)
+        .execute(),
+    ).toEqual([]);
+  });
+
   it("Previewing a draft: the admin reads it marked as a draft, no learner can open it", async () => {
     const m = await module("Draft", { publish: false });
     const preview = await as(admin).get(
@@ -316,6 +350,19 @@ describe("the path", () => {
       const res = await call(null, "GET", path);
       expect(res.status).toBe(401);
       expect(res.raw).not.toContain("Text of");
+    }
+  });
+
+  it("A signed-in account that has not started the program reads no lesson, video or check", async () => {
+    const m = await module("Closed door", { lessons: 1 });
+    for (const path of [
+      `learning/lessons/${m.lessons[0]}`,
+      `learning/lessons/${m.lessons[0]}/video`,
+      `learning/modules/${m.id}/check`,
+    ]) {
+      const res = await as(other).get(path);
+      expect(res.status).toBe(403);
+      expect(res.body?.details.refusal).toBe("not-enrolled");
     }
   });
 
@@ -682,6 +729,47 @@ describe("checks", () => {
     expect(now.body?.version).toBeGreaterThan(opened.body?.version);
   });
 
+  for (const [change, edit] of [
+    [
+      "a question added",
+      (m: { id: number }) =>
+        as(admin).post(`admin/learning/modules/${m.id}/questions`, {
+          prompt: "Added",
+          options: ["right", "wrong"],
+          correct: 0,
+        }),
+    ],
+    [
+      "a question deleted",
+      (m: { questions: number[] }) =>
+        as(admin).del(`admin/learning/questions/${m.questions[1]}`),
+    ],
+    [
+      "the questions reordered",
+      (m: { id: number; questions: number[] }) =>
+        as(admin).put(`admin/learning/modules/${m.id}/questions/order`, {
+          ids: [...m.questions].reverse(),
+        }),
+    ],
+  ] as const)
+    it(`A check changed by ${change} while it was being answered is refused uncounted`, async () => {
+      const m = await ready();
+      const opened = await as(learner).get(`learning/modules/${m.id}/check`);
+      expect((await edit(m)).status).toBe(200);
+      const res = await as(learner).post(`learning/modules/${m.id}/check`, {
+        version: opened.body?.version,
+        answers: m.questions.map((q) => ({ questionId: q, option: 0 })),
+      });
+      expect(res.status).toBe(409);
+      expect(res.body?.details.refusal).toBe("check-changed");
+      expect(
+        await conn
+          .selectFrom("coach_learning_submissions")
+          .selectAll()
+          .execute(),
+      ).toEqual([]);
+    });
+
   it("A check edited after a pass: the module stays passed and the best score is unchanged", async () => {
     const m = await ready();
     await pass(learner, m.id);
@@ -746,9 +834,18 @@ describe("completion", () => {
     await finishLessons(learner, one.lessons);
     await pass(learner, one.id);
     await as(admin).post(`admin/learning/modules/${two.id}/unpublish`);
+    const yesterday = new Date(Date.now() - 86_400_000);
     await conn
       .updateTable("coach_learning_enrolments")
-      .set({ enrolled_at: new Date(Date.now() - 86_400_000) })
+      .set({ enrolled_at: yesterday })
+      .execute();
+    await conn
+      .updateTable("coach_learning_submissions")
+      .set({ submitted_at: yesterday })
+      .execute();
+    await conn
+      .updateTable("coach_learning_lesson_completions")
+      .set({ done_at: yesterday })
       .execute();
     const state = await as(learner).get("learning");
     expect(state.body?.completedAt.slice(0, 10)).toBe(
@@ -901,6 +998,22 @@ describe("lesson videos", () => {
     const res = await as(learner).get(`learning/lessons/${lesson}/video`);
     expect(res.body?.url).toContain(second);
     expect(res.body?.type).toBe("video/webm");
+  });
+
+  it("Removing a video: the file is deleted and learners get no address", async () => {
+    const { attach, lesson, key } = await withVideo(MP4);
+    await attach();
+    expect(
+      (await as(admin).del(`admin/learning/lessons/${lesson}/video`)).status,
+    ).toBe(200);
+    expect(videos.objects.has(key)).toBe(false);
+    await as(learner).post("learning/enrol");
+    expect(
+      (await as(learner).get(`learning/lessons/${lesson}`)).body?.hasVideo,
+    ).toBe(false);
+    expect(
+      (await as(learner).get(`learning/lessons/${lesson}/video`)).status,
+    ).toBe(404);
   });
 
   it("Deleting a lesson deletes its video file", async () => {
