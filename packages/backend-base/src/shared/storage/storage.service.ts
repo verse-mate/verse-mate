@@ -111,14 +111,21 @@ export class ObjectStorageService {
     key,
     expiresInSeconds,
     contentLength,
+    contentType,
   }: {
     key: string;
     expiresInSeconds: number;
     contentLength?: number;
+    contentType?: string;
   }): Promise<string> {
     return contentLength === undefined
       ? this.helper.presignUrl(key, expiresInSeconds, "PUT")
-      : this.helper.presignPutOfLength(key, expiresInSeconds, contentLength);
+      : this.helper.presignPutOfLength(
+          key,
+          expiresInSeconds,
+          contentLength,
+          contentType,
+        );
   }
 
   public async listGlobalObjects(prefix: string) {

@@ -17,11 +17,13 @@ export const conn = Database.getOrCreateConnection();
 export class MemoryVideos implements LearningStorage {
   objects = new Map<string, Uint8Array>();
   sizes = new Map<string, number>();
-  signed: Array<{ key: string; contentLength?: number }> = [];
+  signed: Array<{ key: string; contentLength?: number; contentType?: string }> =
+    [];
   async getGlobalObjectUploadUrl(input: {
     key: string;
     expiresInSeconds: number;
     contentLength?: number;
+    contentType?: string;
   }) {
     this.signed.push(input);
     return `https://store.example.test/${input.key}?put`;

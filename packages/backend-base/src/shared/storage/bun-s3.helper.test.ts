@@ -87,4 +87,19 @@ describe("a PUT address signed for one content length", () => {
       six.searchParams.get("X-Amz-Signature"),
     );
   });
+
+  it("signs the content type when given, so an address for one type does not take another", () => {
+    const mp4 = new URL(
+      helper.presignPutOfLength("coach/uploads/a/p", 60, 5, "video/mp4"),
+    );
+    const webm = new URL(
+      helper.presignPutOfLength("coach/uploads/a/p", 60, 5, "video/webm"),
+    );
+    expect(mp4.searchParams.get("X-Amz-SignedHeaders")).toBe(
+      "content-length;content-type;host",
+    );
+    expect(mp4.searchParams.get("X-Amz-Signature")).not.toBe(
+      webm.searchParams.get("X-Amz-Signature"),
+    );
+  });
 });

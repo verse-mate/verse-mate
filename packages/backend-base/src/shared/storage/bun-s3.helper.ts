@@ -382,11 +382,13 @@ export class BunS3Helper {
     key: string,
     expiresInSeconds: number,
     contentLength: number,
+    contentType?: string,
   ): string {
     return signContentLength(
       this.presignUrl(key, expiresInSeconds, "PUT"),
       contentLength,
       this.secretAccessKey,
+      contentType,
     );
   }
 }
@@ -404,9 +406,11 @@ export function signContentLength(
   presignedPut: string,
   contentLength: number,
   secretAccessKey: string,
+  contentType?: string,
 ): string {
   return signPresigned(presignedPut, "PUT", {}, secretAccessKey, {
     "content-length": String(contentLength),
+    ...(contentType === undefined ? {} : { "content-type": contentType }),
   });
 }
 
