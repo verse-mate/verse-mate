@@ -1166,8 +1166,7 @@ export class CoachLearningService {
       .select("id")
       .where("module_id", "=", moduleId)
       .execute();
-    await this.reorder("coach_learning_questions", all, ids);
-    await this.bumpCheck(moduleId);
+    await this.reorder("coach_learning_questions", all, ids, moduleId);
   }
 
   private async reorder(
@@ -1177,6 +1176,7 @@ export class CoachLearningService {
       | "coach_learning_questions",
     all: Array<{ id: number }>,
     ids: number[],
+    checkOf?: number,
   ) {
     const known = new Set(all.map((r) => r.id));
     if (
@@ -1192,6 +1192,7 @@ export class CoachLearningService {
           .set({ position: i + 1 })
           .where("id", "=", id)
           .execute();
+      if (checkOf !== undefined) await this.bumpCheck(checkOf, trx);
     });
   }
 
@@ -1287,8 +1288,8 @@ export class CoachLearningService {
       await this.storage.deleteObject(key);
   }
 
-  private bumpCheck(moduleId: number) {
-    return this.conn
+  private bumpCheck(moduleId: number, db = this.conn) {
+    return db
       .updateTable("coach_learning_modules")
       .set({ check_version: sql`check_version + 1` })
       .where("id", "=", moduleId)
@@ -1301,18 +1302,25 @@ export class CoachLearningService {
   ) {
     await this.moduleRow(moduleId);
     const q = checkQuestion(input);
-    const row = await this.conn
-      .insertInto("coach_learning_questions")
-      .values({
-        module_id: moduleId,
-        prompt: q.prompt,
-        options: q.options,
-        correct: q.correct,
-        position: await this.nextPosition("coach_learning_questions", moduleId),
-      })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-    await this.bumpCheck(moduleId);
+    const position = await this.nextPosition(
+      "coach_learning_questions",
+      moduleId,
+    );
+    const row = await this.conn.transaction().execute(async (trx) => {
+      const inserted = await trx
+        .insertInto("coach_learning_questions")
+        .values({
+          module_id: moduleId,
+          prompt: q.prompt,
+          options: q.options,
+          correct: q.correct,
+          position,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      await this.bumpCheck(moduleId, trx);
+      return inserted;
+    });
     return { id: row.id };
   }
 
@@ -1333,23 +1341,27 @@ export class CoachLearningService {
   ) {
     const row = await this.questionRow(id);
     const q = checkQuestion(input);
-    await this.conn
-      .updateTable("coach_learning_questions")
-      .set({ prompt: q.prompt, options: q.options, correct: q.correct })
-      .where("id", "=", id)
-      .execute();
-    await this.bumpCheck(row.module_id);
+    await this.conn.transaction().execute(async (trx) => {
+      await trx
+        .updateTable("coach_learning_questions")
+        .set({ prompt: q.prompt, options: q.options, correct: q.correct })
+        .where("id", "=", id)
+        .execute();
+      await this.bumpCheck(row.module_id, trx);
+    });
   }
 
   async deleteQuestion(id: number) {
     const row = await this.questionRow(id);
     if (row.published && (await this.questionCount(row.module_id)) <= 1)
       await this.refuseEmptying(row.module_id);
-    await this.conn
-      .deleteFrom("coach_learning_questions")
-      .where("id", "=", id)
-      .execute();
-    await this.bumpCheck(row.module_id);
+    await this.conn.transaction().execute(async (trx) => {
+      await trx
+        .deleteFrom("coach_learning_questions")
+        .where("id", "=", id)
+        .execute();
+      await this.bumpCheck(row.module_id, trx);
+    });
   }
 
   async videoUploadUrl(
@@ -1367,6 +1379,7 @@ export class CoachLearningService {
         key,
         expiresInSeconds: VIDEO_UPLOAD_URL_SECONDS,
         contentLength: input.size,
+        contentType: input.type,
       }),
     };
   }

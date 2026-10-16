@@ -7,6 +7,8 @@ import {
   it,
 } from "bun:test";
 
+import { sql } from "kysely";
+
 import { coachContract } from "./coach-contract";
 import {
   type Account,
@@ -799,6 +801,54 @@ describe("checks", () => {
     expect(now.body?.version).toBeGreaterThan(opened.body?.version);
   });
 
+  it("A submission landing while a question edit waits on its version bump is graded on the questions the learner was shown", async () => {
+    const m = await ready();
+    const opened = await as(learner).get(`learning/modules/${m.id}/check`);
+    let release = () => {};
+    const held = new Promise<void>((r) => {
+      release = r;
+    });
+    let locked = () => {};
+    const isLocked = new Promise<void>((r) => {
+      locked = r;
+    });
+    const lock = conn.transaction().execute(async (trx) => {
+      await trx
+        .selectFrom("coach_learning_modules")
+        .select("id")
+        .where("id", "=", m.id)
+        .forNoKeyUpdate()
+        .execute();
+      locked();
+      await held;
+    });
+    await isLocked;
+    const edit = as(admin).put(`admin/learning/questions/${m.questions[1]}`, {
+      prompt: "Answer key changed",
+      options: ["right", "wrong"],
+      correct: 1,
+    });
+    for (let waited = 0; ; waited += 20) {
+      const waiting = await sql<{ n: number }>`
+        select count(*)::int as n from pg_stat_activity
+        where wait_event_type = 'Lock' and datname = current_database()`.execute(
+        conn,
+      );
+      if (waiting.rows[0].n > 0) break;
+      if (waited > 5000) throw new Error("the edit never reached the bump");
+      await Bun.sleep(20);
+    }
+    const res = await as(learner).post(`learning/modules/${m.id}/check`, {
+      version: opened.body?.version,
+      answers: m.questions.map((q) => ({ questionId: q, option: 0 })),
+    });
+    release();
+    await lock;
+    expect((await edit).status).toBe(200);
+    if (res.status === 200) expect(res.body?.correct).toBe(2);
+    else expect(res.body?.details.refusal).toBe("check-changed");
+  });
+
   for (const [change, edit] of [
     [
       "a question added",
@@ -941,6 +991,7 @@ describe("lesson videos", () => {
     expect(up.status).toBe(200);
     const key = videos.signed.at(-1)?.key as string;
     expect(videos.signed.at(-1)?.contentLength).toBe(bytes.byteLength);
+    expect(videos.signed.at(-1)?.contentType).toBe(type);
     videos.objects.set(key, bytes);
     return {
       m,
