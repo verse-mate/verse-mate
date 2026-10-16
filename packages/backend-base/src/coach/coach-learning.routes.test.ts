@@ -315,6 +315,13 @@ describe("authoring", () => {
     }
   });
 
+  it("A non-admin over the limit is slowed down before the admin check", async () => {
+    let last = 0;
+    for (let i = 0; i < 121; i++)
+      last = (await as(other).get("admin/learning")).status;
+    expect(last).toBe(429);
+  });
+
   it("Non-admin tries to author: every authoring route is refused and nothing changes", async () => {
     const m = await module("Guarded", { publish: false });
     const tries = [
@@ -743,6 +750,18 @@ describe("checks", () => {
           .execute(),
       ).toEqual([]);
     });
+
+  it("An eleventh check submission in a minute is slowed down and not counted", async () => {
+    const m = await ready();
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++)
+      statuses.push((await pass(learner, m.id, false)).status);
+    expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
+    expect(statuses[10]).toBe(429);
+    expect(
+      await conn.selectFrom("coach_learning_submissions").selectAll().execute(),
+    ).toHaveLength(10);
+  });
 
   it("Incomplete submission: refused, nothing graded, not counted", async () => {
     const m = await ready();

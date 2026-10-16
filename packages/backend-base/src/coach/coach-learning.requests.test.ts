@@ -487,6 +487,31 @@ describe("answering a request", () => {
     );
   });
 
+  it("An address saved with capitals is approved with the address the admin saw", async () => {
+    const id = await requested(learner);
+    await conn
+      .updateTable("user")
+      .set({ email: "Requests-Learner@example.test" })
+      .where("id", "=", learner.id as never)
+      .execute();
+    try {
+      const listed = (await as(admin).get("admin/learning/requests")).body
+        ?.requests[0];
+      const res = await as(admin).post(
+        `admin/learning/requests/${id}/approve`,
+        { email: listed.email },
+      );
+      expect(res.status).toBe(200);
+      expect(mailer.sent).toEqual([EMAILS[1]]);
+    } finally {
+      await conn
+        .updateTable("user")
+        .set({ email: EMAILS[1] })
+        .where("id", "=", learner.id as never)
+        .execute();
+    }
+  });
+
   it("Two requests sent at once: one stands, the other is refused", async () => {
     await complete(learner);
     const results = await Promise.all([

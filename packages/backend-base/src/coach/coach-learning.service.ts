@@ -695,7 +695,7 @@ export class CoachLearningService {
         "r.user_id",
         "r.note",
         "r.created_at",
-        "u.email",
+        sql<string>`lower(trim(u.email))`.as("email"),
         "u.firstName",
         "u.lastName",
         "e.completed_at",
@@ -716,46 +716,55 @@ export class CoachLearningService {
     }));
   }
 
-  private answerRequest<T>(
-    id: number,
-    adminId: string,
-    act: (
-      userId: string,
-      answer: (
-        status: "approved" | "declined" | "already-in-program",
-        reason?: string | null,
-      ) => Promise<unknown>,
-    ) => Promise<T>,
-  ) {
-    return this.conn.transaction().execute(async (trx) => {
-      const row = await trx
-        .selectFrom("coach_learning_join_requests")
-        .select(["user_id", "status", "reason"])
-        .where("id", "=", id)
-        .forUpdate()
-        .executeTakeFirst();
-      if (!row) throw refuse("unknown-request", "No such request", 404);
-      if (row.status !== "open")
-        throw refuse("not-open", "That request was already answered", 409, {
-          status: row.status,
-          reason: row.reason,
-        });
-      return act(row.user_id, (status, reason = null) =>
-        trx
-          .updateTable("coach_learning_join_requests")
-          .set({
-            status,
-            reason,
-            answered_at: sql`now()`,
-            answered_by: adminId as never,
-          })
-          .where("id", "=", id)
-          .execute(),
-      );
-    });
+  private async openRequest(id: number) {
+    const row = await this.conn
+      .selectFrom("coach_learning_join_requests")
+      .select(["user_id", "status", "reason"])
+      .where("id", "=", id)
+      .executeTakeFirst();
+    if (!row) throw refuse("unknown-request", "No such request", 404);
+    if (row.status !== "open")
+      throw refuse("not-open", "That request was already answered", 409, {
+        status: row.status,
+        reason: row.reason,
+      });
+    return row;
   }
 
-  approve(
+  private async claim(
+    id: number,
+    adminId: string,
+    status: "approved" | "declined",
+    reason: string | null,
+  ) {
+    const claimed = await this.conn
+      .updateTable("coach_learning_join_requests")
+      .set({
+        status,
+        reason,
+        answered_at: sql`now()`,
+        answered_by: adminId as never,
+      })
+      .where("id", "=", id)
+      .where("status", "=", "open")
+      .executeTakeFirst();
+    if (!claimed.numUpdatedRows) await this.openRequest(id);
+  }
+
+  private settle(id: number, status: "open" | "already-in-program") {
+    return this.conn
+      .updateTable("coach_learning_join_requests")
+      .set(
+        status === "open"
+          ? { status, answered_at: null, answered_by: null }
+          : { status },
+      )
+      .where("id", "=", id)
+      .where("status", "=", "approved")
+      .execute();
+  }
+
+  async approve(
     adminId: string,
     id: number,
     input: {
@@ -766,45 +775,49 @@ export class CoachLearningService {
     },
     coach: CoachService,
   ) {
-    return this.answerRequest(id, adminId, async (userId, answer) => {
-      const account = await this.account(userId);
-      if (!account.confirmed || !account.email)
-        throw refuse(
-          "address-unconfirmed",
-          "The requester's current address is not confirmed, so no leader was added. They confirm it first.",
-        );
-      if (input.email && input.email !== account.email)
-        throw refuse(
-          "address-changed",
-          `The requester's address changed to ${account.email} since you opened this request, so no leader was added. Review it again.`,
-          409,
-          { email: account.email },
-        );
-      const added = await coach.addLeader(adminId, {
+    const row = await this.openRequest(id);
+    const account = await this.account(row.user_id);
+    if (!account.confirmed || !account.email)
+      throw refuse(
+        "address-unconfirmed",
+        "The requester's current address is not confirmed, so no leader was added. They confirm it first.",
+      );
+    if (input.email && input.email.trim().toLowerCase() !== account.email)
+      throw refuse(
+        "address-changed",
+        `The requester's address changed to ${account.email} since you opened this request, so no leader was added. Review it again.`,
+        409,
+        { email: account.email },
+      );
+    await this.claim(id, adminId, "approved", null);
+    let added: Awaited<ReturnType<CoachService["addLeader"]>>;
+    try {
+      added = await coach.addLeader(adminId, {
         email: account.email,
         name: input.name?.trim() || account.name || undefined,
         group: input.group,
         coachName: input.coachName,
       });
-      if (added.ok) {
-        await answer("approved");
-        return { status: "approved" as const, leaderId: added.coach.id };
-      }
-      if (added.reason === "duplicate") {
-        await answer("already-in-program");
-        return { status: "already-in-program" as const, leaderId: null };
-      }
-      throw refuse("add-refused", addRefusalText(added), 409, {
-        addRefusal: added.reason,
-      });
+    } catch (error) {
+      await this.settle(id, "open");
+      throw error;
+    }
+    if (added.ok)
+      return { status: "approved" as const, leaderId: added.coach.id };
+    if (added.reason === "duplicate") {
+      await this.settle(id, "already-in-program");
+      return { status: "already-in-program" as const, leaderId: null };
+    }
+    await this.settle(id, "open");
+    throw refuse("add-refused", addRefusalText(added), 409, {
+      addRefusal: added.reason,
     });
   }
 
-  decline(adminId: string, id: number, reason: string) {
-    return this.answerRequest(id, adminId, async (_, answer) => {
-      await answer("declined", reason.trim() || null);
-      return { status: "declined" as const };
-    });
+  async decline(adminId: string, id: number, reason: string) {
+    await this.openRequest(id);
+    await this.claim(id, adminId, "declined", reason.trim() || null);
+    return { status: "declined" as const };
   }
 
   async learners(input: { q?: string; limit?: number; offset?: number }) {
