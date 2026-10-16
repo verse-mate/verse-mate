@@ -16,6 +16,13 @@ import type { default as CoachIntakeSessionsTable } from "./CoachIntakeSessions"
 import type { default as CoachLeaderEmailChangesTable } from "./CoachLeaderEmailChanges";
 import type { default as CoachLeaderEmailRequestsTable } from "./CoachLeaderEmailRequests";
 import type { default as CoachLeadersTable } from "./CoachLeaders";
+import type { default as CoachLearningEnrolmentsTable } from "./CoachLearningEnrolments";
+import type { default as CoachLearningJoinRequestsTable } from "./CoachLearningJoinRequests";
+import type { default as CoachLearningLessonCompletionsTable } from "./CoachLearningLessonCompletions";
+import type { default as CoachLearningLessonsTable } from "./CoachLearningLessons";
+import type { default as CoachLearningModulesTable } from "./CoachLearningModules";
+import type { default as CoachLearningQuestionsTable } from "./CoachLearningQuestions";
+import type { default as CoachLearningSubmissionsTable } from "./CoachLearningSubmissions";
 import type { default as CoachMondayRemindersTable } from "./CoachMondayReminders";
 import type { default as CoachMonthlyLeaderSummariesTable } from "./CoachMonthlyLeaderSummaries";
 import type { default as CoachMonthlyNarrativesTable } from "./CoachMonthlyNarratives";
@@ -200,6 +207,13 @@ export default interface PublicSchema {
   coach_classes: CoachClassesTable;
 
   coach_leaders: CoachLeadersTable;
+  coach_learning_enrolments: CoachLearningEnrolmentsTable;
+  coach_learning_join_requests: CoachLearningJoinRequestsTable;
+  coach_learning_lesson_completions: CoachLearningLessonCompletionsTable;
+  coach_learning_lessons: CoachLearningLessonsTable;
+  coach_learning_modules: CoachLearningModulesTable;
+  coach_learning_questions: CoachLearningQuestionsTable;
+  coach_learning_submissions: CoachLearningSubmissionsTable;
 
   coach_recording_links: CoachRecordingLinksTable;
 
