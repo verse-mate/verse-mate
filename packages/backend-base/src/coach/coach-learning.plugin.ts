@@ -254,21 +254,22 @@ const plugin = new Elysia()
   }))
   .group("/coach", (app) =>
     app
-      .resolve({ as: "scoped" }, authDerive)
-      .onBeforeHandle(learningRateLimit)
+      .derive({ as: "scoped" }, authDerive)
       .derive(({ store }) => ({
         coach: () =>
           (store as unknown as { coachService?: CoachService }).coachService ??
           store.learningCoach,
       }))
-      .resolve(({ currentUserId, coach }) => ({
-        admin: async () => {
-          const id = signedIn(currentUserId);
-          if (!(await coach().isAdmin(id)))
-            throw new ForbiddenError("Admin access required");
-          return id;
-        },
-      }))
+      .derive(async ({ currentUserId, coach, path }) => {
+        const userId = signedIn(currentUserId);
+        if (
+          path.startsWith("/coach/admin/") &&
+          !(await coach().isAdmin(userId))
+        )
+          throw new ForbiddenError("Admin access required");
+        return { userId };
+      })
+      .onBeforeHandle(learningRateLimit)
       .get(
         "/learning",
         ({ store: { learningService }, currentUserId, coach }) =>
@@ -374,16 +375,14 @@ const plugin = new Elysia()
       )
       .get(
         "/admin/learning",
-        async ({ store: { learningService }, admin }) => {
-          await admin();
+        async ({ store: { learningService } }) => {
           return { modules: await learningService.adminTree() };
         },
         { response: { 200: AdminTreeSchema, ...StandardErrorResponses } },
       )
       .post(
         "/admin/learning/modules",
-        async ({ store: { learningService }, admin, body }) => {
-          await admin();
+        async ({ store: { learningService }, body }) => {
           return learningService.createModule(body);
         },
         {
@@ -393,8 +392,7 @@ const plugin = new Elysia()
       )
       .put(
         "/admin/learning/modules/order",
-        async ({ store: { learningService }, admin, body }) => {
-          await admin();
+        async ({ store: { learningService }, body }) => {
           await learningService.reorderModules(body.ids);
           return ok;
         },
@@ -402,8 +400,7 @@ const plugin = new Elysia()
       )
       .put(
         "/admin/learning/modules/:id",
-        async ({ store: { learningService }, admin, body, params }) => {
-          await admin();
+        async ({ store: { learningService }, body, params }) => {
           await learningService.updateModule(params.id, body);
           return ok;
         },
@@ -415,8 +412,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/modules/:id/publish",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.publishModule(params.id, true);
           return ok;
         },
@@ -424,8 +420,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/modules/:id/unpublish",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.publishModule(params.id, false);
           return ok;
         },
@@ -433,8 +428,7 @@ const plugin = new Elysia()
       )
       .delete(
         "/admin/learning/modules/:id",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.deleteModule(params.id);
           return ok;
         },
@@ -442,8 +436,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/modules/:id/lessons",
-        async ({ store: { learningService }, admin, params, body }) => {
-          await admin();
+        async ({ store: { learningService }, params, body }) => {
           return learningService.createLesson(params.id, body);
         },
         {
@@ -454,8 +447,7 @@ const plugin = new Elysia()
       )
       .put(
         "/admin/learning/modules/:id/lessons/order",
-        async ({ store: { learningService }, admin, params, body }) => {
-          await admin();
+        async ({ store: { learningService }, params, body }) => {
           await learningService.reorderLessons(params.id, body.ids);
           return ok;
         },
@@ -467,8 +459,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/modules/:id/questions",
-        async ({ store: { learningService }, admin, params, body }) => {
-          await admin();
+        async ({ store: { learningService }, params, body }) => {
           return learningService.createQuestion(params.id, body);
         },
         {
@@ -479,8 +470,7 @@ const plugin = new Elysia()
       )
       .put(
         "/admin/learning/modules/:id/questions/order",
-        async ({ store: { learningService }, admin, params, body }) => {
-          await admin();
+        async ({ store: { learningService }, params, body }) => {
           await learningService.reorderQuestions(params.id, body.ids);
           return ok;
         },
@@ -492,8 +482,7 @@ const plugin = new Elysia()
       )
       .put(
         "/admin/learning/questions/:id",
-        async ({ store: { learningService }, admin, params, body }) => {
-          await admin();
+        async ({ store: { learningService }, params, body }) => {
           await learningService.updateQuestion(params.id, body);
           return ok;
         },
@@ -505,8 +494,7 @@ const plugin = new Elysia()
       )
       .delete(
         "/admin/learning/questions/:id",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.deleteQuestion(params.id);
           return ok;
         },
@@ -514,8 +502,7 @@ const plugin = new Elysia()
       )
       .get(
         "/admin/learning/lessons/:id",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           return learningService.previewLesson(params.id);
         },
         {
@@ -525,8 +512,7 @@ const plugin = new Elysia()
       )
       .put(
         "/admin/learning/lessons/:id",
-        async ({ store: { learningService }, admin, params, body }) => {
-          await admin();
+        async ({ store: { learningService }, params, body }) => {
           await learningService.updateLesson(params.id, body);
           return ok;
         },
@@ -538,8 +524,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/lessons/:id/publish",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.publishLesson(params.id, true);
           return ok;
         },
@@ -547,8 +532,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/lessons/:id/unpublish",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.publishLesson(params.id, false);
           return ok;
         },
@@ -556,8 +540,7 @@ const plugin = new Elysia()
       )
       .delete(
         "/admin/learning/lessons/:id",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.deleteLesson(params.id);
           return ok;
         },
@@ -565,8 +548,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/lessons/:id/video/upload",
-        async ({ store: { learningService }, admin, params, body }) => {
-          await admin();
+        async ({ store: { learningService }, params, body }) => {
           return learningService.videoUploadUrl(params.id, body);
         },
         {
@@ -583,8 +565,7 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/lessons/:id/video/attach",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           return learningService.attachVideo(params.id);
         },
         {
@@ -597,8 +578,7 @@ const plugin = new Elysia()
       )
       .delete(
         "/admin/learning/lessons/:id/video",
-        async ({ store: { learningService }, admin, params }) => {
-          await admin();
+        async ({ store: { learningService }, params }) => {
           await learningService.removeVideo(params.id);
           return ok;
         },
@@ -606,8 +586,7 @@ const plugin = new Elysia()
       )
       .get(
         "/admin/learning/requests",
-        async ({ store: { learningService }, admin }) => {
-          await admin();
+        async ({ store: { learningService } }) => {
           return { requests: await learningService.openRequests() };
         },
         {
@@ -619,8 +598,8 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/requests/:id/approve",
-        async ({ store: { learningService }, admin, params, body, coach }) =>
-          learningService.approve(await admin(), params.id, body, coach()),
+        async ({ store: { learningService }, params, body, coach, userId }) =>
+          learningService.approve(userId, params.id, body, coach()),
         {
           params: IdParam,
           body: t.Object({
@@ -642,8 +621,8 @@ const plugin = new Elysia()
       )
       .post(
         "/admin/learning/requests/:id/decline",
-        async ({ store: { learningService }, admin, params, body }) =>
-          learningService.decline(await admin(), params.id, body.reason ?? ""),
+        async ({ store: { learningService }, params, body, userId }) =>
+          learningService.decline(userId, params.id, body.reason ?? ""),
         {
           params: IdParam,
           body: t.Object({ reason: t.Optional(t.String({ maxLength: 500 })) }),
@@ -655,8 +634,7 @@ const plugin = new Elysia()
       )
       .get(
         "/admin/learning/learners",
-        async ({ store: { learningService }, admin, query }) => {
-          await admin();
+        async ({ store: { learningService }, query }) => {
           return learningService.learners(query);
         },
         {
