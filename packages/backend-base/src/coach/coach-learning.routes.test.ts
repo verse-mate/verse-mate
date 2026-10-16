@@ -7,6 +7,7 @@ import {
   it,
 } from "bun:test";
 
+import { coachContract } from "./coach-contract";
 import {
   type Account,
   MP4,
@@ -294,6 +295,24 @@ describe("authoring", () => {
     const res = await as(learner).get(`learning/lessons/${m.lessons[0]}`);
     expect(res.status).toBe(404);
     expect(res.raw).not.toContain("Text of Draft");
+  });
+
+  it("Every admin learning route in the contract refuses a signed-in non-admin", async () => {
+    const m = await module("Swept", { publish: false });
+    const routes = coachContract()
+      .routes.map((r) => r.route)
+      .filter((r) => r.split(" ")[1].startsWith("/coach/admin/learning"));
+    expect(routes.length).toBeGreaterThan(20);
+    for (const route of routes) {
+      const [method, path] = route.split(" ");
+      const res = await call(
+        learner,
+        method as "GET",
+        path.replace("/coach/", "").replace(":id", String(m.id)),
+        method === "GET" ? undefined : {},
+      );
+      expect([route, res.status]).toEqual([route, 403]);
+    }
   });
 
   it("Non-admin tries to author: every authoring route is refused and nothing changes", async () => {
@@ -693,6 +712,38 @@ describe("checks", () => {
     }
   });
 
+  for (const [what, answers] of [
+    [
+      "the same question twice",
+      (q: number[]) =>
+        [q[0], q[0]].map((id) => ({ questionId: id, option: 0 })),
+    ],
+    [
+      "a question from elsewhere",
+      (q: number[]) =>
+        [q[0], 2147483647].map((id) => ({ questionId: id, option: 0 })),
+    ],
+    [
+      "an option past the last",
+      (q: number[]) => q.map((id) => ({ questionId: id, option: 9 })),
+    ],
+  ] as const)
+    it(`A submission with ${what} is refused uncounted`, async () => {
+      const m = await ready();
+      const check = await as(learner).get(`learning/modules/${m.id}/check`);
+      const res = await as(learner).post(`learning/modules/${m.id}/check`, {
+        version: check.body?.version,
+        answers: answers(m.questions),
+      });
+      expect(res.status).toBe(400);
+      expect(
+        await conn
+          .selectFrom("coach_learning_submissions")
+          .selectAll()
+          .execute(),
+      ).toEqual([]);
+    });
+
   it("Incomplete submission: refused, nothing graded, not counted", async () => {
     const m = await ready();
     const check = await as(learner).get(`learning/modules/${m.id}/check`);
@@ -980,6 +1031,21 @@ describe("lesson videos", () => {
       (await as(learner).get(`learning/lessons/${m.lessons[0]}`)).body
         ?.hasVideo,
     ).toBe(false);
+  });
+
+  it("Interrupted replacement: the lesson keeps the video it had", async () => {
+    const { attach, lesson, key } = await withVideo(MP4);
+    await attach();
+    await as(admin).post(`admin/learning/lessons/${lesson}/video/upload`, {
+      size: WEBM.byteLength,
+      type: "video/webm",
+    });
+    const res = await attach();
+    expect(res.body?.details.refusal).toBe("no-upload");
+    await as(learner).post("learning/enrol");
+    const video = await as(learner).get(`learning/lessons/${lesson}/video`);
+    expect(video.body?.url).toContain(key);
+    expect(video.body?.type).toBe("video/mp4");
   });
 
   it("Replacing a video: learners get the new one and the old file is deleted", async () => {
