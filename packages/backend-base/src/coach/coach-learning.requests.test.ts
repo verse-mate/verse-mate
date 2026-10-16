@@ -214,9 +214,7 @@ describe("sending a request", () => {
     ).toBe(200);
     const again = await as(learner).post("learning/join-request", {});
     expect(again.status).toBe(409);
-    expect(["request-exists", "already-leader"]).toContain(
-      again.body?.details.refusal,
-    );
+    expect(again.body?.details.refusal).toBe("already-leader");
 
     const otherId = await requested(second);
     await conn
@@ -616,6 +614,10 @@ describe("the learners list", () => {
     expect(
       (await as(admin).get("admin/learning/learners?q=100%25")).body?.total,
     ).toBe(0);
+    const byName = await as(admin).get("admin/learning/learners?q=ruth%20req");
+    expect(
+      byName.body?.learners.map((l: { email: string }) => l.email),
+    ).toEqual([EMAILS[1]]);
     await conn.deleteFrom("user").where("email", "in", extra).execute();
   });
 
