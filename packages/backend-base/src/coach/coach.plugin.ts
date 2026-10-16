@@ -16,6 +16,7 @@ import { StandardErrorResponses } from "../common/response-schemas";
 import { getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
 import { CoachIdentityService } from "./coach-identity.service";
+import coachLearningPlugin from "./coach-learning.plugin";
 import { CoachMonthlyService } from "./coach-monthly.service";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import { HOLD_KINDS } from "./coach-session-state";
@@ -288,6 +289,7 @@ const plugin = new Elysia()
     ...state,
     coachService: new CoachService(state.db, state.notification),
   }))
+  .use(coachLearningPlugin)
   .group("/coach", (app) =>
     app
       // ── The rubric contract ───────────────────────────────────────────
