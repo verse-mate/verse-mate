@@ -31,6 +31,7 @@ async function startAs(role: WorkerRole) {
   const ran: string[] = [];
   const crons: string[] = [];
   await startBackgroundWork(role, {
+    waitForMigrations: async () => {},
     startWorkers: () =>
       startQueueWorkers(
         QUEUE_WORKERS.map((entry) => ({
@@ -57,6 +58,7 @@ describe("start-up work that queues jobs runs with the workers", () => {
   async function scansAs(role: WorkerRole) {
     let scans = 0;
     await startBackgroundWork(role, {
+      waitForMigrations: async () => {},
       startWorkers: async () => {},
       resumeBatchMonitoring: async () => {
         scans += 1;
