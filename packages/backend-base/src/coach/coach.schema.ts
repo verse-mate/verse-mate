@@ -55,29 +55,76 @@ export const SectionSchema = t.Object({
 });
 
 // One registered class. `classDate` is an ISO yyyy-mm-dd string or null (no
-// pinned date). `zoomLink` is the URL the Notetaker bot joins.
-export const CoachClassSchema = t.Object({
+// pinned date). `zoomLink` is the URL the Notetaker bot joins, at `startTime`
+// (24-hour HH:MM) in `timeZone` (IANA); `notetaker` false keeps the bot out.
+const CLASS_FIELDS = {
   id: t.String(),
   name: t.String(),
   classDate: t.Union([t.String(), t.Null()]),
   recurrence: t.String(),
   zoomLink: t.String(),
-});
+  startTime: t.Union([t.String(), t.Null()]),
+  timeZone: t.Union([t.String(), t.Null()]),
+  notetaker: t.Boolean(),
+};
+
+export const CoachClassSchema = t.Object(CLASS_FIELDS);
 
 // One class in the admin export, the class fields plus the leader it belongs
-// to (name / email / roster id) so the Fireflies operator can map each meeting
-// link to a coach without a second lookup.
+// to (name / email / roster id) so an admin (and the notetaker) can map each
+// meeting link to a coach without a second lookup.
 export const AdminCoachClassSchema = t.Object({
-  id: t.String(),
-  name: t.String(),
-  classDate: t.Union([t.String(), t.Null()]),
-  recurrence: t.String(),
-  zoomLink: t.String(),
+  ...CLASS_FIELDS,
   leader: t.Object({
     id: t.Union([t.String(), t.Null()]),
     name: t.String(),
     email: t.String(),
   }),
+});
+
+// Whether the signed-in leader connected their Zoom account to the notetaker.
+// `known` false: the notetaker did not answer, so `connected` means nothing.
+export const NotetakerStatusSchema = t.Object({
+  known: t.Boolean(),
+  connected: t.Boolean(),
+  zoomEmail: t.Union([t.String(), t.Null()]),
+  connectUrl: t.String(),
+});
+
+const LeaderRefSchema = t.Union([
+  t.Object({ id: t.String(), name: t.String() }),
+  t.Null(),
+]);
+
+// The admin's view of the notetaker: connected Zoom accounts and their
+// scheduled meetings, in Class Setup's terms. `classId` names the class that
+// already records a meeting. `available` false: the notetaker did not answer.
+export const NotetakerZoomSchema = t.Object({
+  available: t.Boolean(),
+  connectUrl: t.String(),
+  connections: t.Array(
+    t.Object({
+      email: t.String(),
+      name: t.String(),
+      connectedAt: t.Union([t.String(), t.Null()]),
+      leader: LeaderRefSchema,
+    }),
+  ),
+  meetings: t.Array(
+    t.Object({
+      meetingId: t.String(),
+      topic: t.String(),
+      joinUrl: t.String(),
+      hostEmail: t.String(),
+      classDate: t.Union([t.String(), t.Null()]),
+      startTime: t.Union([t.String(), t.Null()]),
+      timeZone: t.Union([t.String(), t.Null()]),
+      recurrence: t.String(),
+      invited: t.Boolean(),
+      leader: LeaderRefSchema,
+      classId: t.Union([t.String(), t.Null()]),
+    }),
+  ),
 });
 
 // A coaching note as returned to the portal. Declared so Elysia passes
@@ -809,6 +856,8 @@ const UPLOAD_COMPLETE = {
   ),
 };
 
+const UNKNOWN_CLASS = { "unknown-class": refusal(404, "Class not found") };
+
 const UNKNOWN_UPLOAD = { "unknown-upload": refusal(404, "Upload not found") };
 const NOT_A_DUPLICATE = {
   "not-a-duplicate": refusal(404, "No likely duplicate waits on that session"),
@@ -873,6 +922,9 @@ export const COACH_REFUSALS = {
       "The upload's report was already delivered, so the recording-bot session cannot replace it",
     ),
   },
+  "POST /coach/admin/classes": UNKNOWN_LEADER,
+  "PUT /coach/admin/classes/:id": UNKNOWN_CLASS,
+  "DELETE /coach/admin/classes/:id": UNKNOWN_CLASS,
   "POST /coach/admin/rotating-classes": ROTATING_CLASS,
   "PUT /coach/admin/rotating-classes/:id": {
     ...ROTATING_CLASS,

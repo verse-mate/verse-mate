@@ -15,7 +15,7 @@ export type CoachClassId = string;
 export default interface CoachClassesTable {
   id: ColumnType<CoachClassId, CoachClassId | undefined, CoachClassId>;
 
-  user_id: ColumnType<UserId, UserId, UserId>;
+  user_id: ColumnType<UserId | null, UserId | null | undefined, UserId | null>;
 
   name: ColumnType<string, string, string>;
 
@@ -28,6 +28,22 @@ export default interface CoachClassesTable {
   recurrence: ColumnType<string, string | undefined, string>;
 
   zoom_link: ColumnType<string, string | undefined, string>;
+
+  start_time: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  time_zone: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  notetaker: ColumnType<boolean, boolean | undefined, boolean>;
+
+  coach_id: ColumnType<string | null, string | null | undefined, string | null>;
 
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 
