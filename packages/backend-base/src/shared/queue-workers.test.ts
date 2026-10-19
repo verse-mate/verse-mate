@@ -1,13 +1,27 @@
 import { describe, expect, it } from "bun:test";
 
-import { QUEUE_WORKERS, startQueueWorkers } from "./shared.plugin";
+import {
+  QUEUE_WORKERS,
+  startBackgroundWork,
+  startQueueWorkers,
+} from "./shared.plugin";
 import type { WorkerRole } from "./worker-role";
 
-const MEDIA = ["Audio generation", "Audio cleanup", "Coach intake"];
-const API = [
+const ALL_WORKERS = [
   "Monitoring",
   "Processing",
+  "Audio generation",
+  "Audio cleanup",
   "Verse notification",
+  "Coach intake",
+  "Coach reminder",
+  "Coach monthly",
+  "Coach Monday reminder",
+];
+const ALL_CRONS = [
+  "Audio cleanup",
+  "Verse notification",
+  "Coach intake",
   "Coach reminder",
   "Coach monthly",
   "Coach Monday reminder",
@@ -16,65 +30,52 @@ const API = [
 async function startAs(role: WorkerRole) {
   const ran: string[] = [];
   const crons: string[] = [];
-  await startQueueWorkers(
-    role,
-    QUEUE_WORKERS.map((entry) => ({
-      ...entry,
-      worker: {
-        isRunning: () => false,
-        run: () => {
-          ran.push(entry.name);
-        },
-      },
-      registerCron: entry.registerCron
-        ? async () => {
-            crons.push(entry.name);
-          }
-        : undefined,
-    })),
-  );
-  return { ran, crons };
+  await startBackgroundWork(role, {
+    startWorkers: () =>
+      startQueueWorkers(
+        QUEUE_WORKERS.map((entry) => ({
+          ...entry,
+          worker: {
+            isRunning: () => false,
+            run: () => {
+              ran.push(entry.name);
+            },
+          },
+          registerCron: entry.registerCron
+            ? async () => {
+                crons.push(entry.name);
+              }
+            : undefined,
+        })),
+      ),
+  });
+  return { ran: ran.sort(), crons: crons.sort() };
 }
 
 describe("the container starts only the workers its role owns", () => {
-  it("the API container starts no media worker and schedules no media cron", async () => {
-    const { ran, crons } = await startAs("api");
-    expect(ran.sort()).toEqual([...API].sort());
-    expect(crons).toEqual([
-      "Verse notification",
-      "Coach reminder",
-      "Coach monthly",
-      "Coach Monday reminder",
-    ]);
+  it("the API container starts no worker and schedules no cron", async () => {
+    expect(await startAs("api")).toEqual({ ran: [], crons: [] });
   });
 
-  it("the media container starts only the media workers and their crons", async () => {
-    const { ran, crons } = await startAs("media-worker");
-    expect(ran.sort()).toEqual([...MEDIA].sort());
-    expect(crons.sort()).toEqual(["Audio cleanup", "Coach intake"]);
+  it("the worker container starts all nine workers and all six crons", async () => {
+    expect(await startAs("worker")).toEqual({
+      ran: [...ALL_WORKERS].sort(),
+      crons: [...ALL_CRONS].sort(),
+    });
   });
 
   it("a single container runs every worker and every cron", async () => {
-    const { ran, crons } = await startAs("all");
-    expect(ran.sort()).toEqual([...API, ...MEDIA].sort());
-    expect(crons.sort()).toEqual(
-      [
-        "Audio cleanup",
-        "Coach intake",
-        "Verse notification",
-        "Coach reminder",
-        "Coach monthly",
-        "Coach Monday reminder",
-      ].sort(),
-    );
+    expect(await startAs("all")).toEqual({
+      ran: [...ALL_WORKERS].sort(),
+      crons: [...ALL_CRONS].sort(),
+    });
   });
 
   it("a worker already running is not started twice", async () => {
     let runs = 0;
-    await startQueueWorkers("all", [
+    await startQueueWorkers([
       {
         name: "Coach intake",
-        side: "media",
         worker: {
           isRunning: () => true,
           run: () => {
@@ -88,10 +89,9 @@ describe("the container starts only the workers its role owns", () => {
 
   it("a cron that fails to register does not stop the workers after it", async () => {
     const ran: string[] = [];
-    await startQueueWorkers("all", [
+    await startQueueWorkers([
       {
         name: "First",
-        side: "media",
         worker: { isRunning: () => false, run: () => ran.push("First") },
         registerCron: async () => {
           throw new Error("redis down");
@@ -99,7 +99,6 @@ describe("the container starts only the workers its role owns", () => {
       },
       {
         name: "Second",
-        side: "api",
         worker: { isRunning: () => false, run: () => ran.push("Second") },
       },
     ]);
