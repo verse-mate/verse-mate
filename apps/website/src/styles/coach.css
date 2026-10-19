@@ -564,7 +564,14 @@
 /* ========== NOTETAKER (/coach/notetaker) ========== */
 .coach-page .phases-grid.phases-3 { grid-template-columns: repeat(3, 1fr); }
 .coach-page .nt-note { margin-top: 18px; font-size: 14px; color: rgb(255 255 255 / 70%); }
-.coach-page .nt-badge-address { text-transform: none; letter-spacing: 0; }
+.coach-page .score-card-hero.nt-card::before { content: 'EXAMPLE CLASS'; }
+.coach-page .nt-card .dim-row { grid-template-columns: auto 1fr; padding: 12px 0; }
+.coach-page .nt-card .nt-val {
+  text-align: right; font-size: 13px; font-weight: 600; color: var(--slate); overflow-wrap: anywhere;
+}
+.coach-page .nt-badge-address {
+  font-size: 12px; text-transform: none; letter-spacing: 0; white-space: normal; overflow-wrap: anywhere;
+}
 .coach-page .nt-invite { margin: 40px auto 0; max-width: 560px; text-align: center; }
 .coach-page .nt-invite p { color: var(--slate); font-size: 15px; margin-bottom: 12px; }
 .coach-page .nt-address {
@@ -574,7 +581,7 @@
 }
 .coach-page .nt-address code {
   font-family: var(--sans); font-size: clamp(15px, 1.6vw, 18px); font-weight: 600;
-  color: var(--ink); overflow-wrap: anywhere; text-align: left;
+  color: var(--ink); overflow-wrap: break-word; text-align: left;
 }
 .coach-page .nt-address-dark { background: rgb(255 255 255 / 8%); border-color: rgb(255 255 255 / 22%); }
 .coach-page .nt-address-dark code { color: var(--white); }

@@ -52,7 +52,7 @@ export default function CoachNotetaker() {
             </div>
 
             <div
-              className="score-card-hero"
+              className="score-card-hero nt-card"
               aria-label="A Zoom class that invites the recorder"
             >
               <div className="score-head">
@@ -69,25 +69,23 @@ export default function CoachNotetaker() {
               </div>
               <div className="dim-row">
                 <span className="dn">When</span>
-                <span className="ds"></span>
-                <span className="badge target">SATURDAYS 9:00</span>
+                <span className="nt-val">Saturdays, 9:00 AM</span>
               </div>
               <div className="dim-row">
                 <span className="dn">Invitees</span>
-                <span className="ds"></span>
-                <span className="badge strong nt-badge-address">
-                  {NOTETAKER_INVITE_ADDRESS}
+                <span className="nt-val">
+                  <span className="badge strong nt-badge-address">
+                    {NOTETAKER_INVITE_ADDRESS}
+                  </span>
                 </span>
               </div>
               <div className="dim-row">
                 <span className="dn">Joins as</span>
-                <span className="ds"></span>
-                <span className="badge na">VERSEMATE COACHING</span>
+                <span className="nt-val">VerseMate Coaching</span>
               </div>
               <div className="dim-row">
                 <span className="dn">Report</span>
-                <span className="ds"></span>
-                <span className="badge target">AFTER EACH CLASS</span>
+                <span className="nt-val">After each class</span>
               </div>
             </div>
           </div>
