@@ -7,6 +7,7 @@
     "migrate:dev": "bun ./src/migrator.ts migrate-dev",
     "migrate:down": "bun ./src/migrator.ts migrate-down",
     "migrate:fix": "bun ./src/actions/fix-migration.ts",
+    "migrate:coach-roundtrip": "bun ./src/actions/coach-migration-roundtrip.ts",
     "model:generate": "kanel && biome check --write ./src/models",
     "dbml:generate": "prisma db pull && prisma generate",
     "db:seed": "bun ./src/seeder.ts",
