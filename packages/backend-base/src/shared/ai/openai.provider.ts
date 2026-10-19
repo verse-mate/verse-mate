@@ -3,6 +3,8 @@ import type {
   AiBatchCreateOptions,
   AiBatchResult,
   AiBatchStatus,
+  AiChatBatch,
+  AiChatBatchRequest,
   AiChatOptions,
   AiChatResponse,
   AiFileCreateOptions,
@@ -13,7 +15,7 @@ import type {
   AiTranscription,
 } from "./ai-provider.interface";
 
-const REASONING_MODEL = /^(gpt-5(?!-chat)|o\d)/;
+const REASONING_MODEL = /^(?!.*-chat)(gpt-([5-9]|[1-9]\d)|o\d)/;
 const STREAM_IDLE_MS = 90_000;
 const STREAM_TOTAL_MS = 15 * 60_000;
 const INLINE_IMAGE = /^data:image\/(png|jpeg|webp|gif);base64,/;
@@ -78,12 +80,7 @@ export class OpenAiProvider implements AiProvider {
   }
 
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
-    const images = opts.messages.flatMap((m) => m.images ?? []);
-    if (images.some((url) => !INLINE_IMAGE.test(url)))
-      throw new Error(
-        `OpenAI images must be inline data: image URLs for model=${opts.model}`,
-      );
-    const reasons = REASONING_MODEL.test(opts.model);
+    const body = responsesBody(opts);
     const abort = new AbortController();
     let stalled = false;
     let idle: ReturnType<typeof setTimeout> | undefined;
@@ -96,7 +93,7 @@ export class OpenAiProvider implements AiProvider {
     };
     const total = setTimeout(() => abort.abort(), this.totalMs);
     try {
-      return await this.streamChat(opts, reasons, abort.signal, quiet, () =>
+      return await this.streamChat(opts, body, abort.signal, quiet, () =>
         stalled
           ? `no data for ${this.idleMs} ms`
           : abort.signal.aborted
@@ -111,49 +108,13 @@ export class OpenAiProvider implements AiProvider {
 
   private async streamChat(
     opts: AiChatOptions,
-    reasons: boolean,
+    body: Record<string, unknown>,
     signal: AbortSignal,
     heard: () => void,
     stoppedBecause: () => string | null,
   ): Promise<AiChatResponse> {
     const stream = await (this.client as any).responses
-      .create(
-        {
-          model: opts.model,
-          input: opts.messages.map((m) =>
-            m.role === "user" && m.images?.length
-              ? {
-                  role: "user",
-                  content: [
-                    { type: "input_text", text: m.content },
-                    ...m.images.map((url) => ({
-                      type: "input_image",
-                      image_url: url,
-                    })),
-                  ],
-                }
-              : { role: m.role, content: m.content },
-          ),
-          ...(opts.temperature != null && { temperature: opts.temperature }),
-          ...(reasons && {
-            reasoning: {
-              ...(opts.reasoningEffort != null && {
-                effort: opts.reasoningEffort,
-              }),
-              summary: "auto",
-            },
-          }),
-          ...(opts.maxTokens !== undefined && {
-            max_output_tokens: opts.maxTokens,
-          }),
-          ...(opts.responseFormat && {
-            text: { format: { type: opts.responseFormat.type } },
-          }),
-          store: false,
-          stream: true,
-        },
-        { signal },
-      )
+      .create({ ...body, stream: true }, { signal })
       .catch((error: unknown) => {
         const stopped = stoppedBecause();
         if (stopped)
@@ -259,6 +220,72 @@ export class OpenAiProvider implements AiProvider {
     return this.client.files.content(fileId);
   }
 
+  async submitChatBatch(
+    requests: AiChatBatchRequest[],
+    metadata: Record<string, string>,
+  ): Promise<string> {
+    const lines = requests.map((r) =>
+      JSON.stringify({
+        custom_id: r.id,
+        method: "POST",
+        url: "/v1/responses",
+        body: responsesBody(r.options),
+      }),
+    );
+    const file = await this.client.files.create({
+      file: new File([lines.join("\n")], "chat-batch.jsonl", {
+        type: "application/jsonl",
+      }),
+      purpose: "batch",
+      expires_after: BATCH_FILE_EXPIRY,
+    });
+    try {
+      const batch = await this.client.batches.create({
+        input_file_id: file.id,
+        endpoint: "/v1/responses",
+        completion_window: "24h",
+        metadata,
+        output_expires_after: BATCH_FILE_EXPIRY,
+      });
+      return batch.id;
+    } catch (error) {
+      await this.client.files.delete(file.id).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  async collectChatBatch(batchId: string): Promise<AiChatBatch> {
+    const batch = await this.batchesRetrieve(batchId);
+    const metadata = batch.metadata ?? {};
+    if (BATCH_RUNNING.includes(batch.status))
+      return { status: "pending", metadata };
+    const finished =
+      batch.status === "completed" ||
+      (batch.status === "expired" && batch.outputFileId !== undefined);
+    if (!finished) {
+      const why = (batch.errors?.data ?? [])
+        .map((e) => (e as { message?: string }).message)
+        .filter(Boolean)
+        .join("; ");
+      return {
+        status: "failed",
+        metadata,
+        detail: why ? `${batch.status}: ${why}` : batch.status,
+      };
+    }
+    const results: Record<string, AiChatResponse | { error: string }> = {};
+    for (const fileId of [batch.outputFileId, batch.errorFileId]) {
+      if (!fileId) continue;
+      const text = await (await this.filesContent(fileId)).text();
+      for (const line of text.split("\n")) {
+        if (!line.trim()) continue;
+        const row = parsedRow(line);
+        if (row) results[row.custom_id] = batchAnswer(row);
+      }
+    }
+    return { status: "completed", metadata, results };
+  }
+
   async batchesCreate(opts: AiBatchCreateOptions): Promise<AiBatchResult> {
     const batch = await this.client.batches.create({
       input_file_id: opts.inputFileId,
@@ -278,6 +305,124 @@ export class OpenAiProvider implements AiProvider {
     const batch = await this.client.batches.cancel(batchId);
     return mapOpenAiBatch(batch);
   }
+}
+
+const BATCH_RUNNING: AiBatchStatus[] = [
+  "validating",
+  "in_progress",
+  "finalizing",
+  "cancelling",
+];
+
+interface BatchRow {
+  custom_id: string;
+  response?: {
+    status_code?: number;
+    body?: {
+      status?: string;
+      model?: string;
+      incomplete_details?: { reason?: string };
+      error?: { message?: string };
+      output?: Array<{
+        type?: string;
+        content?: Array<{ type?: string; text?: string }>;
+      }>;
+      usage?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+      };
+    };
+  } | null;
+  error?: { message?: string } | null;
+}
+
+const BATCH_FILE_EXPIRY = {
+  anchor: "created_at" as const,
+  seconds: 3 * 86400,
+};
+
+function parsedRow(line: string): BatchRow | null {
+  try {
+    const row = JSON.parse(line) as BatchRow;
+    return typeof row.custom_id === "string" ? row : null;
+  } catch {
+    return null;
+  }
+}
+
+function batchAnswer(row: BatchRow): AiChatResponse | { error: string } {
+  const body = row.response?.body;
+  if (row.error || row.response?.status_code !== 200 || !body)
+    return {
+      error:
+        row.error?.message ??
+        body?.error?.message ??
+        `the request answered ${row.response?.status_code ?? "nothing"}`,
+    };
+  if (body.status !== "completed")
+    return {
+      error: `the response did not complete: ${body.incomplete_details?.reason ?? body.status}`,
+    };
+  const content = (body.output ?? [])
+    .flatMap((item) => (item.type === "message" ? item.content ?? [] : []))
+    .filter((part) => part.type === "output_text")
+    .map((part) => part.text ?? "")
+    .join("");
+  if (!content) return { error: "the response has no content" };
+  return {
+    content,
+    model: body.model ?? "",
+    ...(body.usage && {
+      usage: {
+        promptTokens: body.usage.input_tokens,
+        completionTokens: body.usage.output_tokens,
+        totalTokens: body.usage.total_tokens,
+      },
+    }),
+  };
+}
+
+function responsesBody(opts: AiChatOptions): Record<string, unknown> {
+  const images = opts.messages.flatMap((m) => m.images ?? []);
+  if (images.some((url) => !INLINE_IMAGE.test(url)))
+    throw new Error(
+      `OpenAI images must be inline data: image URLs for model=${opts.model}`,
+    );
+  const reasons = REASONING_MODEL.test(opts.model);
+  return {
+    model: opts.model,
+    input: opts.messages.map((m) =>
+      m.role === "user" && m.images?.length
+        ? {
+            role: "user",
+            content: [
+              { type: "input_text", text: m.content },
+              ...m.images.map((url) => ({
+                type: "input_image",
+                image_url: url,
+              })),
+            ],
+          }
+        : { role: m.role, content: m.content },
+    ),
+    ...(opts.temperature != null && { temperature: opts.temperature }),
+    ...(reasons && {
+      reasoning: {
+        ...(opts.reasoningEffort != null && {
+          effort: opts.reasoningEffort,
+        }),
+        summary: "auto",
+      },
+    }),
+    ...(opts.maxTokens !== undefined && {
+      max_output_tokens: opts.maxTokens,
+    }),
+    ...(opts.responseFormat && {
+      text: { format: { type: opts.responseFormat.type } },
+    }),
+    store: false,
+  };
 }
 
 function mapOpenAiFile(file: any): AiFileResult {

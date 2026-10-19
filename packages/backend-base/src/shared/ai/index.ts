@@ -1,4 +1,6 @@
 export type {
+  AiChatBatch,
+  AiChatBatchRequest,
   AiChatMessage,
   AiChatOptions,
   AiChatResponse,

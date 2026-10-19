@@ -373,6 +373,15 @@ describe("OpenAiProvider chatComplete", () => {
     expect(sent).not.toHaveProperty("reasoning");
   });
 
+  it("later reasoning families get the requested effort, and their chat variants get none", async () => {
+    for (const model of ["gpt-6-astra", "gpt-6.1-sol", "gpt-5.5", "o4-mini"])
+      expect(
+        (await sentFor({ model, reasoningEffort: "low" })).reasoning,
+      ).toEqual({ effort: "low", summary: "auto" });
+    for (const model of ["gpt-5.1-chat-latest", "chat-latest", "gpt-4.1"])
+      expect(await sentFor({ model })).not.toHaveProperty("reasoning");
+  });
+
   it("the idle limit does not run while the request waits for its response to start, which the SDK's own timeout covers", async () => {
     const provider = new OpenAiProvider("test-key", { idleMs: 20 });
     (provider as unknown as { client: unknown }).client = {
@@ -585,5 +594,277 @@ describe("OpenAiProvider transcribeAudio", () => {
     });
     expect(sent[0].model).toBe("gpt-4o-transcribe");
     expect(result.segments).toEqual([]);
+  });
+});
+
+function batchProvider(
+  batch: Record<string, unknown>,
+  files: Record<string, string> = {},
+  refuseBatch = false,
+) {
+  const provider = new OpenAiProvider("test-key");
+  const uploaded: string[] = [];
+  const fileParams: Record<string, unknown>[] = [];
+  const deleted: string[] = [];
+  const created: Record<string, unknown>[] = [];
+  (provider as unknown as { client: unknown }).client = {
+    files: {
+      create: async ({ file, ...params }: { file: File }) => {
+        uploaded.push(await file.text());
+        fileParams.push(params);
+        return { id: "file-in" };
+      },
+      content: async (id: string) => new Response(files[id] ?? ""),
+      delete: async (id: string) => {
+        deleted.push(id);
+        return { id, deleted: true };
+      },
+    },
+    batches: {
+      create: async (body: Record<string, unknown>) => {
+        if (refuseBatch) throw new Error("batch quota reached");
+        created.push(body);
+        return {
+          id: "batch-1",
+          status: "validating",
+          input_file_id: "file-in",
+        };
+      },
+      retrieve: async () => batch,
+    },
+  };
+  return { provider, uploaded, fileParams, deleted, created };
+}
+
+const answerLine = (customId: string, body: Record<string, unknown>) =>
+  JSON.stringify({
+    custom_id: customId,
+    response: { status_code: 200, body },
+    error: null,
+  });
+
+describe("OpenAiProvider chat batches", () => {
+  it("submits one Responses API request per chat, the body a direct call would send without streaming, and returns the batch id", async () => {
+    const sent: Record<string, unknown>[] = [];
+    const options: AiChatOptions = {
+      model: "gpt-5",
+      messages: [
+        { role: "system", content: "Return JSON." },
+        {
+          role: "user",
+          content: "hi",
+          images: ["data:image/jpeg;base64,AA=="],
+        },
+      ],
+      maxTokens: 100,
+      responseFormat: { type: "json_object" },
+    };
+    await providerSending(sent).chatComplete(options);
+    const { stream, ...direct } = sent[0];
+    const { provider, uploaded, created } = batchProvider({});
+
+    const id = await provider.submitChatBatch(
+      [
+        { id: "text", options },
+        { id: "vision", options: { ...options, model: "gpt-4.1-mini" } },
+      ],
+      { coach_session: "s1" },
+    );
+
+    expect(id).toBe("batch-1");
+    const lines = uploaded[0].split("\n").map((l) => JSON.parse(l));
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toEqual({
+      custom_id: "text",
+      method: "POST",
+      url: "/v1/responses",
+      body: direct,
+    });
+    expect(lines[1].custom_id).toBe("vision");
+    expect(lines[1].body).not.toHaveProperty("reasoning");
+    expect(created[0]).toEqual({
+      input_file_id: "file-in",
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+      metadata: { coach_session: "s1" },
+      output_expires_after: { anchor: "created_at", seconds: 3 * 86400 },
+    });
+  });
+
+  it("the uploaded requests and the answers expire at OpenAI after three days, and an upload the batch never used is deleted", async () => {
+    const { provider, fileParams } = batchProvider({});
+    await provider.submitChatBatch(
+      [{ id: "text", options: { model: "gpt-5", messages: [] } }],
+      {},
+    );
+    expect(fileParams[0]).toEqual({
+      purpose: "batch",
+      expires_after: { anchor: "created_at", seconds: 3 * 86400 },
+    });
+
+    const refused = batchProvider({}, {}, true);
+    await expect(
+      refused.provider.submitChatBatch(
+        [{ id: "text", options: { model: "gpt-5", messages: [] } }],
+        {},
+      ),
+    ).rejects.toThrow("batch quota reached");
+    expect(refused.deleted).toEqual(["file-in"]);
+  });
+
+  it("refuses an image that is not an inline data URL before uploading anything", async () => {
+    const { provider, uploaded } = batchProvider({});
+    await expect(
+      provider.submitChatBatch(
+        [
+          {
+            id: "vision",
+            options: {
+              model: "gpt-5",
+              messages: [
+                { role: "user", content: "x", images: ["https://x/y.jpg"] },
+              ],
+            },
+          },
+        ],
+        {},
+      ),
+    ).rejects.toThrow("inline data: image URLs");
+    expect(uploaded).toEqual([]);
+  });
+
+  it("a batch still running is pending, and carries its metadata", async () => {
+    for (const status of [
+      "validating",
+      "in_progress",
+      "finalizing",
+      "cancelling",
+    ]) {
+      const { provider } = batchProvider({
+        id: "batch-1",
+        status,
+        metadata: { coach_session: "s1" },
+      });
+      expect(await provider.collectChatBatch("batch-1")).toEqual({
+        status: "pending",
+        metadata: { coach_session: "s1" },
+      });
+    }
+  });
+
+  it("a batch that failed, expired or was cancelled is a failure naming why", async () => {
+    const { provider } = batchProvider({
+      id: "batch-1",
+      status: "failed",
+      metadata: null,
+      errors: { object: "list", data: [{ message: "model not supported" }] },
+    });
+    expect(await provider.collectChatBatch("batch-1")).toEqual({
+      status: "failed",
+      metadata: {},
+      detail: "failed: model not supported",
+    });
+    const expired = batchProvider({ id: "batch-1", status: "expired" });
+    expect(await expired.provider.collectChatBatch("batch-1")).toMatchObject({
+      status: "failed",
+      detail: "expired",
+    });
+    const cancelled = batchProvider({ id: "batch-1", status: "cancelled" });
+    expect(await cancelled.provider.collectChatBatch("batch-1")).toMatchObject({
+      status: "failed",
+      detail: "cancelled",
+    });
+  });
+
+  it("an expired batch still gives the answers it finished, and a line that is not JSON is left out rather than failing the rest", async () => {
+    const { provider } = batchProvider(
+      {
+        id: "batch-1",
+        status: "expired",
+        output_file_id: "file-out",
+        metadata: { coach_session: "s1" },
+      },
+      {
+        "file-out": [
+          "{not json",
+          answerLine("text", {
+            status: "completed",
+            model: "m",
+            output: [
+              {
+                type: "message",
+                content: [{ type: "output_text", text: "{}" }],
+              },
+            ],
+          }),
+        ].join("\n"),
+      },
+    );
+    expect(await provider.collectChatBatch("batch-1")).toEqual({
+      status: "completed",
+      metadata: { coach_session: "s1" },
+      results: { text: { content: "{}", model: "m" } },
+    });
+  });
+
+  it("a completed batch gives each request's answer, model and usage, and each failed request its error", async () => {
+    const { provider } = batchProvider(
+      {
+        id: "batch-1",
+        status: "completed",
+        output_file_id: "file-out",
+        error_file_id: "file-err",
+        metadata: { coach_session: "s1" },
+      },
+      {
+        "file-out": [
+          answerLine("text", {
+            status: "completed",
+            model: "gpt-5-served",
+            output: [
+              { type: "reasoning", summary: [] },
+              {
+                type: "message",
+                content: [
+                  { type: "output_text", text: '{"a":' },
+                  { type: "output_text", text: "1}" },
+                ],
+              },
+            ],
+            usage: { input_tokens: 10, output_tokens: 4, total_tokens: 14 },
+          }),
+          answerLine("cut", {
+            status: "incomplete",
+            incomplete_details: { reason: "max_output_tokens" },
+            output: [],
+          }),
+          answerLine("empty", { status: "completed", output: [] }),
+          "",
+        ].join("\n"),
+        "file-err": JSON.stringify({
+          custom_id: "vision",
+          response: {
+            status_code: 400,
+            body: { error: { message: "image too large" } },
+          },
+          error: null,
+        }),
+      },
+    );
+
+    expect(await provider.collectChatBatch("batch-1")).toEqual({
+      status: "completed",
+      metadata: { coach_session: "s1" },
+      results: {
+        text: {
+          content: '{"a":1}',
+          model: "gpt-5-served",
+          usage: { promptTokens: 10, completionTokens: 4, totalTokens: 14 },
+        },
+        cut: { error: "the response did not complete: max_output_tokens" },
+        empty: { error: "the response has no content" },
+        vision: { error: "image too large" },
+      },
+    });
   });
 });

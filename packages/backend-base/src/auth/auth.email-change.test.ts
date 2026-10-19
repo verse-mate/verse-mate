@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 
+import { CoachService } from "../coach/coach.service";
 import cacheConstants from "../shared/cache.constants";
 import { getTestClient } from "../shared/test-client";
 import Backend, { type AuthPlugin } from "./auth.plugin";
@@ -1329,5 +1330,32 @@ describe("an SSO sign-in that adopts an unverified account", () => {
         `owner-${squatter.id}`,
       ),
     ).toBeTruthy();
+  });
+});
+
+describe("an email change onto a coach admin address", () => {
+  it("grants no admin authority while the change waits for its confirmation, and grants it once the new address is confirmed", async () => {
+    const admin = address("admin");
+    await conn.insertInto("coach_admins").values({ email: admin }).execute();
+    try {
+      const user = await account();
+      const coach = new CoachService(db);
+
+      await requestChange(user, admin);
+
+      expect(await coach.isAdmin(user.id)).toBe(false);
+      expect((await row(user.id)).email).toBe(user.email);
+
+      const key = keyIn((await mailTo(admin)).text);
+      expect((await confirm(key, user.email)).status).toBe(200);
+
+      expect((await row(user.id)).email).toBe(admin);
+      expect(await coach.isAdmin(user.id)).toBe(true);
+    } finally {
+      await conn
+        .deleteFrom("coach_admins")
+        .where("email", "=", admin)
+        .execute();
+    }
   });
 });
