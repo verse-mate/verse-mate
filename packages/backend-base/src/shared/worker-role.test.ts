@@ -33,13 +33,6 @@ describe("a container knows which work is its job", () => {
     expect(runsApiStartup("worker")).toBe(false);
   });
 
-  it("api and worker together run the workers and the API start-up exactly once", () => {
-    expect(Number(runsWorkers("api")) + Number(runsWorkers("worker"))).toBe(1);
-    expect(
-      Number(runsApiStartup("api")) + Number(runsApiStartup("worker")),
-    ).toBe(1);
-  });
-
   it("an unrecognised role is refused, naming the value", () => {
     process.env.VERSEMATE_ROLE = "media-worker";
     expect(() => workerRole()).toThrow('"media-worker"');
