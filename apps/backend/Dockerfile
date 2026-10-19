@@ -1,4 +1,4 @@
-FROM oven/bun:1.2.23
+FROM oven/bun:1.4.0
 WORKDIR /app
 
 # ffmpeg is for coach session video: frame extraction for the Visual Aids
