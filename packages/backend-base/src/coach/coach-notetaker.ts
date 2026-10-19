@@ -33,8 +33,10 @@ function config(): { url: string; token: string } | null {
 export function notetakerTokenOk(authorization: string | undefined): boolean {
   const token = (process.env[NOTETAKER_TOKEN] ?? "").trim();
   if (!token || !authorization) return false;
-  const expected = Buffer.from(`Bearer ${token}`);
-  const actual = Buffer.from(authorization);
+  // TextEncoder, not Buffer: frontend-next type-checks this file too, and its
+  // lib does not take a Buffer as an ArrayBufferView.
+  const expected = new TextEncoder().encode(`Bearer ${token}`);
+  const actual = new TextEncoder().encode(authorization);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
