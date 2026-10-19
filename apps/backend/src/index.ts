@@ -23,9 +23,15 @@ import { BibleService } from "backend-base/src/bible/services/bible.service";
 import bullmqRedisConnection from "backend-base/src/shared/bullmq-redis";
 import { verifyRedisOrExit } from "backend-base/src/shared/redis-startup-check";
 import { configuredRedisUrl } from "backend-base/src/shared/redis-url";
+import {
+  runsApiStartup,
+  workerRole,
+} from "backend-base/src/shared/worker-role";
 import { db } from "database";
 import { Elysia } from "elysia";
 import redis from "./lib/redis";
+
+const role = workerRole();
 
 const REDIS_STARTUP_TIMEOUT_MS = 10_000;
 
@@ -86,7 +92,8 @@ app.listen(process.env.PORT || 3000, async () => {
     `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
   );
 
-  // Asynchronously refresh language stats on startup (fire-and-forget with timeout)
+  if (!runsApiStartup(role)) return;
+
   console.log("🚀 Triggering initial language stats refresh on startup...");
   const refreshLanguageStats = async () => {
     try {
@@ -105,7 +112,6 @@ app.listen(process.env.PORT || 3000, async () => {
     }
   };
 
-  // Execute with timeout protection to avoid blocking startup
   Promise.race([
     refreshLanguageStats(),
     new Promise((_, reject) =>
