@@ -21,7 +21,7 @@ const worker = new Worker(
 
     await batchOperationService.processBatch(batchId, outputFileId);
   },
-  { connection: batchProcessingQueue.opts.connection },
+  { connection: batchProcessingQueue.opts.connection, autorun: false },
 );
 
 worker.on("completed", (job) => {
