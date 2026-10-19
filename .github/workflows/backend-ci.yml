@@ -36,7 +36,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -71,7 +71,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Restore cached dependencies
         uses: actions/cache@v4
@@ -100,7 +100,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Restore cached dependencies
         uses: actions/cache@v4
@@ -129,7 +129,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Restore cached dependencies
         uses: actions/cache@v4
@@ -212,7 +212,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Restore cached dependencies
         uses: actions/cache@v4
@@ -256,7 +256,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Restore cached dependencies
         uses: actions/cache@v4
@@ -291,7 +291,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Restore cached dependencies
         uses: actions/cache@v4

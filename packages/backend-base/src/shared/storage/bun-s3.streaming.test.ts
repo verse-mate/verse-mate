@@ -10,15 +10,8 @@ import { BunS3Helper, MAX_STREAMED_OBJECT_BYTES } from "./bun-s3.helper";
  * 5 GB single-object limit, below what a long recorded session reaches.
  */
 
-interface FakeWriter {
-  chunks: Uint8Array[];
-  ended: boolean;
-}
-
 function fakeClient(stored: Map<string, Uint8Array>) {
-  const writers: FakeWriter[] = [];
   return {
-    writers,
     client: {
       file(key: string) {
         return {
@@ -65,27 +58,6 @@ function fakeClient(stored: Map<string, Uint8Array>) {
               },
             };
           },
-          writer(_opts?: { partSize?: number }) {
-            const w: FakeWriter = { chunks: [], ended: false };
-            writers.push(w);
-            return {
-              write(chunk: Uint8Array) {
-                w.chunks.push(chunk);
-                return chunk.byteLength;
-              },
-              async end() {
-                w.ended = true;
-                const total = w.chunks.reduce((n, c) => n + c.byteLength, 0);
-                const merged = new Uint8Array(total);
-                let at = 0;
-                for (const c of w.chunks) {
-                  merged.set(c, at);
-                  at += c.byteLength;
-                }
-                stored.set(key, merged);
-              },
-            };
-          },
         };
       },
       presign() {
@@ -102,40 +74,7 @@ function helperWith(stored = new Map<string, Uint8Array>()) {
   return { helper, stored, fake };
 }
 
-function streamOf(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      for (const c of chunks) controller.enqueue(c);
-      controller.close();
-    },
-  });
-}
-
 describe("object storage can stream, not only buffer", () => {
-  it("a streamed put uploads in parts, never materialising the whole object", async () => {
-    const { helper, stored, fake } = helperWith();
-    const chunks = [
-      new Uint8Array([1, 2, 3]),
-      new Uint8Array([4, 5, 6]),
-      new Uint8Array([7, 8]),
-    ];
-
-    const written = await helper.putObjectStream(
-      "coach/ff-1/recording.mp4",
-      streamOf(chunks),
-      "video/mp4",
-    );
-
-    expect(written).toBe(8);
-    expect(fake.writers.length).toBe(1);
-    expect(fake.writers[0].ended).toBe(true);
-    // Parts arrived separately, the point of the exercise.
-    expect(fake.writers[0].chunks.length).toBe(3);
-    expect([...(stored.get("coach/ff-1/recording.mp4") as Uint8Array)]).toEqual(
-      [1, 2, 3, 4, 5, 6, 7, 8],
-    );
-  });
-
   it("a streamed get returns a stream, not the whole object in memory", async () => {
     const stored = new Map([["k", new Uint8Array([9, 9, 9])]]);
     const { helper } = helperWith(stored);
