@@ -561,9 +561,44 @@
   max-width: 600px; margin: 0 auto 40px; line-height: 1.6;
 }
 
+/* ========== NOTETAKER (/coach/notetaker) ========== */
+.coach-page .phases-grid.phases-3 { grid-template-columns: repeat(3, 1fr); }
+.coach-page .nt-note { margin-top: 18px; font-size: 14px; color: rgb(255 255 255 / 70%); }
+.coach-page .nt-badge-address { text-transform: none; letter-spacing: 0; }
+.coach-page .nt-invite { margin: 40px auto 0; max-width: 560px; text-align: center; }
+.coach-page .nt-invite p { color: var(--slate); font-size: 15px; margin-bottom: 12px; }
+.coach-page .nt-address {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 12px 12px 20px;
+  background: var(--cream); border: 1px solid var(--border); border-radius: 12px;
+}
+.coach-page .nt-address code {
+  font-family: var(--sans); font-size: clamp(15px, 1.6vw, 18px); font-weight: 600;
+  color: var(--ink); overflow-wrap: anywhere; text-align: left;
+}
+.coach-page .nt-address-dark { background: rgb(255 255 255 / 8%); border-color: rgb(255 255 255 / 22%); }
+.coach-page .nt-address-dark code { color: var(--white); }
+.coach-page .nt-copy { padding: 10px 20px; flex-shrink: 0; }
+.coach-page .nt-links { margin-top: 32px; font-size: 14px; color: var(--slate); text-align: center; }
+.coach-page .nt-links a { color: var(--tan-dk); text-decoration: underline; }
+.coach-page .nt-connected { max-width: 760px; }
+.coach-page .nt-connected .hero-sub { margin-bottom: 24px; }
+.coach-page .nt-connected .nt-address { margin-bottom: 32px; }
+.coach-page .nt-steps {
+  list-style: decimal; padding-left: 22px; margin: 0 0 36px;
+  color: rgb(255 255 255 / 82%); font-size: 16px; line-height: 1.6;
+}
+.coach-page .nt-steps li { margin-bottom: 10px; }
+.coach-page .nt-connected .nt-links { text-align: left; color: rgb(255 255 255 / 70%); }
+.coach-page .nt-connected .nt-links a { color: var(--white); }
+
 /* ========== RESPONSIVE — TABLET (< 1024px) — landing ========== */
 @media (max-width: 1023px) {
   .coach-page .wrap { padding: 0 24px; }
+  .coach-page .phases-grid.phases-3 { grid-template-columns: 1fr; }
+  .coach-page .phases-grid.phases-3 .phase { border-right: none; border-bottom: 1px solid var(--border); }
+  .coach-page .phases-grid.phases-3 .phase:last-child { border-bottom: none; }
+  .coach-page .phases-grid.phases-3 .phase::after { display: none; }
   .coach-page section { padding: 72px 0; }
 
   .coach-page .hero { padding: 90px 0 72px; }
