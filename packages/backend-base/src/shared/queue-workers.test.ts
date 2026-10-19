@@ -78,6 +78,11 @@ describe("start-up work that queues jobs runs with the workers", () => {
 });
 
 describe("the container starts only the workers its role owns", () => {
+  it("no worker runs before its role starts it", () => {
+    const running = QUEUE_WORKERS.filter((entry) => entry.worker.isRunning());
+    expect(running.map((entry) => entry.name)).toEqual([]);
+  });
+
   it("the API container starts no worker and schedules no cron", async () => {
     expect(await startAs("api")).toEqual({ ran: [], crons: [] });
   });
