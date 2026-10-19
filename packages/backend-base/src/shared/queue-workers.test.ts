@@ -79,8 +79,15 @@ describe("start-up work that queues jobs runs with the workers", () => {
 
 describe("the container starts only the workers its role owns", () => {
   it("no worker runs before its role starts it", () => {
-    const running = QUEUE_WORKERS.filter((entry) => entry.worker.isRunning());
-    expect(running.map((entry) => entry.name)).toEqual([]);
+    // Asserted on the construction, not on isRunning(): bun runs every test file in one process,
+    // and a test that calls app.listen() fires the shared plugin's onStart, which starts every
+    // worker. Whether those are still running when this file runs depends on file order.
+    const autostarting = QUEUE_WORKERS.filter(
+      (entry) =>
+        (entry.worker as { opts?: { autorun?: boolean } }).opts?.autorun !==
+        false,
+    );
+    expect(autostarting.map((entry) => entry.name)).toEqual([]);
   });
 
   it("the API container starts no worker and schedules no cron", async () => {
