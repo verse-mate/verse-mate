@@ -3,9 +3,9 @@ WORKDIR /app
 
 # ffmpeg is for coach session video: frame extraction for the Visual Aids
 # dimension (change: port-coach-pipeline, tasks 5.3 and 5.4). Installed in the
-# one image both the API and the media worker run from — the worker is the same
-# image in a different mode (see the change's deploy runbook), so a separate
-# image would be a second thing to build, tag and keep in step.
+# one image both the API and the worker component run from (VERSEMATE_ROLE,
+# see docs/runbooks/app-platform.md), so a separate image would be a second
+# thing to build, tag and keep in step.
 RUN apt-get update && apt-get install -y curl ffmpeg postgresql-client vim && rm -rf /var/lib/apt/lists/*
 
 # Don't run production as root
