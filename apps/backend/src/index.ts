@@ -23,9 +23,12 @@ import { BibleService } from "backend-base/src/bible/services/bible.service";
 import bullmqRedisConnection from "backend-base/src/shared/bullmq-redis";
 import { verifyRedisOrExit } from "backend-base/src/shared/redis-startup-check";
 import { configuredRedisUrl } from "backend-base/src/shared/redis-url";
+import { workerRole } from "backend-base/src/shared/worker-role";
 import { db } from "database";
 import { Elysia } from "elysia";
 import redis from "./lib/redis";
+
+const role = workerRole();
 
 const REDIS_STARTUP_TIMEOUT_MS = 10_000;
 

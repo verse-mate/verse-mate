@@ -161,74 +161,54 @@ import {
 } from "../notifications/verse-notification.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
-import {
-  type WorkerRole,
-  runsApiWorkers,
-  runsMediaWorkers,
-  workerRole,
-} from "./worker-role";
+import { type WorkerRole, runsWorkers, workerRole } from "./worker-role";
 
 export interface QueueWorkerEntry {
   name: string;
-  side: "api" | "media";
   worker: { isRunning(): boolean; run(): unknown };
   registerCron?: () => Promise<unknown>;
 }
 
 export const QUEUE_WORKERS: QueueWorkerEntry[] = [
-  { name: "Monitoring", side: "api", worker: batchMonitoringWorker },
-  { name: "Processing", side: "api", worker: batchProcessingWorker },
-  { name: "Audio generation", side: "media", worker: audioGenerationWorker },
+  { name: "Monitoring", worker: batchMonitoringWorker },
+  { name: "Processing", worker: batchProcessingWorker },
+  { name: "Audio generation", worker: audioGenerationWorker },
   {
     name: "Audio cleanup",
-    side: "media",
     worker: audioCleanupWorker,
     registerCron: registerAudioCleanupCron,
   },
   {
     name: "Verse notification",
-    side: "api",
     worker: verseNotificationWorker,
     registerCron: registerVerseNotificationCron,
   },
   {
     name: "Coach intake",
-    side: "media",
     worker: coachIntakeWorker,
     registerCron: registerCoachIntakeCron,
   },
   {
     name: "Coach reminder",
-    side: "api",
     worker: coachReminderWorker,
     registerCron: registerCoachReminderCron,
   },
   {
     name: "Coach monthly",
-    side: "api",
     worker: coachMonthlyWorker,
     registerCron: registerCoachMonthlyCron,
   },
   {
     name: "Coach Monday reminder",
-    side: "api",
     worker: coachMondayReminderWorker,
     registerCron: registerCoachMondayReminderCron,
   },
 ];
 
 export async function startQueueWorkers(
-  role: WorkerRole,
   entries: QueueWorkerEntry[],
 ): Promise<void> {
-  console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
   for (const entry of entries) {
-    const owned =
-      entry.side === "media" ? runsMediaWorkers(role) : runsApiWorkers(role);
-    if (!owned) {
-      console.log(`[QUEUE] ${entry.name} worker belongs to another role`);
-      continue;
-    }
     if (entry.worker.isRunning()) {
       console.log(`[QUEUE] ${entry.name} worker already running`);
     } else {
@@ -244,8 +224,26 @@ export async function startQueueWorkers(
   }
 }
 
+export interface BackgroundSteps {
+  startWorkers(): Promise<void>;
+}
+
+export async function startBackgroundWork(
+  role: WorkerRole,
+  steps: BackgroundSteps,
+): Promise<void> {
+  if (!runsWorkers(role)) {
+    console.log(`[QUEUE] No BullMQ workers in this process (role: ${role})`);
+    return;
+  }
+  console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
+  await steps.startWorkers();
+}
+
 setup.onStart(async () => {
-  await startQueueWorkers(workerRole(), QUEUE_WORKERS);
+  await startBackgroundWork(workerRole(), {
+    startWorkers: () => startQueueWorkers(QUEUE_WORKERS),
+  });
 
   // Check for existing active batches and start monitoring them
   console.log("[QUEUE] Checking for existing active batches to monitor...");
