@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { rootCertificates } from "node:tls";
 import { createBullmqRedisConnection } from "./bullmq-redis";
 
 const ORIGINAL_CA = process.env.REDIS_CA_CERT;
@@ -19,10 +20,13 @@ describe("BullMQ Redis connection", () => {
     else process.env.REDIS_CA_CERT = ORIGINAL_CA;
   });
 
-  it("verifies a rediss:// server against the configured CA", () => {
+  it("verifies a rediss:// server against the configured CA and the system CAs", () => {
     process.env.REDIS_CA_CERT = CA;
 
-    expect(tlsOf(MANAGED_URL)).toEqual({ rejectUnauthorized: true, ca: CA });
+    expect(tlsOf(MANAGED_URL)).toEqual({
+      rejectUnauthorized: true,
+      ca: [...rootCertificates, CA],
+    });
   });
 
   it("verifies a rediss:// server against the system CAs when no CA is configured", () => {

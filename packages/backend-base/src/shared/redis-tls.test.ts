@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { rootCertificates } from "node:tls";
 import { RedisClient } from "./redis-client";
 
 const ORIGINAL_CA = process.env.REDIS_CA_CERT;
@@ -20,14 +21,14 @@ describe("Redis TLS config", () => {
     else process.env.REDIS_CA_CERT = ORIGINAL_CA;
   });
 
-  it("verifies the server certificate against the configured CA", () => {
+  it("verifies the server certificate against the configured CA and the system CAs", () => {
     process.env.REDIS_CA_CERT = CA;
 
     const socket = socketOptions(MANAGED_URL);
 
     expect(socket.tls).toBe(true);
     expect(socket.rejectUnauthorized).toBe(true);
-    expect(socket.ca).toBe(CA);
+    expect(socket.ca).toEqual([...rootCertificates, CA]);
   });
 
   it("verifies against the system CAs when no CA is configured", () => {
