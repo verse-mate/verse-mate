@@ -41,8 +41,8 @@ export default function CoachNotetaker() {
                 <a className="btn btn-primary" href={NOTETAKER_CONNECT_URL}>
                   Connect your Zoom account
                 </a>
-                <a className="btn btn-ghost" href="#steps">
-                  How it works
+                <a className="btn btn-ghost" href="#watch">
+                  Watch how (2 min)
                 </a>
               </div>
               <p className="nt-note">
@@ -90,6 +90,27 @@ export default function CoachNotetaker() {
             </div>
           </div>
         </header>
+
+        {/* VIDEO */}
+        <section className="nt-watch" id="watch">
+          <div data-reveal className="wrap">
+            <div className="s-head-center">
+              <span className="eyebrow">Watch it once</span>
+              <h2 className="s-title">
+                The whole setup, <em>in two minutes.</em>
+              </h2>
+            </div>
+            <video
+              className="nt-video"
+              controls
+              preload="none"
+              playsInline
+              poster="/coach/notetaker/connect-zoom-poster.jpg"
+            >
+              <source src="/coach/notetaker/connect-zoom.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </section>
 
         {/* STEPS */}
         <section className="method" id="steps">
