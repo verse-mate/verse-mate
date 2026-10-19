@@ -28,15 +28,6 @@ declare const Bun: {
       ): { arrayBuffer(): Promise<ArrayBuffer> };
       /** The object as a stream, never materialised whole. */
       stream(): ReadableStream<Uint8Array>;
-      /** Multipart upload sink. */
-      writer(opts?: {
-        type?: string;
-        partSize?: number;
-        queueSize?: number;
-      }): {
-        write(chunk: Uint8Array): number | Promise<number>;
-        end(): Promise<void> | void;
-      };
     };
     presign(
       key: string,
@@ -70,6 +61,8 @@ const S3_MAX_PARTS = 10_000;
  * limit, which a long recorded session can exceed, and the failure arrives at
  * upload time with no warning beforehand.
  */
+const MULTIPART_URL_LIFETIME_SECONDS = 6 * 60 * 60;
+
 export const MAX_STREAMED_OBJECT_BYTES =
   MULTIPART_PART_SIZE_BYTES * S3_MAX_PARTS;
 
@@ -100,6 +93,8 @@ export class BunS3Helper {
      * makes slowest to exercise.
      */
     client?: BunS3Client,
+    private readonly send: typeof fetch = fetch,
+    private readonly partSize: number = MULTIPART_PART_SIZE_BYTES,
   ) {
     this.client =
       client ??
@@ -126,42 +121,105 @@ export class BunS3Helper {
     body: ReadableStream<Uint8Array>,
     contentType?: string,
   ): Promise<number> {
+    const presigned = this.client.presign(key, {
+      method: "PUT",
+      expiresIn: MULTIPART_URL_LIFETIME_SECONDS,
+    });
+    const call = async (
+      method: string,
+      query: Record<string, string>,
+      init: {
+        body?: ArrayBuffer | string;
+        headers?: Record<string, string>;
+      } = {},
+    ) => {
+      const response = await this.send(
+        signPresigned(presigned, method, query, this.secretAccessKey),
+        { method, ...init },
+      );
+      if (!response.ok)
+        throw new InternalServerError(
+          `Bun S3 putObjectStream ${method} for ${key} answered ${response.status}`,
+        );
+      return response;
+    };
+
+    const created = await (
+      await call(
+        "POST",
+        { uploads: "" },
+        contentType ? { headers: { "content-type": contentType } } : {},
+      )
+    ).text();
+    const uploadId = /<UploadId>([^<]+)<\/UploadId>/.exec(created)?.[1];
+    if (!uploadId)
+      throw new InternalServerError(
+        `Bun S3 putObjectStream got no upload id for ${key}`,
+      );
+
+    const etags: string[] = [];
+    const uploadPart = async (bytes: ArrayBuffer) => {
+      const response = await call(
+        "PUT",
+        {
+          partNumber: String(etags.length + 1),
+          uploadId,
+        },
+        { body: bytes },
+      );
+      etags.push(response.headers.get("etag") ?? "");
+    };
+
+    const reader = body.getReader();
+    const buffer = new ArrayBuffer(this.partSize);
+    const part = new Uint8Array(buffer);
+    let filled = 0;
+    let written = 0;
     try {
-      const file = this.client.file(key);
-      const writer = file.writer({
-        type: contentType,
-        partSize: MULTIPART_PART_SIZE_BYTES,
-      });
-      const reader = body.getReader();
-      let written = 0;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        if (!value) continue;
-        // ENFORCED, not merely documented. MAX_STREAMED_OBJECT_BYTES was
-        // declared and then compared against nothing, so the "supported upper
-        // size" was a comment: a stream of any length was written until S3
-        // refused it, having already been billed for the parts. A source whose
-        // length is not declared up front, which is every chunked response —
-        // could run indefinitely.
-        if (written + value.byteLength > MAX_STREAMED_OBJECT_BYTES) {
-          await reader.cancel();
+        if (written + value.byteLength > MAX_STREAMED_OBJECT_BYTES)
           throw new InternalServerError(
             `Bun S3 putObjectStream refused ${key}: exceeds ${MAX_STREAMED_OBJECT_BYTES} bytes`,
           );
-        }
-        await writer.write(value);
         written += value.byteLength;
+        let at = 0;
+        while (at < value.byteLength) {
+          const take = Math.min(this.partSize - filled, value.byteLength - at);
+          part.set(value.subarray(at, at + take), filled);
+          filled += take;
+          at += take;
+          if (filled === this.partSize) {
+            await uploadPart(buffer.slice(0));
+            filled = 0;
+          }
+        }
       }
-      await writer.end();
+      if (filled > 0 || etags.length === 0)
+        await uploadPart(buffer.slice(0, filled));
+      const parts = etags
+        .map(
+          (etag, i) =>
+            `<Part><PartNumber>${i + 1}</PartNumber><ETag>${etag}</ETag></Part>`,
+        )
+        .join("");
+      await call(
+        "POST",
+        { uploadId },
+        {
+          body: `<CompleteMultipartUpload>${parts}</CompleteMultipartUpload>`,
+          headers: { "content-type": "application/xml" },
+        },
+      );
       return written;
     } catch (error) {
-      if (error instanceof Error) {
-        throw new InternalServerError(
-          `Bun S3 putObjectStream failed: ${error.message}`,
-        );
-      }
-      throw error;
+      await reader.cancel().catch(() => undefined);
+      await call("DELETE", { uploadId }).catch(() => undefined);
+      if (error instanceof InternalServerError) throw error;
+      throw new InternalServerError(
+        `Bun S3 putObjectStream failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -347,12 +405,29 @@ export function signContentLength(
   contentLength: number,
   secretAccessKey: string,
 ): string {
-  const url = new URL(presignedPut);
-  const query = [...url.searchParams]
-    .filter(([name]) => name !== "X-Amz-Signature")
+  return signPresigned(presignedPut, "PUT", {}, secretAccessKey, {
+    "content-length": String(contentLength),
+  });
+}
+
+export function signPresigned(
+  presigned: string,
+  method: string,
+  extraQuery: Record<string, string>,
+  secretAccessKey: string,
+  signedHeaders: Record<string, string> = {},
+): string {
+  const url = new URL(presigned);
+  const headers = { ...signedHeaders, host: url.host };
+  const headerNames = Object.keys(headers).sort();
+  const names = headerNames.join(";");
+  const query = [
+    ...[...url.searchParams].filter(([name]) => name !== "X-Amz-Signature"),
+    ...Object.entries(extraQuery),
+  ]
     .map(([name, value]) =>
       name === "X-Amz-SignedHeaders"
-        ? `${name}=${encode("content-length;host")}`
+        ? `${name}=${encode(names)}`
         : `${encode(name)}=${encode(value)}`,
     )
     .sort()
@@ -361,11 +436,13 @@ export function signContentLength(
     url.searchParams.get("X-Amz-Credential") ?? ""
   ).split("/");
   const canonical = [
-    "PUT",
+    method,
     url.pathname,
     query,
-    `content-length:${contentLength}\nhost:${url.host}\n`,
-    "content-length;host",
+    headerNames
+      .map((name) => `${name}:${headers[name as keyof typeof headers]}\n`)
+      .join(""),
+    names,
     "UNSIGNED-PAYLOAD",
   ].join("\n");
   const toSign = [
