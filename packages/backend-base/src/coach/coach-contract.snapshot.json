@@ -231,6 +231,24 @@
         "message": "The upload's report was already delivered, so the recording-bot session cannot replace it"
       }
     },
+    "POST /coach/admin/classes": {
+      "unknown-leader": {
+        "status": 404,
+        "message": "Leader not found"
+      }
+    },
+    "PUT /coach/admin/classes/:id": {
+      "unknown-class": {
+        "status": 404,
+        "message": "Class not found"
+      }
+    },
+    "DELETE /coach/admin/classes/:id": {
+      "unknown-class": {
+        "status": 404,
+        "message": "Class not found"
+      }
+    },
     "POST /coach/admin/rotating-classes": {
       "invalid-address": {
         "status": 400,
@@ -784,6 +802,80 @@
       }
     },
     {
+      "route": "DELETE /coach/admin/classes/:id",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean"
+            }
+          },
+          "required": ["success"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "404": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "DELETE /coach/admin/leaders/:id/not-teaching",
       "response": {
         "200": {
@@ -1277,6 +1369,29 @@
                   "zoomLink": {
                     "type": "string"
                   },
+                  "startTime": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "timeZone": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "notetaker": {
+                    "type": "boolean"
+                  },
                   "leader": {
                     "type": "object",
                     "properties": {
@@ -1306,6 +1421,9 @@
                   "classDate",
                   "recurrence",
                   "zoomLink",
+                  "startTime",
+                  "timeZone",
+                  "notetaker",
                   "leader"
                 ]
               }
@@ -4676,6 +4794,213 @@
       }
     },
     {
+      "route": "GET /coach/admin/notetaker/zoom",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "connectUrl": {
+              "type": "string"
+            },
+            "connections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "connectedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "leader": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["email", "name", "connectedAt", "leader"]
+              }
+            },
+            "meetings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "meetingId": {
+                    "type": "string"
+                  },
+                  "topic": {
+                    "type": "string"
+                  },
+                  "joinUrl": {
+                    "type": "string"
+                  },
+                  "hostEmail": {
+                    "type": "string"
+                  },
+                  "classDate": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "startTime": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "timeZone": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "recurrence": {
+                    "type": "string"
+                  },
+                  "invited": {
+                    "type": "boolean"
+                  },
+                  "leader": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "classId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "meetingId",
+                  "topic",
+                  "joinUrl",
+                  "hostEmail",
+                  "classDate",
+                  "startTime",
+                  "timeZone",
+                  "recurrence",
+                  "invited",
+                  "leader",
+                  "classId"
+                ]
+              }
+            }
+          },
+          "required": ["available", "connectUrl", "connections", "meetings"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/admin/parallel-run/comparison",
       "response": {
         "200": {
@@ -6218,6 +6543,29 @@
                   },
                   "zoomLink": {
                     "type": "string"
+                  },
+                  "startTime": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "timeZone": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "notetaker": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -6225,7 +6573,10 @@
                   "name",
                   "classDate",
                   "recurrence",
-                  "zoomLink"
+                  "zoomLink",
+                  "startTime",
+                  "timeZone",
+                  "notetaker"
                 ]
               }
             }
@@ -7632,6 +7983,229 @@
             }
           },
           "required": ["profile", "summary", "availableMonths"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/notetaker/classes",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "classes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "classDate": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "recurrence": {
+                    "type": "string"
+                  },
+                  "zoomLink": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "timeZone": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "notetaker": {
+                    "type": "boolean"
+                  },
+                  "leader": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name", "email"]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "classDate",
+                  "recurrence",
+                  "zoomLink",
+                  "startTime",
+                  "timeZone",
+                  "notetaker",
+                  "leader"
+                ]
+              }
+            }
+          },
+          "required": ["classes"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/notetaker/status",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "known": {
+              "type": "boolean"
+            },
+            "connected": {
+              "type": "boolean"
+            },
+            "zoomEmail": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "connectUrl": {
+              "type": "string"
+            }
+          },
+          "required": ["known", "connected", "zoomEmail", "connectUrl"]
         },
         "400": {
           "type": "object",
@@ -9295,6 +9869,160 @@
               "type": "number"
             },
             "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/classes",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "class": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "classDate": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "recurrence": {
+                  "type": "string"
+                },
+                "zoomLink": {
+                  "type": "string"
+                },
+                "startTime": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "timeZone": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "notetaker": {
+                  "type": "boolean"
+                },
+                "leader": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "name", "email"]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "classDate",
+                "recurrence",
+                "zoomLink",
+                "startTime",
+                "timeZone",
+                "notetaker",
+                "leader"
+              ]
+            }
+          },
+          "required": ["class"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "404": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
           },
           "required": ["error", "message"]
         },
@@ -11723,9 +12451,41 @@
                 },
                 "zoomLink": {
                   "type": "string"
+                },
+                "startTime": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "timeZone": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "notetaker": {
+                  "type": "boolean"
                 }
               },
-              "required": ["id", "name", "classDate", "recurrence", "zoomLink"]
+              "required": [
+                "id",
+                "name",
+                "classDate",
+                "recurrence",
+                "zoomLink",
+                "startTime",
+                "timeZone",
+                "notetaker"
+              ]
             }
           },
           "required": ["class"]
@@ -13046,6 +13806,137 @@
       }
     },
     {
+      "route": "PUT /coach/admin/classes/:id",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "class": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "classDate": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "recurrence": {
+                  "type": "string"
+                },
+                "zoomLink": {
+                  "type": "string"
+                },
+                "startTime": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "timeZone": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "notetaker": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "classDate",
+                "recurrence",
+                "zoomLink",
+                "startTime",
+                "timeZone",
+                "notetaker"
+              ]
+            }
+          },
+          "required": ["class"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "404": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "PUT /coach/admin/coaches/:id/reports/:reportId/recording",
       "response": {
         "200": {
@@ -14244,9 +15135,41 @@
                 },
                 "zoomLink": {
                   "type": "string"
+                },
+                "startTime": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "timeZone": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "notetaker": {
+                  "type": "boolean"
                 }
               },
-              "required": ["id", "name", "classDate", "recurrence", "zoomLink"]
+              "required": [
+                "id",
+                "name",
+                "classDate",
+                "recurrence",
+                "zoomLink",
+                "startTime",
+                "timeZone",
+                "notetaker"
+              ]
             }
           },
           "required": ["class"]
