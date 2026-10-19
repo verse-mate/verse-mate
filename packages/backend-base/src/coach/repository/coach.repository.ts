@@ -287,7 +287,8 @@ export class CoachRepository {
 
   /** Update a class. With an owner, only one of theirs; without (an admin),
    *  any. Returns the stored row, or null when no row matches. A leader who
-   *  edits a class an admin scheduled for them takes it into their account. */
+   *  edits a class takes it into their account and roster id (an admin's
+   *  class for them, or one made before classes carried the roster id). */
   async updateClass(
     owner: CoachClassOwner | null,
     classId: string,
@@ -300,6 +301,7 @@ export class CoachRepository {
       .set({
         ...CoachRepository.classValues(input),
         ...(owner?.userId ? { user_id: owner.userId as never } : {}),
+        ...(owner?.coachId ? { coach_id: owner.coachId } : {}),
         updated_at: sql`NOW()`,
       })
       .where("id", "=", classId);
