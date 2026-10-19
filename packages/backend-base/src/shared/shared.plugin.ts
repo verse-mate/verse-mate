@@ -161,6 +161,7 @@ import {
 } from "../notifications/verse-notification.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
+import { imageMigrator, waitForMigrations } from "./migration-wait";
 import { type WorkerRole, runsWorkers, workerRole } from "./worker-role";
 
 export interface QueueWorkerEntry {
@@ -225,6 +226,7 @@ export async function startQueueWorkers(
 }
 
 export interface BackgroundSteps {
+  waitForMigrations(): Promise<void>;
   startWorkers(): Promise<void>;
   resumeBatchMonitoring(): Promise<void>;
 }
@@ -237,6 +239,7 @@ export async function startBackgroundWork(
     console.log(`[QUEUE] No BullMQ workers in this process (role: ${role})`);
     return;
   }
+  if (role === "worker") await steps.waitForMigrations();
   console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
   await steps.startWorkers();
   await steps.resumeBatchMonitoring();
@@ -291,10 +294,15 @@ export async function resumeActiveBatchMonitoring(): Promise<void> {
   }
 }
 
-setup.onStart(async () => {
-  await startBackgroundWork(workerRole(), {
+setup.onStart(() => {
+  startBackgroundWork(workerRole(), {
+    waitForMigrations: () =>
+      waitForMigrations(imageMigrator(Database.getOrCreateConnection())),
     startWorkers: () => startQueueWorkers(QUEUE_WORKERS),
     resumeBatchMonitoring: resumeActiveBatchMonitoring,
+  }).catch((error) => {
+    console.error(error);
+    process.exit(1);
   });
 });
 
