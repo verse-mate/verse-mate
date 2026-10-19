@@ -188,7 +188,25 @@ The role code ships first. With no role set, the merged image runs as before (`a
      `[QUEUE] Starting BullMQ workers (role: worker)...` and the nine workers started.
    - The connection count across the whole cluster at the deploy's peak stays within the
      budget above:
-     `select count(*) from pg_stat_activity where backend_type = 'client backend';`
+
+     ```sql
+     select usename, datname, count(*)
+     from pg_stat_activity
+     where datname is not null and usename is not null
+     group by rollup (usename, datname)
+     order by usename nulls last, datname nulls last;
+     ```
+
+     The last row is the total, one row per role and database above it: the app's rows are
+     its own role's, `postgres` and `_dodb` are DigitalOcean's, held on the reserved
+     superuser slots.
+     Don't filter on `backend_type`, `state` or `client_addr`: a role without
+     `pg_read_all_stats` (the read-only role, for one) sees those as null for every other
+     role's session, so such a filter counts only its own. `usename`, `datname` and `pid`
+     stay visible to every role. Background processes have no `datname`, autovacuum workers
+     no `usename`, so the filter leaves client sessions. It still counts parallel query
+     workers, which don't take a connection slot; they last as long as one query, so read
+     the count twice before trusting a peak.
    - The next scheduled job (a verse notification) is logged by the worker only.
    - Restart the worker once (`doctl apps restart <app-id> --components verse-mate-backend-worker`):
      the API keeps answering and the worker starts its queues again.
