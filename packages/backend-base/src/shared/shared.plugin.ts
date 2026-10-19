@@ -226,6 +226,7 @@ export async function startQueueWorkers(
 
 export interface BackgroundSteps {
   startWorkers(): Promise<void>;
+  resumeBatchMonitoring(): Promise<void>;
 }
 
 export async function startBackgroundWork(
@@ -238,14 +239,10 @@ export async function startBackgroundWork(
   }
   console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
   await steps.startWorkers();
+  await steps.resumeBatchMonitoring();
 }
 
-setup.onStart(async () => {
-  await startBackgroundWork(workerRole(), {
-    startWorkers: () => startQueueWorkers(QUEUE_WORKERS),
-  });
-
-  // Check for existing active batches and start monitoring them
+export async function resumeActiveBatchMonitoring(): Promise<void> {
   console.log("[QUEUE] Checking for existing active batches to monitor...");
   try {
     const activeBatches = await Database.getOrCreateConnection()
@@ -292,6 +289,13 @@ setup.onStart(async () => {
   } catch (error) {
     console.error("[QUEUE] Error checking for active batches:", error);
   }
+}
+
+setup.onStart(async () => {
+  await startBackgroundWork(workerRole(), {
+    startWorkers: () => startQueueWorkers(QUEUE_WORKERS),
+    resumeBatchMonitoring: resumeActiveBatchMonitoring,
+  });
 });
 
 setup.onStop(async () => {

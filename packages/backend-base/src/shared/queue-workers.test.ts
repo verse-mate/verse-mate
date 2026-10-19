@@ -48,9 +48,32 @@ async function startAs(role: WorkerRole) {
             : undefined,
         })),
       ),
+    resumeBatchMonitoring: async () => {},
   });
   return { ran: ran.sort(), crons: crons.sort() };
 }
+
+describe("start-up work that queues jobs runs with the workers", () => {
+  async function scansAs(role: WorkerRole) {
+    let scans = 0;
+    await startBackgroundWork(role, {
+      startWorkers: async () => {},
+      resumeBatchMonitoring: async () => {
+        scans += 1;
+      },
+    });
+    return scans;
+  }
+
+  it("re-queues monitoring for active batches in the worker and a single container", async () => {
+    expect(await scansAs("worker")).toBe(1);
+    expect(await scansAs("all")).toBe(1);
+  });
+
+  it("the API container does not re-queue batch monitoring", async () => {
+    expect(await scansAs("api")).toBe(0);
+  });
+});
 
 describe("the container starts only the workers its role owns", () => {
   it("the API container starts no worker and schedules no cron", async () => {
