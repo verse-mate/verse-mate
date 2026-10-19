@@ -563,6 +563,12 @@
 
 /* ========== NOTETAKER (/coach/notetaker) ========== */
 .coach-page .phases-grid.phases-3 { grid-template-columns: repeat(3, 1fr); }
+.coach-page .nt-watch { background: var(--white); padding: 96px 0 0; }
+.coach-page .nt-video {
+  display: block; width: 100%; max-width: 960px; margin: 32px auto 0; aspect-ratio: 16 / 9;
+  background: #0f1115; border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 20px 50px rgb(0 0 0 / 18%);
+}
 .coach-page .nt-note { margin-top: 18px; font-size: 14px; color: rgb(255 255 255 / 70%); }
 .coach-page .score-card-hero.nt-card::before { content: 'EXAMPLE CLASS'; }
 .coach-page .nt-card .dim-row { grid-template-columns: auto 1fr; padding: 12px 0; }
@@ -602,6 +608,7 @@
 /* ========== RESPONSIVE — TABLET (< 1024px) — landing ========== */
 @media (max-width: 1023px) {
   .coach-page .wrap { padding: 0 24px; }
+  .coach-page .nt-watch { padding-top: 64px; }
   .coach-page .phases-grid.phases-3 { grid-template-columns: 1fr; }
   .coach-page .phases-grid.phases-3 .phase { border-right: none; border-bottom: 1px solid var(--border); }
   .coach-page .phases-grid.phases-3 .phase:last-child { border-bottom: none; }
