@@ -243,7 +243,6 @@ jobs:
 
   # ============================================
   # BUILD BACKEND JOB
-  # Builds backend and database packages, uploads artifacts
   # ============================================
   build-backend:
     name: Build Backend
@@ -275,18 +274,6 @@ jobs:
       - name: Build database package
         run: cd packages/database && bun run build
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-build
-          retention-days: 1
-          path: |
-            apps/backend/dist
-            packages/database/dist
-            packages/database/migrations
-            packages/backend-base/src/bible/data/key_english.json
-            packages/backend-base/src/bible/data/NASB1995.json
-
   # ============================================
   # DOCKER BUILD AND PUSH JOB
   # Builds Docker image and pushes to DigitalOcean registry
@@ -301,10 +288,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          name: backend-build
+          bun-version: 1.2.23
+
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Build backend
+        run: cd apps/backend && bun run build
+
+      - name: Build database package
+        run: cd packages/database && bun run build
 
       - name: Setup Docker auth
         run: |
