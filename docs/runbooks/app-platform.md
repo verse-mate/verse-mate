@@ -33,21 +33,25 @@ notification and coach reminder workers.
 
 **After every edit to the app spec, check that the service still has `VERSEMATE_ROLE=api`.**
 A service with the variable removed runs as `all`: every worker on the API's 1 GB again, beside
-the worker component. A coach intake run on that 1 GB is what took the API down on 2026-10-19.
+the worker component. The service also holds the Fireflies key (see Environment), so it would
+run coach intake on that 1 GB, which is what took the API down on 2026-10-19.
 
 ## Environment
 
-Every variable stays at the app level, shared by both components, except these, set on each
-component:
+Every variable is set at the app level and shared by both components, secrets included
+(`FIREFLIES_API_KEY` among them). The one variable set on each component is the role, which
+picks the entrypoint:
 
 | Variable | Service | Worker |
 | --- | --- | --- |
 | `VERSEMATE_ROLE` | `api` | `worker` |
-| `PG_POOL_MAX` | `6` | `4` |
-| `FIREFLIES_API_KEY` (secret) | not set | set, once the split is verified (step 6) |
 
-Credentials only a worker uses belong on the worker component, not at the app level, so the
-service never holds them: if its role is lost, intake still cannot run on it.
+The run command differs too (the service runs the image CMD, the worker runs `index.js`, see
+below). Nothing else does: a credential only the worker uses is still visible to the service,
+and what keeps the service from running intake is its role, so the role check after every spec
+edit (above) matters.
+
+`PG_POOL_MAX` is `5` at the app level, so each component opens a pool of up to 5.
 
 The managed Postgres allows 25 connections, of which DigitalOcean keeps a few for its own
 superuser; check what is left for the app before the first apply:
@@ -57,10 +61,11 @@ show max_connections;
 show superuser_reserved_connections;
 ```
 
-Steady state is at most 10 (6 + 4), as with the single service's pool of 10. During a deploy
+Steady state is at most 10 (5 + 5), as with the single service's pool of 10. During a deploy
 an old and a new instance of each component run side by side, so at most 20, plus the
 migrator's and the coach step's few on the new service's start and any operator session.
-Raise either value only after checking that sum against what the query above leaves.
+Raise the value only after checking that sum against what the query above leaves: it applies
+to both components, so each step up adds 2 connections in steady state and 4 during a deploy.
 
 ## Health checks
 
@@ -84,7 +89,8 @@ is restarted, and BullMQ retries the job it held once its lock lapses.
 ## Spec fragments
 
 Edit the saved spec (below) rather than writing one from scratch: it carries the domain, the
-image and the app-level variables. The service gains:
+image and the app-level variables. Set the app-level `PG_POOL_MAX` to `"5"`: unset, each
+component opens a pool of up to 10. The service gains:
 
 ```yaml
 services:
@@ -94,9 +100,6 @@ services:
       - key: VERSEMATE_ROLE
         scope: RUN_TIME
         value: api
-      - key: PG_POOL_MAX
-        scope: RUN_TIME
-        value: "6"
     health_check:
       http_path: /health
       initial_delay_seconds: 30
@@ -129,9 +132,6 @@ workers:
       - key: VERSEMATE_ROLE
         scope: RUN_TIME
         value: worker
-      - key: PG_POOL_MAX
-        scope: RUN_TIME
-        value: "4"
     liveness_health_check:
       http_path: /health
       port: 3000
@@ -163,7 +163,8 @@ The role code ships first. With no role set, the merged image runs as before (`a
 
 3. **Write the new spec** from a copy of the saved one, with the fragments above, and validate
    it against the app without applying it. The proposal echoes the components, the health
-   checks and the monthly cost; check them against the tables above ($35).
+   checks and the monthly cost; check them against the tables above ($35), and that the app-level
+   `PG_POOL_MAX` is `"5"`.
 
    ```bash
    doctl apps propose --app <app-id> --spec ~/verse-mate-backend.spec.new.yaml
@@ -193,10 +194,10 @@ The role code ships first. With no role set, the merged image runs as before (`a
    - Restart the worker once (`doctl apps restart <app-id> --components verse-mate-backend-worker`):
      the API keeps answering and the worker starts its queues again.
 
-6. **Turn coach intake back on** only after step 5: add `FIREFLIES_API_KEY` to the worker
-   component's `envs` as `type: SECRET` (not at the app level), apply, and watch the next
-   intake tick in the worker's log while polling `/health` and a chapter read every 5 s. The
-   API should answer every poll and not restart.
+6. **Turn coach intake back on** only after step 5: add `FIREFLIES_API_KEY` to the app-level
+   `envs` as `type: SECRET` and apply (both components redeploy). Watch the next intake tick in
+   the worker's log while polling `/health` and a chapter read every 5 s. Every poll should
+   answer 200, and the service's log should show no intake run.
 
 Once the split has run for a while, delete both spec files.
 
