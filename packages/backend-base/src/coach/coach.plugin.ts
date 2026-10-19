@@ -18,6 +18,11 @@ import shared from "../shared/shared.plugin";
 import { CoachIdentityService } from "./coach-identity.service";
 import coachLearningPlugin from "./coach-learning.plugin";
 import { CoachMonthlyService } from "./coach-monthly.service";
+import {
+  NOTETAKER_CONNECT_URL,
+  isTimeZone,
+  notetakerTokenOk,
+} from "./coach-notetaker";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import { HOLD_KINDS } from "./coach-session-state";
 import {
@@ -39,6 +44,8 @@ import {
   MonthlyReportRowSchema,
   MonthlySchema,
   NoteSchema,
+  NotetakerStatusSchema,
+  NotetakerZoomSchema,
   ParallelRunComparisonSchema,
   ReportSchema,
   ReviewStateSchema,
@@ -61,12 +68,14 @@ import {
 import {
   AddLeaderDto,
   AddNoteDto,
+  AdminCoachClassDto,
   CoachClassDto,
   UpdateAffiliatedChurchDto,
   UpdateBibleCoachDto,
   UpdateRecordingLinkDto,
   UpdateZoomLinkDto,
 } from "./dto/coach.dto";
+import type { CoachClassInput } from "./repository/coach.repository";
 import { rubricContract } from "./rubric";
 
 const caller = (context: {
@@ -165,19 +174,18 @@ const MeSchema = t.Object({
 });
 
 // Shared validation + normalization for a class body. Mirrors the zoom-link
-// route's URL rule and enforces an ISO yyyy-mm-dd (or empty) date. Returns the
-// CoachClassInput the service/repository expect (empty date → null).
+// route's URL rule, enforces an ISO yyyy-mm-dd (or empty) date, a 24-hour
+// HH:MM (or empty) start time and a known IANA zone whenever a time is set.
+// Returns the CoachClassInput the service/repository expect (empty → null).
 function normalizeClassBody(body: {
   name: string;
   classDate: string;
   recurrence: string;
   zoomLink: string;
-}): {
-  name: string;
-  classDate: string | null;
-  recurrence: string;
-  zoomLink: string;
-} {
+  startTime?: string;
+  timeZone?: string;
+  notetaker?: boolean;
+}): CoachClassInput {
   const name = body.name.trim();
   if (!name) throw new ValidationError("Class name is required");
 
@@ -191,11 +199,26 @@ function normalizeClassBody(body: {
     throw new ValidationError("Date must be in YYYY-MM-DD format");
   }
 
+  const startTime = (body.startTime ?? "").trim();
+  if (startTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)) {
+    throw new ValidationError("Start time must be in HH:MM (24-hour) format");
+  }
+  const timeZone = (body.timeZone ?? "").trim();
+  if (timeZone && !isTimeZone(timeZone)) {
+    throw new ValidationError("Choose a time zone from the list");
+  }
+  if (startTime && !timeZone) {
+    throw new ValidationError("Choose the time zone the start time is in");
+  }
+
   return {
     name,
     classDate: classDate || null,
     recurrence: body.recurrence,
     zoomLink,
+    startTime: startTime || null,
+    timeZone: timeZone || null,
+    notetaker: body.notetaker ?? true,
   };
 }
 
@@ -305,6 +328,24 @@ const plugin = new Elysia()
           ...StandardErrorResponses,
         },
       })
+      // ── The notetaker's feed ──────────────────────────────────────────
+      // Every class the notetaker records, read by the notetaker itself
+      // (coach-notetaker.ts) with its own bearer token, not a user session:
+      // declared before authDerive for that reason.
+      .get(
+        "/notetaker/classes",
+        async ({ headers, store: { coachService } }) => {
+          if (!notetakerTokenOk(headers.authorization))
+            throw new UnauthorizedError("Authentication required");
+          return { classes: await coachService.notetakerClasses() };
+        },
+        {
+          response: {
+            200: t.Object({ classes: t.Array(AdminCoachClassSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .resolve({ as: "scoped" }, authDerive)
       .onBeforeHandle(coachRateLimit)
       .post(
@@ -784,6 +825,25 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ success: t.Boolean() }),
             404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Whether the leader's Zoom account is connected to the notetaker, so
+      // Class Setup can suggest connecting it (the bot then joins as the
+      // leader's guest, without anyone admitting it).
+      .get(
+        "/notetaker/status",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const status = await coachService.notetakerStatus(currentUserId);
+          if (!status) throw new ForbiddenError("Not a coaching account");
+          return { ...status, connectUrl: NOTETAKER_CONNECT_URL };
+        },
+        {
+          response: {
+            200: NotetakerStatusSchema,
             ...StandardErrorResponses,
           },
         },
@@ -1954,6 +2014,103 @@ const plugin = new Elysia()
         {
           response: {
             200: t.Object({ classes: t.Array(AdminCoachClassSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // An admin schedules, edits or removes a class for any leader, also one
+      // who has not signed up yet: the class then waits under their roster id.
+      .post(
+        "/admin/classes",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const { coachId, ...rest } = body;
+          const created = await coachService.adminAddClass(
+            coachId.trim(),
+            normalizeClassBody(rest),
+          );
+          if (!created)
+            throw refuse("POST /coach/admin/classes", "unknown-leader");
+          return { class: created };
+        },
+        {
+          body: AdminCoachClassDto,
+          response: {
+            200: t.Object({ class: AdminCoachClassSchema }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/admin/classes/:id",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const updated = await coachService.adminUpdateClass(
+            params.id,
+            normalizeClassBody(body),
+          );
+          if (!updated)
+            throw refuse("PUT /coach/admin/classes/:id", "unknown-class");
+          return { class: updated };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: CoachClassDto,
+          response: {
+            200: t.Object({ class: CoachClassSchema }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .delete(
+        "/admin/classes/:id",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (!(await coachService.adminRemoveClass(params.id)))
+            throw refuse("DELETE /coach/admin/classes/:id", "unknown-class");
+          return { success: true };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({ success: t.Boolean() }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // The notetaker's connected Zoom accounts and their scheduled meetings,
+      // so an admin can pick the ones to record without the leader doing
+      // anything more.
+      .get(
+        "/admin/notetaker/zoom",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const overview = await coachService.notetakerZoomOverview();
+          return {
+            available: overview !== null,
+            connectUrl: NOTETAKER_CONNECT_URL,
+            connections: overview?.connections ?? [],
+            meetings: overview?.meetings ?? [],
+          };
+        },
+        {
+          response: {
+            200: NotetakerZoomSchema,
             ...StandardErrorResponses,
           },
         },
