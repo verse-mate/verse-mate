@@ -18,16 +18,22 @@ The roles:
   no cron and does not re-queue batch monitoring.
 - `worker`: before any worker or cron, waits until the database holds every migration in its
   image's `migrations` folder, re-reading every 5 s and logging
-  `[QUEUE] waiting for N pending migration(s)`. After 15 minutes it exits 1 and App Platform
-  restarts it. Then it starts all nine workers, registers the six crons and re-queues
-  monitoring for active OpenAI batches.
+  `[QUEUE] waiting for N pending migration(s)`. After 15 minutes, or at once if the folder is
+  missing, it exits 1 and App Platform restarts it. Then it starts all nine workers, registers
+  the six crons and re-queues monitoring for active OpenAI batches.
 - `all` (nothing set): both, in one process. Local development and any single-container copy.
-- Anything else: the process exits 1 at start, naming the value, before it listens or starts a
-  worker. A mistyped role fails the deploy instead of putting the workers back on the API.
+- Anything else, including the earlier `media-worker`: the API process exits 1 at start,
+  naming the value, before it listens or starts a worker. A mistyped role fails the deploy
+  instead of putting the workers back on the API. On the service, the image CMD has already
+  run the migrator and the coach step by then; both are safe to repeat.
+
+The role is understood by images built from the commit that added this page onward. An older
+image reads `worker` as unknown and runs as `all`, and its `api` still runs the batch, verse
+notification and coach reminder workers.
 
 **After every edit to the app spec, check that the service still has `VERSEMATE_ROLE=api`.**
-A service with the variable removed runs as `all`: every worker back on the API, beside the
-worker component, which is how the 2026-10-19 outage happened.
+A service with the variable removed runs as `all`: every worker on the API's 1 GB again, beside
+the worker component. A coach intake run on that 1 GB is what took the API down on 2026-10-19.
 
 ## Environment
 
@@ -37,12 +43,24 @@ component:
 | Variable | Service | Worker |
 | --- | --- | --- |
 | `VERSEMATE_ROLE` | `api` | `worker` |
-| `PG_POOL_MAX` | `8` | `3` |
+| `PG_POOL_MAX` | `6` | `4` |
+| `FIREFLIES_API_KEY` (secret) | not set | set, once the split is verified (step 6) |
 
-The managed Postgres allows 25 connections. Steady state is at most 11 (8 + 3). During a
-deploy an old and a new instance of each component run side by side, so at most 22, plus the
-migrator's and the coach step's few on the new service's start. Raise either value only after
-checking that sum.
+Credentials only a worker uses belong on the worker component, not at the app level, so the
+service never holds them: if its role is lost, intake still cannot run on it.
+
+The managed Postgres allows 25 connections, of which DigitalOcean keeps a few for its own
+superuser; check what is left for the app before the first apply:
+
+```sql
+show max_connections;
+show superuser_reserved_connections;
+```
+
+Steady state is at most 10 (6 + 4), as with the single service's pool of 10. During a deploy
+an old and a new instance of each component run side by side, so at most 20, plus the
+migrator's and the coach step's few on the new service's start and any operator session.
+Raise either value only after checking that sum against what the query above leaves.
 
 ## Health checks
 
@@ -78,7 +96,7 @@ services:
         value: api
       - key: PG_POOL_MAX
         scope: RUN_TIME
-        value: "8"
+        value: "6"
     health_check:
       http_path: /health
       initial_delay_seconds: 30
@@ -113,7 +131,7 @@ workers:
         value: worker
       - key: PG_POOL_MAX
         scope: RUN_TIME
-        value: "3"
+        value: "4"
     liveness_health_check:
       http_path: /health
       port: 3000
@@ -123,26 +141,32 @@ workers:
       failure_threshold: 3
 ```
 
+The run command is relative to the image's `WORKDIR` (`/app`).
+
 ## Applying the split
 
 The role code ships first. With no role set, the merged image runs as before (`all`).
 
 1. **Confirm the merged image.** The newest deployment is ACTIVE, `GET /health` answers 200,
    and the service's log shows the nine `[QUEUE] ... worker started successfully` lines.
-2. **Save the current spec** to a file outside every repository (it holds secrets). This is
-   the rollback copy.
+   Check that no component sets `VERSEMATE_ROLE` yet (an old `media-worker` value would now
+   stop it from starting).
+2. **Save the current spec** to a file outside every repository, readable only by you. It is
+   the rollback copy. Variables of type `SECRET` come out encrypted, anything else in plain
+   text, so check every credential is a `SECRET` and keep the files out of synced folders.
 
    ```bash
+   umask 077
    doctl apps list                                   # the app id
    doctl apps spec get <app-id> --format yaml > ~/verse-mate-backend.spec.before.yaml
    ```
 
 3. **Write the new spec** from a copy of the saved one, with the fragments above, and validate
-   it without applying it. The proposal echoes the components, the health checks and the
-   monthly cost; check them against the tables above ($35).
+   it against the app without applying it. The proposal echoes the components, the health
+   checks and the monthly cost; check them against the tables above ($35).
 
    ```bash
-   doctl apps propose --spec ~/verse-mate-backend.spec.new.yaml
+   doctl apps propose --app <app-id> --spec ~/verse-mate-backend.spec.new.yaml
    ```
 
 4. **Apply it.** Both components deploy as one deployment.
@@ -162,15 +186,19 @@ The role code ships first. With no role set, the merged image runs as before (`a
    - The worker's log (`doctl apps logs <app-id> verse-mate-backend-worker`) shows no migrator
      run, any `[QUEUE] waiting for N pending migration(s)` lines ending,
      `[QUEUE] Starting BullMQ workers (role: worker)...` and the nine workers started.
-   - The database's connection count at the deploy's peak is at most 22:
-     `select count(*) from pg_stat_activity where datname = current_database();`
+   - The connection count across the whole cluster at the deploy's peak stays within the
+     budget above:
+     `select count(*) from pg_stat_activity where backend_type = 'client backend';`
    - The next scheduled job (a verse notification) is logged by the worker only.
    - Restart the worker once (`doctl apps restart <app-id> --components verse-mate-backend-worker`):
      the API keeps answering and the worker starts its queues again.
 
-6. **Turn coach intake back on** only after step 5: restore `FIREFLIES_API_KEY` as an
-   app-level secret and watch the next intake tick in the worker's log while polling `/health`
-   and a chapter read every 5 s. The API should answer every poll and not restart.
+6. **Turn coach intake back on** only after step 5: add `FIREFLIES_API_KEY` to the worker
+   component's `envs` as `type: SECRET` (not at the app level), apply, and watch the next
+   intake tick in the worker's log while polling `/health` and a chapter read every 5 s. The
+   API should answer every poll and not restart.
+
+Once the split has run for a while, delete both spec files.
 
 ## Rollback
 
@@ -181,11 +209,9 @@ doctl apps update <app-id> --spec ~/verse-mate-backend.spec.before.yaml
 ```
 
 The worker component goes away and the service runs as `all` from its image CMD, as before
-the split. The role code needs no revert.
-
-The saved spec predates step 6, so restoring it also removes `FIREFLIES_API_KEY`. Leave it
-unset while one service runs every worker: a coach intake run on the API's 1 GB is what took
-the API down on 2026-10-19.
+the split. The role code needs no revert. The saved spec predates step 6, so it carries no
+`FIREFLIES_API_KEY`: leave it unset while one service runs every worker, or the 2026-10-19
+outage comes back.
 
 ## Rolling back to an older image
 
@@ -193,8 +219,11 @@ An image older than the newest migration in the database cannot start the servic
 migrator refuses a database holding migrations its folder lacks (see
 `coach-migration-rollback.md`). For that deploy, set the service's run command to
 `bun --bun run ./dist/index.js` so it skips the migrator, and remove the run command again on
-the next deploy of a current image. The worker needs nothing: the older image's migrations are
-a subset of what the database holds, so it finds none pending and starts.
+the next deploy of a current image. The worker needs nothing for that: the older image's
+migrations are a subset of what the database holds, so it finds none pending and starts.
+
+An image from before the split does not know the roles (see above): roll the spec back with
+it, so a single service runs everything as it did then.
 
 ## Migrations
 
@@ -204,12 +233,22 @@ migrated schema, and if the new service fails after migrating, the previous vers
 serving on it. A migration that is not additive needs its own staged deploy.
 
 A migration expected to take longer than 30 s is applied ahead of its deploy, so it is already
-done when the image starts and the service's start stays inside its 360 s window. From a
-checkout of the commit being deployed, with `POSTGRES_URL` pointing at production:
+done when the image starts and the service's start stays inside its 360 s window. Apply it
+only from the merged commit, never from a branch: a migration the database ran that `main`
+never gets (a PR changed in review, abandoned, or overtaken by a later-dated migration) makes
+the next image's migrator refuse to start.
 
-```bash
-cd packages/database
-bun run migrate:deploy
-```
+1. Turn off `deploy_on_push` on both components and apply the spec.
+2. Merge, and wait for CI to push the image.
+3. From a clean checkout of that merged commit (`git status --porcelain` empty,
+   `git rev-parse HEAD` the image's commit), with the production connection given inline and
+   not written to any `.env` file, and the cluster's CA certificate (TLS is verified):
 
-Then merge. The service's migrator finds nothing pending, and the worker's wait passes at once.
+   ```bash
+   cd packages/database
+   POSTGRES_URL='<production url>' POSTGRES_CA_CERT="$(cat <ca file>)" bun run migrate:deploy
+   ```
+
+   If your address had to be added to the cluster's trusted sources, remove it afterwards.
+4. Deploy (`doctl apps create-deployment <app-id>`), then turn `deploy_on_push` back on. The
+   service's migrator finds nothing pending, and the worker's wait passes at once.

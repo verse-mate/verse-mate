@@ -1,14 +1,16 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { db } from "database";
+import { MIGRATIONS_DIR, type db } from "database";
 import { FileMigrationProvider, type Kysely, Migrator } from "kysely";
 
 const INTERVAL_MS = 5_000;
 const TIMEOUT_MS = 15 * 60_000;
 
+type PendingSource = Pick<Migrator, "getMigrations">;
+
 export function imageMigrator(
   connection: ReturnType<typeof db.getOrCreateConnection>,
-  migrationFolder = path.join(import.meta.dir, "../migrations"),
+  migrationFolder = MIGRATIONS_DIR,
   migrationTableName?: string,
 ): Migrator {
   return new Migrator({
@@ -21,23 +23,40 @@ export function imageMigrator(
   });
 }
 
-async function pendingCount(migrator: Migrator): Promise<number | undefined> {
+async function pendingCount(
+  migrator: PendingSource,
+  timeLeftMs: number,
+): Promise<number | undefined> {
+  let timer: Timer | undefined;
   try {
-    const migrations = await migrator.getMigrations();
+    const migrations = await Promise.race([
+      migrator.getMigrations(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("the read timed out")),
+          Math.max(timeLeftMs, 0),
+        );
+      }),
+    ]);
     return migrations.filter((migration) => !migration.executedAt).length;
   } catch (error) {
-    console.error("[QUEUE] Could not read the migrations:", error);
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") throw error;
+    console.error(
+      `[QUEUE] Could not read the migrations: ${(error as Error).message}`,
+    );
     return undefined;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 export async function waitForMigrations(
-  migrator: Migrator,
+  migrator: PendingSource,
   { intervalMs = INTERVAL_MS, timeoutMs = TIMEOUT_MS } = {},
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
-    const pending = await pendingCount(migrator);
+    const pending = await pendingCount(migrator, deadline - Date.now());
     if (pending === 0) return;
     if (Date.now() >= deadline) {
       throw new Error(
