@@ -403,6 +403,9 @@ describe("Coach class schemas", () => {
     classDate: "2026-07-23",
     recurrence: "weekly",
     zoomLink: "https://zoom.us/j/123456789",
+    startTime: "19:00",
+    timeZone: "America/Chicago",
+    notetaker: true,
   };
 
   it("validates a well-formed class and allows a null date", () => {
@@ -457,6 +460,30 @@ describe("Coach class schemas", () => {
         zoomLink: "",
       }),
     ).toBe(true);
+  });
+
+  it("takes a start time, zone and notetaker choice, and a class without them still validates", () => {
+    expect(
+      Value.Check(CoachClassDto, {
+        name: "X",
+        classDate: "2026-10-22",
+        recurrence: "weekly",
+        zoomLink: "https://zoom.us/j/1",
+        startTime: "19:00",
+        timeZone: "America/Chicago",
+        notetaker: false,
+      }),
+    ).toBe(true);
+    expect(
+      Value.Check(CoachClassSchema, {
+        ...validClass,
+        startTime: null,
+        timeZone: null,
+      }),
+    ).toBe(true);
+    expect(
+      Value.Check(CoachClassSchema, { ...validClass, notetaker: undefined }),
+    ).toBe(false);
   });
 });
 

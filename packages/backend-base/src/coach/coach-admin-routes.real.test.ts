@@ -7,6 +7,7 @@ import { sql } from "kysely";
 import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import { NOTETAKER_TOKEN } from "./coach-notetaker";
 import { isolateTable } from "./coach-test-tables";
 import { MemoryStorage } from "./coach-upload.fixture";
 import coachPlugin from "./coach.plugin";
@@ -56,6 +57,10 @@ let userId = "";
 let token = "";
 
 async function clear() {
+  await conn
+    .deleteFrom("coach_classes")
+    .where("coach_id", "in", [LEADER, OTHER])
+    .execute();
   await conn
     .deleteFrom("coach_intake_sessions")
     .where("source_session_id", "in", SESSIONS)
@@ -1094,5 +1099,120 @@ describe("the parallel-run comparison route", () => {
         reportId: ALONE,
       },
     ]);
+  });
+});
+
+describe("an admin schedules a class for the notetaker", () => {
+  const FEED_TOKEN = "real-routes-notetaker-token";
+  let pings = 0;
+
+  beforeAll(() => {
+    process.env[NOTETAKER_TOKEN] = FEED_TOKEN;
+    (store.coachService as CoachService).notifyNotetaker = async () => {
+      pings += 1;
+    };
+  });
+  afterAll(() => {
+    delete process.env[NOTETAKER_TOKEN];
+  });
+
+  async function feed(authorization?: string) {
+    const res = await app.handle(
+      new Request("http://localhost/coach/notetaker/classes", {
+        headers: authorization ? { authorization } : {},
+      }),
+    );
+    const text = await res.text();
+    return {
+      status: res.status,
+      body: text ? (JSON.parse(text) as Record<string, any>) : null,
+    };
+  }
+
+  const thursday = {
+    coachId: LEADER,
+    name: "Thursday evening, James",
+    classDate: "2026-10-22",
+    recurrence: "weekly",
+    zoomLink: "https://us02web.zoom.us/j/81234567890?pwd=abc",
+    startTime: "19:00",
+    timeZone: "America/Chicago",
+  };
+
+  it("for a leader who has not signed up; the notetaker reads it with its token and is told of every change", async () => {
+    const created = await call("POST", "classes", thursday);
+    expect(created.status).toBe(200);
+    expect(created.body?.class).toMatchObject({
+      name: thursday.name,
+      startTime: "19:00",
+      timeZone: "America/Chicago",
+      notetaker: true,
+      leader: { id: LEADER, email: LEADER_EMAIL, name: "Rhea Ronan" },
+    });
+    const id = created.body?.class.id as string;
+    expect(pings).toBe(1);
+
+    expect((await feed()).status).toBe(401);
+    expect((await feed(`Bearer ${token}`)).status).toBe(401);
+    const listed = await feed(`Bearer ${FEED_TOKEN}`);
+    expect(listed.status).toBe(200);
+    expect(
+      listed.body?.classes.find((c: { id: string }) => c.id === id),
+    ).toMatchObject({
+      zoomLink: thursday.zoomLink,
+      leader: { id: LEADER, email: LEADER_EMAIL },
+    });
+
+    const { coachId: _, ...body } = thursday;
+    const off = await call("PUT", `classes/${id}`, {
+      ...body,
+      notetaker: false,
+    });
+    expect(off.status).toBe(200);
+    expect(off.body?.class.notetaker).toBe(false);
+    expect(pings).toBe(2);
+    const after = await feed(`Bearer ${FEED_TOKEN}`);
+    expect(after.body?.classes.some((c: { id: string }) => c.id === id)).toBe(
+      false,
+    );
+
+    const all = await call("GET", "classes");
+    expect(
+      all.body?.classes.find((c: { id: string }) => c.id === id)?.leader.id,
+    ).toBe(LEADER);
+
+    expect((await call("DELETE", `classes/${id}`)).status).toBe(200);
+    expect(pings).toBe(3);
+    const gone = await call("DELETE", `classes/${id}`);
+    expect(gone.status).toBe(404);
+    expect(gone.body?.details?.refusal).toBe("unknown-class");
+  });
+
+  it("refuses an unknown leader, a malformed time and a time without its zone", async () => {
+    const unknown = await call("POST", "classes", {
+      ...thursday,
+      coachId: "nobody-at-all",
+    });
+    expect(unknown.status).toBe(404);
+    expect(
+      (await call("POST", "classes", { ...thursday, startTime: "7pm" })).status,
+    ).toBe(400);
+    expect(
+      (await call("POST", "classes", { ...thursday, timeZone: "" })).status,
+    ).toBe(400);
+    expect(
+      (await call("POST", "classes", { ...thursday, timeZone: "Mars/Olympus" }))
+        .status,
+    ).toBe(400);
+  });
+
+  it("an admin sees the notetaker as unavailable when it is not configured", async () => {
+    const zoom = await call("GET", "notetaker/zoom");
+    expect(zoom.status).toBe(200);
+    expect(zoom.body).toMatchObject({
+      available: false,
+      connections: [],
+      meetings: [],
+    });
   });
 });

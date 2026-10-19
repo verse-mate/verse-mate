@@ -35,6 +35,13 @@ import {
 } from "./coach-governance.service";
 import type { ProgramReport } from "./coach-monthly.service";
 import {
+  type NotetakerConnection,
+  type NotetakerMeeting,
+  notetakerZoom,
+  pingNotetaker,
+  zoomMeetingId,
+} from "./coach-notetaker";
+import {
   type RetainedKind,
   RetainedMediaService,
 } from "./coach-retained-media.service";
@@ -2803,14 +2810,29 @@ export class CoachService {
 
   // ─── Classes (many per leader) ────────────────────────────────────────────
   // Every class op is gated on the caller being a coachee (recordFor). An
-  // admin who is not also a coachee has no classes of their own; they read the
-  // whole cohort via listAllClasses().
+  // admin who is not also a coachee has no classes of their own; they read and
+  // schedule the whole cohort's (listAllClasses, adminAddClass...). Every
+  // change tells the notetaker, which records the classes (coach-notetaker.ts).
+
+  /** Tells the notetaker the classes changed; replaced in tests. */
+  notifyNotetaker: () => Promise<void> = () => pingNotetaker();
+
+  private classesChanged(): void {
+    // Not awaited: the leader's save never waits on the notetaker.
+    void this.notifyNotetaker();
+  }
+
+  private static ownerOf(userId: string, record: CoachRecord) {
+    return { userId, coachId: record.id };
+  }
 
   /** A leader's classes, most-recently-updated first. null → not a coach. */
   async getClasses(userId: string): Promise<CoachClass[] | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return this.coachRepository.listClasses(userId);
+    return this.coachRepository.listClasses(
+      CoachService.ownerOf(userId, record),
+    );
   }
 
   async addClass(
@@ -2819,7 +2841,12 @@ export class CoachService {
   ): Promise<CoachClass | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return this.coachRepository.createClass(userId, input);
+    const created = await this.coachRepository.createClass(
+      CoachService.ownerOf(userId, record),
+      input,
+    );
+    this.classesChanged();
+    return created;
   }
 
   /** Update a class the caller owns. null → not a coach OR unknown class id
@@ -2831,7 +2858,13 @@ export class CoachService {
   ): Promise<CoachClass | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return this.coachRepository.updateClass(userId, classId, input);
+    const updated = await this.coachRepository.updateClass(
+      CoachService.ownerOf(userId, record),
+      classId,
+      input,
+    );
+    if (updated) this.classesChanged();
+    return updated;
   }
 
   /** Delete a class the caller owns. Returns 'not_coach' | 'not_found' |
@@ -2842,39 +2875,176 @@ export class CoachService {
   ): Promise<"not_coach" | "not_found" | "deleted"> {
     const record = await this.recordFor(userId);
     if (!record) return "not_coach";
-    const ok = await this.coachRepository.deleteClass(userId, classId);
+    const ok = await this.coachRepository.deleteClass(
+      CoachService.ownerOf(userId, record),
+      classId,
+    );
+    if (ok) this.classesChanged();
     return ok ? "deleted" : "not_found";
   }
 
+  /** An admin schedules a class for a roster leader, signed up or not. null →
+   *  no such leader. */
+  async adminAddClass(
+    coachId: string,
+    input: CoachClassInput,
+  ): Promise<AdminCoachClass | null> {
+    const record = await this.resolveById(coachId);
+    if (!record) return null;
+    const created = await this.coachRepository.createClass(
+      {
+        userId: await this.coachRepository.leaderUserId(record.id),
+        coachId: record.id,
+      },
+      input,
+    );
+    this.classesChanged();
+    return {
+      ...created,
+      leader: { id: record.id, name: record.name, email: record.email },
+    };
+  }
+
+  /** An admin edits any class. null → unknown class id. */
+  async adminUpdateClass(
+    classId: string,
+    input: CoachClassInput,
+  ): Promise<CoachClass | null> {
+    const updated = await this.coachRepository.updateClass(
+      null,
+      classId,
+      input,
+    );
+    if (updated) this.classesChanged();
+    return updated;
+  }
+
+  /** An admin deletes any class. false → unknown class id. */
+  async adminRemoveClass(classId: string): Promise<boolean> {
+    const ok = await this.coachRepository.deleteClass(null, classId);
+    if (ok) this.classesChanged();
+    return ok;
+  }
+
   /** Every leader's classes with owner identity resolved (admin export). The
-   *  Fireflies operator reads this to configure which meeting links the bot
-   *  auto-joins. Owner name comes from the coaching roster when the account is
-   *  a known leader; otherwise it falls back to the account's email. */
+   *  owner is the roster leader the class was scheduled for; a class made
+   *  before classes carried that resolves through its account's current
+   *  address. */
   async listAllClasses(): Promise<AdminCoachClass[]> {
     const rows = await this.coachRepository.listAllClasses();
-    // Resolve each distinct user_id once → email → roster record.
-    const emailCache = new Map<string, string | null>();
+    // Resolve each distinct owner once.
+    const byCoach = new Map<string, CoachRecord | null>();
+    const byUser = new Map<
+      string,
+      { email: string | null; record: CoachRecord | null }
+    >();
     const out: AdminCoachClass[] = [];
     for (const row of rows) {
-      if (!emailCache.has(row.userId)) {
-        emailCache.set(row.userId, await this.emailFor(row.userId));
+      const { userId, coachId, ...cls } = row;
+      let record: CoachRecord | null = null;
+      let email: string | null = null;
+      if (coachId) {
+        if (!byCoach.has(coachId))
+          byCoach.set(coachId, await this.resolveById(coachId));
+        record = byCoach.get(coachId) ?? null;
+        email = record?.email ?? null;
       }
-      const email = emailCache.get(row.userId) ?? null;
-      const record = email ? await this.resolveByEmail(email) : null;
+      if (!record && userId) {
+        if (!byUser.has(userId)) {
+          const address = await this.emailFor(userId);
+          byUser.set(userId, {
+            email: address,
+            record: address ? await this.resolveByEmail(address) : null,
+          });
+        }
+        const found = byUser.get(userId);
+        record = found?.record ?? null;
+        email = found?.email ?? null;
+      }
       out.push({
-        id: row.id,
-        name: row.name,
-        classDate: row.classDate,
-        recurrence: row.recurrence,
-        zoomLink: row.zoomLink,
+        ...cls,
         leader: {
-          id: record?.id ?? null,
+          id: record?.id ?? coachId ?? null,
           name: record?.name ?? email ?? "Unknown",
           email: email ?? "",
         },
       });
     }
     return out;
+  }
+
+  /** What the notetaker records: every class marked for it that has a
+   *  meeting link. Whether it has enough of a schedule to join is the
+   *  notetaker's call, so the admin screen and the notetaker agree. */
+  async notetakerClasses(): Promise<AdminCoachClass[]> {
+    return (await this.listAllClasses()).filter(
+      (c) => c.notetaker && c.zoomLink !== "",
+    );
+  }
+
+  /** Whether the signed-in leader's Zoom account is connected to the
+   *  notetaker: matched on their account address or roster address. null →
+   *  not a coach. `known` false when the notetaker did not answer. */
+  async notetakerStatus(userId: string): Promise<{
+    known: boolean;
+    connected: boolean;
+    zoomEmail: string | null;
+  } | null> {
+    const record = await this.recordFor(userId);
+    if (!record) return null;
+    const zoom = await notetakerZoom();
+    if (!zoom) return { known: false, connected: false, zoomEmail: null };
+    const mine = new Set(
+      [await this.emailFor(userId), record.email]
+        .filter((e): e is string => Boolean(e))
+        .map((e) => e.trim().toLowerCase()),
+    );
+    const hit = zoom.connections.find((c) => mine.has(c.email));
+    return {
+      known: true,
+      connected: Boolean(hit),
+      zoomEmail: hit?.email ?? null,
+    };
+  }
+
+  /** The admin's view of the notetaker: who connected Zoom, each matched to a
+   *  roster leader by address, and their scheduled meetings, each marked when
+   *  a class already records it. null → the notetaker did not answer. */
+  async notetakerZoomOverview(): Promise<{
+    connections: Array<
+      NotetakerConnection & { leader: { id: string; name: string } | null }
+    >;
+    meetings: Array<
+      NotetakerMeeting & {
+        leader: { id: string; name: string } | null;
+        classId: string | null;
+      }
+    >;
+  } | null> {
+    const zoom = await notetakerZoom();
+    if (!zoom) return null;
+    const leaders = new Map<string, { id: string; name: string } | null>();
+    const leaderFor = async (email: string) => {
+      if (!leaders.has(email)) {
+        const r = email ? await this.resolveByEmail(email) : null;
+        leaders.set(email, r ? { id: r.id, name: r.name } : null);
+      }
+      return leaders.get(email) ?? null;
+    };
+    const classes = await this.coachRepository.listAllClasses();
+    const classFor = (meetingId: string) =>
+      classes.find((c) => zoomMeetingId(c.zoomLink) === meetingId)?.id ?? null;
+    const connections = [];
+    for (const c of zoom.connections)
+      connections.push({ ...c, leader: await leaderFor(c.email) });
+    const meetings = [];
+    for (const m of zoom.meetings)
+      meetings.push({
+        ...m,
+        leader: await leaderFor(m.hostEmail),
+        classId: classFor(m.meetingId),
+      });
+    return { connections, meetings };
   }
 
   /** Derive the chart series from a coach's reports. Pure, exported shape
