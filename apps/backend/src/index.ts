@@ -7,6 +7,7 @@ import {
   biblePlugin,
   coachPlugin,
   corsPlugin,
+  crawlersPlugin,
   dailyVersePlugin,
   healthCheckPlugin,
   jesusPlugin,
@@ -40,7 +41,7 @@ const MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024;
 const app = new Elysia({
   serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES },
 })
-  // Handle favicon.ico requests to prevent NOT_FOUND errors from browsers
+  .use(crawlersPlugin)
   .get("/favicon.ico", () => new Response(null, { status: 204 }))
   .use(authPlugin)
   .use(userPlugin)

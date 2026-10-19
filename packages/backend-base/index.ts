@@ -11,6 +11,7 @@ import type { BiblePlugin } from "./src/bible/bible.plugin";
 import coachPlugin from "./src/coach/coach.plugin";
 import type { CoachPlugin } from "./src/coach/coach.plugin";
 import corsPlugin from "./src/cors/cors.plugin";
+import crawlersPlugin from "./src/crawlers/crawlers.plugin";
 import healthCheckPlugin from "./src/healthcheck/healthcheck.plugin";
 import type { HealthCheckPlugin } from "./src/healthcheck/healthcheck.plugin";
 import userPlugin from "./src/user/user.plugin";
@@ -60,6 +61,7 @@ export {
   type CoachPlugin,
   coachPlugin,
   corsPlugin,
+  crawlersPlugin,
   type AudioPlugin,
   audioPlugin,
   type BibleBrainPlugin,
