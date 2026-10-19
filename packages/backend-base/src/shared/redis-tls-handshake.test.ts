@@ -92,6 +92,7 @@ function testCertificates() {
 describe("Redis TLS handshake", () => {
   const ORIGINAL_CA = process.env.REDIS_CA_CERT;
   const certificates = testCertificates();
+  const unrelatedCa = testCertificates().ca;
   let server: Server;
   let url: string;
   let settle: ((outcome: Handshake) => void) | undefined;
@@ -173,6 +174,12 @@ describe("Redis TLS handshake", () => {
   ] as const) {
     it(`${name} refuses a server certificate it cannot verify`, async () => {
       Reflect.deleteProperty(process.env, "REDIS_CA_CERT");
+
+      expect(await handshake()).toBe("refused");
+    });
+
+    it(`${name} refuses a server certificate REDIS_CA_CERT did not sign`, async () => {
+      process.env.REDIS_CA_CERT = unrelatedCa;
 
       expect(await handshake()).toBe("refused");
     });

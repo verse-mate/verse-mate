@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { rootCertificates } from "node:tls";
 import { redisTlsOptions } from "./redis-tls";
 
 const ORIGINAL_CA = process.env.REDIS_CA_CERT;
@@ -12,22 +13,19 @@ describe("Redis TLS options for the queue connection", () => {
     else process.env.REDIS_CA_CERT = ORIGINAL_CA;
   });
 
-  it("verifies the server certificate against the configured CA", () => {
+  it("verifies the server certificate against the configured CA and the system CAs", () => {
     process.env.REDIS_CA_CERT = CA;
 
     expect(redisTlsOptions(MANAGED_URL)).toEqual({
       rejectUnauthorized: true,
-      ca: CA,
+      ca: [...rootCertificates, CA],
     });
   });
 
   it("turns literal \\n escapes in the CA into line breaks", () => {
     process.env.REDIS_CA_CERT = CA.replace(/\n/g, "\\n");
 
-    expect(redisTlsOptions(MANAGED_URL)).toEqual({
-      rejectUnauthorized: true,
-      ca: CA,
-    });
+    expect(redisTlsOptions(MANAGED_URL)?.ca?.at(-1)).toBe(CA);
   });
 
   it("verifies against the system CAs when no CA is configured", () => {
