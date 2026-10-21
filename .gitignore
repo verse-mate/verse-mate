@@ -198,3 +198,5 @@ FIGMA_MIGRATION_SPEC.md
 playwright-report/
 test-results/
 .gstack/
+
+coach.data.json

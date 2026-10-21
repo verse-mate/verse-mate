@@ -4,21 +4,15 @@ import { Elysia } from "elysia";
 
 import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
-import coachDataJson from "./coach.data.json";
+import { FIXTURE_LEADERS, FIXTURE_REPORTS } from "./coach-fixture";
 import coachPlugin, { EMAIL_RULE } from "./coach.plugin";
 
 const USER = "media-routes-user";
-const bundledCoach = (
-  coachDataJson as unknown as {
-    coaches: Array<{
-      id: string;
-      name: string;
-      group: string;
-      coachName: string;
-      reports: Array<Record<string, unknown>>;
-    }>;
-  }
-).coaches[0];
+const bundledCoach = {
+  ...FIXTURE_LEADERS[0],
+  id: FIXTURE_LEADERS[0].slug,
+  reports: [FIXTURE_REPORTS[0].report],
+};
 const bundledProfile = {
   id: bundledCoach.id,
   name: bundledCoach.name,

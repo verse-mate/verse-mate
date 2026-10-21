@@ -15,7 +15,6 @@ import {
   replayOrder,
   selectEligible,
 } from "./coach-calibration";
-import coachDataJson from "./coach.data.json";
 import { DIMENSIONS } from "./rubric";
 
 function report(
@@ -67,50 +66,6 @@ describe("eligibility is an explicit filter, and its count is derived", () => {
     expect(result.totalDimensionEntries).toBe(24);
     expect(result.emptyRationaleEntries).toBe(12);
   });
-
-  it("the DEPLOYED corpus's exclusions are measured, not taken from the design", () => {
-    // Design D3 says nine reports were reconstructed. Measured against the
-    // bundle this run reads it is more than that, and the empty-rationale
-    // entries are entirely explained by them, no report has only SOME
-    // rationales missing. A hardcoded nine would have quietly admitted the
-    // rest into the calibration set.
-    const bundle = coachDataJson as unknown as {
-      coaches: Array<{
-        id: string;
-        reports: Array<{
-          id: string;
-          date: string;
-          dimensions?: Array<{
-            n: number;
-            score: number | null;
-            note?: string;
-          }>;
-        }>;
-      }>;
-    };
-    const corpus: HandScoredReport[] = bundle.coaches.flatMap((c) =>
-      c.reports.map((r) => ({
-        coachId: c.id,
-        reportId: r.id,
-        date: r.date,
-        dimensions: (r.dimensions ?? []).map((d) => ({
-          n: d.n,
-          score: d.score,
-          rationale: d.note ?? "",
-        })),
-      })),
-    );
-
-    const result = selectEligible(corpus);
-    const totalReports = corpus.length;
-    expect(result.eligible.length + result.excluded.length).toBe(totalReports);
-    // Every excluded report contributes exactly its full dimension set to the
-    // empty count, which is the evidence that the share is whole reports and
-    // not scattered gaps.
-    const excludedEntries = result.excluded.length * DIMENSIONS.length;
-    expect(result.emptyRationaleEntries).toBe(excludedEntries);
-    expect(result.excluded.length).toBeGreaterThan(0);
-  });
 });
 
 describe("an incomplete hand report is not a partial comparison", () => {
@@ -142,42 +97,6 @@ describe("an incomplete hand report is not a partial comparison", () => {
     const { eligible, excluded } = selectEligible([withNulls]);
     expect(eligible.map((r) => r.reportId)).toEqual(["r-nulls"]);
     expect(excluded).toEqual([]);
-  });
-
-  it("the BUNDLED corpus carries all twelve on every report", () => {
-    // Measured, not assumed: if a future bundle drops dimensions, the
-    // calibration's eligible count moves and this says so.
-    const corpus = (
-      coachDataJson as {
-        coaches: Array<{
-          id: string;
-          reports: Array<{
-            id: string;
-            date: string;
-            dimensions: Array<{
-              n: number;
-              score: number | null;
-              note?: string;
-            }>;
-          }>;
-        }>;
-      }
-    ).coaches.flatMap((c) =>
-      c.reports.map((r) => ({
-        coachId: c.id,
-        reportId: r.id,
-        date: r.date,
-        dimensions: r.dimensions.map((d) => ({
-          n: d.n,
-          score: d.score,
-          rationale: d.note ?? "",
-        })),
-      })),
-    );
-    const { excluded } = selectEligible(corpus);
-    expect(
-      excluded.filter((e) => e.reason === "incomplete-dimensions"),
-    ).toEqual([]);
   });
 });
 

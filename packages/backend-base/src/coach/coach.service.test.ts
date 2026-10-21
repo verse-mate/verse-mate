@@ -1,6 +1,15 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { Value } from "@sinclair/typebox/value";
-import coachDataJson from "./coach.data.json";
+import { db as Database } from "database";
+import {
+  FIXTURE_ADMIN,
+  FIXTURE_LEADERS,
+  FIXTURE_MONTH,
+  FIXTURE_NARRATIVE,
+  FIXTURE_REPORTS,
+  clearCoachFixture,
+  seedCoachFixture,
+} from "./coach-fixture";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
@@ -12,6 +21,10 @@ import {
   CoachService,
 } from "./coach.service";
 import { CoachClassDto } from "./dto/coach.dto";
+import { CoachRepository } from "./repository/coach.repository";
+
+const LEADER = FIXTURE_LEADERS[0].slug;
+const LEADER_EMAIL = FIXTURE_LEADERS[0].email;
 
 // buildTrends is a pure static — exercise it without a DB connection.
 
@@ -211,188 +224,107 @@ describe("ReportSchema sections field", () => {
   });
 });
 
-const BUNDLED_LEADER =
-  coachDataJson.coaches.find((c) => c.reports.length > 1)?.id ?? "";
-const MONTHLY_LEADER =
-  Object.entries(coachDataJson.monthlyLeaderSummaries).find(
-    ([, byMonth]) => "2026-06" in byMonth,
-  )?.[0] ?? "";
-
 describe("CoachService admin oversight", () => {
-  // listCoaches / getReportsById now merge admin-added leaders and overlay
-  // recording links + notes from the DB. A fully-chainable query-builder stub
-  // that resolves every terminal to [] means "no added leaders, no overlays",
-  // so the assertions below reflect the bundled dataset unchanged.
-  const emptyQuery: Record<string, unknown> = new Proxy(
-    {},
-    {
-      get(_t, prop) {
-        if (prop === "execute") return async () => [];
-        if (prop === "executeTakeFirst") return async () => undefined;
-        return () => emptyQuery;
-      },
-    },
-  );
-  const stubDb = {
-    getOrCreateConnection: () => ({
-      selectFrom: () => emptyQuery,
-      insertInto: () => emptyQuery,
-    }),
-  } as unknown as ConstructorParameters<typeof CoachService>[0];
-  const adminSvc = new CoachService(stubDb);
+  const service = new CoachService(Database);
+  beforeAll(() => seedCoachFixture(Database));
+  afterAll(() => clearCoachFixture(Database));
 
   it("lists every coach with a newest-first latest summary", async () => {
-    const coaches = await adminSvc.listCoaches();
-    expect(coaches.length).toBeGreaterThan(0);
-    const leader = coaches.find((c) => c.id === BUNDLED_LEADER);
-    expect(leader).toBeDefined();
-    expect(leader?.sessionCount).toBeGreaterThanOrEqual(1);
-    // latest.date must be >= every other report date for that coach.
-    const reports = (await adminSvc.getReportsById(BUNDLED_LEADER)) ?? [];
+    const leader = (await service.listCoaches()).find((c) => c.id === LEADER);
+    expect(leader?.sessionCount).toBe(3);
+    const reports = (await service.getReportsById(LEADER)) ?? [];
     const maxDate = reports.reduce((m, r) => (r.date > m ? r.date : m), "");
     expect(leader?.latest?.date).toBe(maxDate);
   });
 
   it("returns reports for a known coach id and null for an unknown one", async () => {
-    expect(await adminSvc.getReportsById(BUNDLED_LEADER)).not.toBeNull();
-    expect(await adminSvc.getReportsById("nope")).toBeNull();
-    expect(await adminSvc.getTrendsById("nope")).toBeNull();
-    expect(await adminSvc.getProfileById("nope")).toBeNull();
+    expect(await service.getReportsById(LEADER)).not.toBeNull();
+    expect(await service.getReportsById("nope")).toBeNull();
+    expect(await service.getTrendsById("nope")).toBeNull();
+    expect(await service.getProfileById("nope")).toBeNull();
   });
 
   it("lists only months that actually have reports (newest first)", async () => {
-    const monthly = await adminSvc.getMonthly("2026-07");
-    // Every listed month must be present in the underlying dataset — a month
-    // with no reports must never appear in the picker.
-    const reportMonths = new Set<string>();
-    for (const c of await adminSvc.listCoaches()) {
-      const reps = (await adminSvc.getReportsById(c.id)) ?? [];
-      for (const r of reps) reportMonths.add(r.date.slice(0, 7));
-    }
-    expect(monthly.availableMonths.length).toBeGreaterThan(0);
-    for (const m of monthly.availableMonths)
-      expect(reportMonths.has(m)).toBe(true);
+    const monthly = await service.getMonthly(FIXTURE_MONTH);
+    expect(monthly.availableMonths).toContain("2033-03");
+    expect(monthly.availableMonths).toContain("2033-02");
+    expect(monthly.availableMonths).not.toContain("2033-01");
     expect(
       [...monthly.availableMonths].sort((a, b) => (a < b ? 1 : -1)),
     ).toEqual(monthly.availableMonths);
-    // A month the dataset never covers is absent.
-    expect(monthly.availableMonths).not.toContain("2025-12");
   });
 
   it("returns a leader's monthly summary (admin drill-in) with picker months", async () => {
-    const res = await adminSvc.getMonthlySummaryById(MONTHLY_LEADER, "2026-06");
-    expect(res).not.toBeNull();
-    expect(res?.profile.id).toBe(MONTHLY_LEADER);
-    expect(res?.summary).not.toBeNull();
-    expect(res?.summary?.month).toBe("2026-06");
+    const res = await service.getMonthlySummaryById(LEADER, FIXTURE_MONTH);
+    expect(res?.profile.id).toBe(LEADER);
+    expect(res?.summary?.month).toBe(FIXTURE_MONTH);
     expect(res?.summary?.clusters.length).toBe(4);
-    expect(res?.summary?.sessions.length).toBeGreaterThan(0);
-    const months = res?.availableMonths ?? [];
-    expect(months.length).toBeGreaterThan(0);
-    // newest-first
-    expect([...months].sort((a, b) => (a < b ? 1 : -1))).toEqual(months);
-    // A month the leader has no summary for → summary null, months still listed.
-    const empty = await adminSvc.getMonthlySummaryById(
-      MONTHLY_LEADER,
-      "2030-01",
-    );
+    expect(res?.availableMonths).toEqual(["2033-03", "2033-02"]);
+    const empty = await service.getMonthlySummaryById(LEADER, "2030-01");
     expect(empty?.summary).toBeNull();
-    expect(empty?.availableMonths.length).toBeGreaterThan(0);
-    // Unknown leader → null.
-    expect(await adminSvc.getMonthlySummaryById("nope", "2026-06")).toBeNull();
+    expect(empty?.availableMonths).toEqual(["2033-03", "2033-02"]);
+    expect(
+      await service.getMonthlySummaryById("nope", FIXTURE_MONTH),
+    ).toBeNull();
   });
 
   it("passes through the program narrative for a month that has one", async () => {
-    const may = await adminSvc.getMonthly("2026-05");
-    expect(may.narrative).not.toBeNull();
-    expect(Array.isArray(may.narrative?.executiveSummary)).toBe(true);
-    expect(may.narrative?.executiveSummary.length ?? 0).toBeGreaterThan(0);
-    expect(Array.isArray(may.narrative?.trends)).toBe(true);
-    // A month the dataset carries no narrative for → null (never throws).
-    const empty = await adminSvc.getMonthly("2030-01");
-    expect(empty.narrative).toBeNull();
+    expect((await service.getMonthly(FIXTURE_MONTH)).narrative).toEqual(
+      FIXTURE_NARRATIVE,
+    );
+    expect((await service.getMonthly("2030-01")).narrative).toBeNull();
   });
 
   it("carries the same availableMonths regardless of which month is queried", async () => {
-    const jul = await adminSvc.getMonthly("2026-07");
-    const jan = await adminSvc.getMonthly("2026-01");
-    expect(jan.availableMonths).toEqual(jul.availableMonths);
-    // An empty month still reports zero leaders but the full picker list.
-    const empty = await adminSvc.getMonthly("2030-01");
+    const one = await service.getMonthly(FIXTURE_MONTH);
+    const empty = await service.getMonthly("2030-01");
     expect(empty.leaders).toHaveLength(0);
-    expect(empty.availableMonths).toEqual(jul.availableMonths);
+    expect(empty.availableMonths).toEqual(one.availableMonths);
   });
 });
 
 describe("CoachService recording-link auto-attach", () => {
-  // A table-aware query stub: coach_zoom_links terminal → the saved meeting
-  // link; coach_recording_links terminal → the seeded explicit links; all
-  // other terminals → empty.
-  function stubDbFor(opts: {
-    zoomLink?: string;
-    recordingLinks?: Record<string, string>;
-  }) {
-    const recordingRows = Object.entries(opts.recordingLinks ?? {}).map(
-      ([report_id, recording_url]) => ({ report_id, recording_url }),
-    );
-    const builderFor = (table: string) => {
-      const b: Record<string, unknown> = new Proxy(
-        {},
-        {
-          get(_t, prop) {
-            if (prop === "execute")
-              return async () =>
-                table === "coach_recording_links" ? recordingRows : [];
-            if (prop === "executeTakeFirst")
-              return async () =>
-                table === "coach_zoom_links" && opts.zoomLink
-                  ? { zoom_link: opts.zoomLink }
-                  : undefined;
-            return () => b;
-          },
-        },
-      );
-      return b;
-    };
-    return {
-      getOrCreateConnection: () => ({
-        selectFrom: (table: string) => builderFor(table),
-        insertInto: () => builderFor("_"),
-      }),
-    } as unknown as ConstructorParameters<typeof CoachService>[0];
-  }
+  const service = new CoachService(Database);
+  const conn = Database.getOrCreateConnection();
+  const zoom = "https://zoom.us/j/555000111";
+  let userId = "";
 
-  it("auto-attaches the leader's saved meeting link when no explicit link is set", async () => {
-    const zoom = "https://zoom.us/j/555000111";
-    const svc = new CoachService(stubDbFor({ zoomLink: zoom }));
-    const reports = (await svc.getReportsById(BUNDLED_LEADER)) ?? [];
-    expect(reports.length).toBeGreaterThan(0);
-    for (const r of reports) expect(r.recordingUrl).toBe(zoom);
+  beforeAll(async () => {
+    await seedCoachFixture(Database);
+    await conn.deleteFrom("user").where("email", "=", LEADER_EMAIL).execute();
+    userId = (
+      await conn
+        .insertInto("user")
+        .values({ email: LEADER_EMAIL, firstName: "A", lastName: "L" })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
   });
-
-  it("lets an explicit recording link override the auto-attached meeting link", async () => {
-    const zoom = "https://zoom.us/j/555000111";
-    const explicit = "https://drive.google.com/file/session-1";
-    // Grab a real report id first, then seed an explicit link for it.
-    const ids =
-      (await new CoachService(stubDbFor({})).getReportsById(BUNDLED_LEADER)) ??
-      [];
-    const targetId = ids[0]?.id ?? "";
-    const svc = new CoachService(
-      stubDbFor({ zoomLink: zoom, recordingLinks: { [targetId]: explicit } }),
-    );
-    const reports = (await svc.getReportsById(BUNDLED_LEADER)) ?? [];
-    expect(reports.find((r) => r.id === targetId)?.recordingUrl).toBe(explicit);
-    // Every other session still gets the auto-attached meeting link.
-    for (const r of reports.filter((r) => r.id !== targetId)) {
-      expect(r.recordingUrl).toBe(zoom);
-    }
+  afterAll(async () => {
+    await clearCoachFixture(Database);
+    await conn.deleteFrom("user").where("email", "=", LEADER_EMAIL).execute();
   });
 
   it("leaves the recording link empty when the leader has saved no meeting link", async () => {
-    const svc = new CoachService(stubDbFor({}));
-    const reports = (await svc.getReportsById(BUNDLED_LEADER)) ?? [];
+    const reports = (await service.getReportsById(LEADER)) ?? [];
+    expect(reports.length).toBe(3);
     for (const r of reports) expect(r.recordingUrl).toBe("");
+  });
+
+  it("auto-attaches the saved meeting link, and an explicit link overrides it", async () => {
+    await new CoachRepository(Database).setZoomLink(userId, zoom);
+    const [first, ...rest] = (await service.getReportsById(LEADER)) ?? [];
+    await new CoachRepository(Database).setRecordingLink(
+      LEADER,
+      first.id,
+      "https://example.org/recordings/session-1",
+    );
+    const reports = (await service.getReportsById(LEADER)) ?? [];
+    expect(reports.find((r) => r.id === first.id)?.recordingUrl).toBe(
+      "https://example.org/recordings/session-1",
+    );
+    for (const r of rest)
+      expect(reports.find((x) => x.id === r.id)?.recordingUrl).toBe(zoom);
   });
 });
 
@@ -525,9 +457,27 @@ describe("CoachService.addNote records whether the email went out", () => {
     const svc = new CoachService(db, {
       sendEmail: async () => result,
     });
-    const coach = (await svc.listCoaches()).find((c) => c.sessionCount > 0);
-    const [report] = (await svc.getReportsById(coach?.id ?? "")) ?? [];
-    await svc.addNote(coach?.id ?? "", report.id, null, "Note body");
+    const leader = FIXTURE_LEADERS[0];
+    const stub = svc as unknown as {
+      resolveById: () => Promise<unknown>;
+      getReportDetail: () => Promise<unknown>;
+      canonicalReportId: () => Promise<string>;
+    };
+    stub.resolveById = async () => ({
+      ...leader,
+      id: leader.slug,
+      isCoach: true,
+      zoomLink: "",
+      reports: [],
+    });
+    stub.canonicalReportId = async () => FIXTURE_REPORTS[0].report.id;
+    stub.getReportDetail = async () => FIXTURE_REPORTS[0].report;
+    await svc.addNote(
+      leader.slug,
+      FIXTURE_REPORTS[0].report.id,
+      null,
+      "Note body",
+    );
     return saved.at(-1)?.emailed;
   }
 
@@ -544,12 +494,8 @@ describe("CoachService.addNote records whether the email went out", () => {
 });
 
 describe("CoachService grants coach and admin roles only to a confirmed address", () => {
-  const roster = coachDataJson as unknown as {
-    admins: string[];
-    coaches: { email: string }[];
-  };
-  const adminEmail = roster.admins[0];
-  const coachEmail = roster.coaches[0].email;
+  const adminEmail = FIXTURE_ADMIN;
+  const coachEmail = FIXTURE_LEADERS[0].email;
 
   function serviceFor(
     user: { email: string; emailVerified: boolean },

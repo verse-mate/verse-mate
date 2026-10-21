@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
-import coachLeaderMapJson from "./coach-leader-map.json";
 import { CoachReviewService } from "./coach-review.service";
 import {
   CoachScoringService,
@@ -13,7 +12,6 @@ import {
   promptVersion,
 } from "./coach-scoring.service";
 import type { TimedLine } from "./coach-transcript";
-import coachDataJson from "./coach.data.json";
 import { DIMENSIONS, RUBRIC_MODEL_VERSION, composeBaseScore } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
@@ -1302,23 +1300,12 @@ describe("the scoring prompt follows the v3 rules", () => {
     for (const line of SCORING_LEVELS[7]) expect(vision).toContain(line);
   });
 
-  it("no prompt the scoring service sends names a leader from the roster or quotes a benchmark leader", () => {
+  it("no prompt the scoring service sends quotes a benchmark leader", () => {
     const prompts = [
       CoachScoringService.buildInstructions(),
       CoachScoringService.buildVisionInstructions(),
       CoachScoringService.buildLeaderCueInstructions(),
     ].join("\n");
-    const names = new Set<string>();
-    for (const name of [
-      ...coachDataJson.coaches.flatMap((c) => [c.name, c.coachName ?? ""]),
-      ...coachLeaderMapJson.coaches.map((c) => c.leader),
-    ])
-      for (const word of name.split(/[^\p{L}]+/u))
-        if (word.length >= 2 && word.toLowerCase() !== "and") names.add(word);
-    const named = [...names].filter((word) =>
-      new RegExp(`\\b${word}\\b`, "i").test(prompts),
-    );
-    expect(named).toEqual([]);
     expect(prompts).not.toMatch(/'s benchmark/i);
   });
 });

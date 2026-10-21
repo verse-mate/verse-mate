@@ -1,57 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
 
-import coachDataJson from "./coach.data.json";
-import { type CoachDataset, CoachService } from "./coach.service";
+import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "guard-merge-coach";
-
-function bundledReport(id: string, date: string) {
-  return {
-    id,
-    date,
-    dateLabel: date,
-    session: `bundled ${date}`,
-    topic: "t",
-    duration: "60 min",
-    attendees: 5,
-    newcomers: 0,
-    score: 70,
-    base: 70,
-    newcomerBonus: 0,
-    sizeBonus: 0,
-    status: "Strong",
-    statusEmoji: "",
-    clusters: [],
-    dimensions: [],
-    bigIdeas: [],
-    feedback: {
-      headline: "",
-      strengths: [],
-      improvements: [],
-      recommendations: [],
-    },
-  };
-}
-
-function bundleWith(reports: ReturnType<typeof bundledReport>[]): CoachDataset {
-  return {
-    ...(coachDataJson as unknown as CoachDataset),
-    coaches: [
-      {
-        id: COACH,
-        name: "Guard Merge",
-        email: "guard-merge@example.test",
-        group: "g",
-        coachName: "c",
-        isCoach: true,
-        zoomLink: "",
-        reports,
-      },
-    ],
-  } as unknown as CoachDataset;
-}
 
 async function stored(id: string, date: string, source: string) {
   await conn
@@ -81,58 +34,7 @@ async function clear() {
     .execute();
 }
 
-describe("a leader part-way through the backfill sees their sessions newest first", () => {
-  beforeEach(async () => {
-    await clear();
-    await stored("guard-june", "2026-06-01", `legacy:${COACH}:2026-06-01`);
-    await stored("guard-august", "2026-08-01", "ff-guard-august");
-  });
-  afterEach(clear);
-
-  const bundle = bundleWith([
-    bundledReport("guard-june", "2026-06-01"),
-    bundledReport("guard-september", "2026-09-15"),
-  ]);
-
-  it("the merged session list is ordered by date", async () => {
-    const page = await new CoachService(
-      Database,
-      undefined,
-      bundle,
-    ).getReportSummaries(COACH);
-    expect(page.items.map((r) => r.date)).toEqual([
-      "2026-09-15",
-      "2026-08-01",
-      "2026-06-01",
-    ]);
-  });
-
-  it("the roster shows the newest session as the latest", async () => {
-    const coaches = await new CoachService(
-      Database,
-      undefined,
-      bundle,
-    ).listCoaches();
-    expect(coaches.find((c) => c.id === COACH)?.latest?.date).toBe(
-      "2026-09-15",
-    );
-  });
-
-  it("the admin drill-in lists the merged sessions newest first", async () => {
-    const reports = await new CoachService(
-      Database,
-      undefined,
-      bundle,
-    ).getReportsById(COACH);
-    expect(reports?.map((r) => r.date)).toEqual([
-      "2026-09-15",
-      "2026-08-01",
-      "2026-06-01",
-    ]);
-  });
-});
-
-describe("a fully backfilled leader's session list is paginated in the database", () => {
+describe("a leader's session list is paginated in the database", () => {
   beforeEach(async () => {
     await clear();
     await stored("guard-june", "2026-06-01", `legacy:${COACH}:2026-06-01`);
@@ -142,14 +44,7 @@ describe("a fully backfilled leader's session list is paginated in the database"
   afterEach(clear);
 
   it("one page loads one page, not the whole corpus", async () => {
-    const service = new CoachService(
-      Database,
-      undefined,
-      bundleWith([
-        bundledReport("guard-june", "2026-06-01"),
-        bundledReport("guard-july", "2026-07-01"),
-      ]),
-    );
+    const service = new CoachService(Database);
     const repo = (service as unknown as { reportsRepository: object })
       .reportsRepository as {
       listFullReports: (...a: unknown[]) => unknown;

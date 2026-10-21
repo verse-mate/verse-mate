@@ -6,8 +6,8 @@ The app has two components that run that image in different roles:
 
 | Component | Kind | Role (`VERSEMATE_ROLE`) | What it runs | Size | Cost |
 | --- | --- | --- | --- | --- | --- |
-| `verse-mate-backend-backend` | service | `api` | the image CMD: migrator, coach deploy step (`timeout 300`), then the API on port 3000 at `api.versemate.org`; no background worker | `apps-s-1vcpu-1gb-fixed` | $10/month |
-| `verse-mate-backend-worker` | worker | `worker` | `bun --bun run ./dist/index.js`: no migrator, no coach step; waits for the image's migrations, then every BullMQ worker and cron; listens on port 3000 for its liveness check only (no route, no domain) | `apps-s-1vcpu-2gb` | $25/month |
+| `verse-mate-backend-backend` | service | `api` | the image CMD: migrator, then the API on port 3000 at `api.versemate.org`; no background worker | `apps-s-1vcpu-1gb-fixed` | $10/month |
+| `verse-mate-backend-worker` | worker | `worker` | `bun --bun run ./dist/index.js`: no migrator; waits for the image's migrations, then every BullMQ worker and cron; listens on port 3000 for its liveness check only (no route, no domain) | `apps-s-1vcpu-2gb` | $25/month |
 
 Total: $35 a month (App Platform's quote on 2026-10-19). Before the split it was $10, one
 service running everything.
@@ -25,7 +25,7 @@ The roles:
 - Anything else, including the earlier `media-worker`: the API process exits 1 at start,
   naming the value, before it listens or starts a worker. A mistyped role fails the deploy
   instead of putting the workers back on the API. On the service, the image CMD has already
-  run the migrator and the coach step by then; both are safe to repeat.
+  run the migrator by then; it is safe to repeat.
 
 The role is understood by images built from the commit that added this page onward. An older
 image reads `worker` as unknown and runs as `all`, and its `api` still runs the batch, verse
@@ -63,7 +63,7 @@ show superuser_reserved_connections;
 
 Steady state is at most 10 (5 + 5), as with the single service's pool of 10. During a deploy
 an old and a new instance of each component run side by side, so at most 20, plus the
-migrator's and the coach step's few on the new service's start and any operator session.
+migrator's few on the new service's start and any operator session.
 Raise the value only after checking that sum against what the query above leaves: it applies
 to both components, so each step up adds 2 connections in steady state and 4 during a deploy.
 
@@ -76,11 +76,12 @@ to both components, so each step up adds 2 connections in steady state and 4 dur
 | worker | liveness (`liveness_health_check`) | `/health`, 3000 | 30 s | 30 s | 5 s | 3 |
 
 The service's readiness check allows 30 + 33 x 10 = 360 s before a new instance counts as
-failed. A start can spend up to 300 s in the coach deploy step (its `timeout`), up to 10 s on
-the Redis check, and the rest on the migrator and boot. The old check (90 s, 9 failures, 180 s)
-was shorter than the coach step's own limit. A fast start still goes live at its first passing
-check. The liveness check restarts a running API that stops answering within about 90 s, and
-only once the 360 s start window has passed.
+failed. A start runs the migrator, up to 10 s on the Redis check, then boots the API; a normal
+start takes well under a minute. The 360 s window was sized for a 300 s step that ran between
+the migrator and the API and has since been removed. It is kept because a fast start still goes
+live at its first passing check, so the extra room costs nothing, and lowering it is its own
+operations change. The liveness check restarts a running API that stops answering within about
+90 s, and only once the 360 s start window has passed.
 
 The worker's check shows its event loop answering, not that its queues are processing: a
 worker that lost Redis but still serves HTTP is not caught. A worker blocked for 90 s or more
@@ -182,7 +183,7 @@ The role code ships first. With no role set, the merged image runs as before (`a
 5. **Verify.**
    - The deployment is ACTIVE (`doctl apps list-deployments <app-id>`).
    - The service's log (`doctl apps logs <app-id> verse-mate-backend-backend`) shows the
-     migrator, the coach step, `[QUEUE] No BullMQ workers in this process (role: api)` and the
+     migrator, `[QUEUE] No BullMQ workers in this process (role: api)` and the
      language statistics refresh.
    - The worker's log (`doctl apps logs <app-id> verse-mate-backend-worker`) shows no migrator
      run, any `[QUEUE] waiting for N pending migration(s)` lines ending,
@@ -243,6 +244,11 @@ migrations are a subset of what the database holds, so it finds none pending and
 
 An image from before the split does not know the roles (see above): roll the spec back with
 it, so a single service runs everything as it did then.
+
+An image from before the coaching dataset left the repository still carries it, and its start
+command loads it into the coach tables between the migrator and the API. Against a store that
+already holds it, that changes nothing. Roll back by redeploying such an image tag, never by
+reverting the commit that removed the dataset: a revert would commit it again.
 
 ## Migrations
 

@@ -30,8 +30,7 @@ import { firefliesConfigured } from "./fireflies.config";
  * This replaces the 30-minute systemd timer on the retired host, and it is the
  * whole point of the port: after it, **no step depends on a machine outside
  * VerseMate**, and nothing in the pipeline holds a credential that can write to
- * production source control. The old host had both, it pushed a rebuilt
- * `coach.data.json` to `verse-mate`'s default branch on a timer.
+ * production source control.
  *
  * Four phases per tick, in order, each feeding the next so a session observed
  * this tick can reach a delivered report in the same run rather than waiting
