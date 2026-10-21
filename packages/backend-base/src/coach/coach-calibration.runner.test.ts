@@ -23,35 +23,61 @@ import {
   readTranscript,
   runCalibration,
 } from "./coach-calibration.runner";
+import { fixtureReport } from "./coach-fixture";
 import { CoachScoringService } from "./coach-scoring.service";
-import { datasetToRows } from "./coach-store.transform";
-import coachDataJson from "./coach.data.json";
+import { reportToRow } from "./coach-store.transform";
 import { DIMENSIONS, RUBRIC_MODEL_VERSION } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 
-const seeded: string[] = [];
-for (const row of datasetToRows(coachDataJson)) {
-  const inserted = await conn
-    .insertInto("coach_reports")
-    .values({
-      id: row.id,
-      coach_id: row.coach_id,
-      session_date: row.session_date,
-      source_session_id: row.source_session_id,
-      legacy_ids: row.legacy_ids,
-      summary: JSON.stringify(row.summary),
-      metrics: JSON.stringify(row.metrics),
-      body: JSON.stringify(row.body),
-    })
-    .onConflict((oc) => oc.column("source_session_id").doNothing())
-    .returning("id")
-    .executeTakeFirst();
-  if (inserted) seeded.push(inserted.id);
-}
+const CALIBRATION_LEADERS: Array<[string, number]> = [
+  ...Array.from({ length: 11 }, (_, i): [string, number] => [
+    `calib-fixture-${i + 10}`,
+    6,
+  ]),
+  ["calib-fixture-single", 1],
+];
+const calibrationRows = CALIBRATION_LEADERS.flatMap(([coach, count]) =>
+  Array.from({ length: count }, (_, i) => {
+    const date = `2032-${String(i + 1).padStart(2, "0")}-14`;
+    return reportToRow(
+      coach,
+      fixtureReport(`${coach}-${date}`, date, 60 + i * 5, {
+        dimensions: DIMENSIONS.map((d) => ({
+          n: d.n,
+          name: d.name,
+          score: 2 + ((d.n + i) % 4),
+          note: `rationale ${d.n}`,
+        })),
+      }) as never,
+    );
+  }),
+);
+const noRationale = reportToRow(
+  "calib-fixture-10",
+  fixtureReport("calib-fixture-10-silent", "2032-09-14", 70, {
+    dimensions: DIMENSIONS.map((d) => ({ n: d.n, name: d.name, score: 3 })),
+  }) as never,
+);
+const incomplete = reportToRow(
+  "calib-fixture-11",
+  fixtureReport("calib-fixture-11-partial", "2032-09-14", 70, {
+    dimensions: DIMENSIONS.slice(0, 6).map((d) => ({
+      n: d.n,
+      name: d.name,
+      score: 3,
+      note: "partial",
+    })),
+  }) as never,
+);
+const seeded = [...calibrationRows, noRationale, incomplete].map((r) => r.id);
+await conn.deleteFrom("coach_reports").where("id", "in", seeded).execute();
+await conn
+  .insertInto("coach_reports")
+  .values([...calibrationRows, noRationale, incomplete])
+  .execute();
 afterAll(async () => {
-  if (seeded.length > 0)
-    await conn.deleteFrom("coach_reports").where("id", "in", seeded).execute();
+  await conn.deleteFrom("coach_reports").where("id", "in", seeded).execute();
 });
 
 const corpus = await handScoredCorpus(Database);
@@ -148,7 +174,7 @@ afterEach(async () => {
     .execute();
 });
 
-describe("the calibration runner measures the bundle's own hand-scored corpus", () => {
+describe("the calibration runner measures the stored hand-scored corpus", () => {
   it("states the corpus, the filter and what it excluded, all derived from the store", async () => {
     const result = await runCalibration(deps(new HandCopyAi()), {
       dryRun: true,
@@ -294,7 +320,7 @@ describe("transcripts come from a directory the operator points at", () => {
   });
 });
 
-describe("the hand-scored corpus is read from the store, not the bundle task 7.1 deletes", () => {
+describe("the hand-scored corpus is read from the store", () => {
   const COACH = "calib-store-coach";
   afterEach(async () => {
     await conn
@@ -362,13 +388,6 @@ describe("the hand-scored corpus is read from the store, not the bundle task 7.1
     expect(result.corpusLeaders).toBe(
       new Set((await handScoredCorpus(Database)).map((r) => r.coachId)).size,
     );
-  });
-
-  it("the runner does not import the bundle", async () => {
-    const source = await Bun.file(
-      new URL("./coach-calibration.runner.ts", import.meta.url).pathname,
-    ).text();
-    expect(source).not.toContain("coach.data.json");
   });
 });
 

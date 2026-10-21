@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { fixtureReport } from "./coach-fixture";
 import { reportToRow } from "./coach-store.transform";
-import coachData from "./coach.data.json";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
@@ -27,19 +27,13 @@ describe("the id the oversight roster lists is the id the drill-in accepts", () 
       .insertInto("coach_leaders")
       .values({ slug: SLUG, email: EMAIL, name: "Post Bundle Leader" })
       .execute();
-    const template = (
-      coachData as unknown as {
-        coaches: { reports: Record<string, unknown>[] }[];
-      }
-    ).coaches[0].reports[0];
     await conn
       .insertInto("coach_reports")
       .values({
-        ...reportToRow(SLUG, {
-          ...template,
-          id: "post-bundle-report-1",
-          date: "2026-09-19",
-        }),
+        ...reportToRow(
+          SLUG,
+          fixtureReport("post-bundle-report-1", "2026-09-19", 70) as never,
+        ),
         source_session_id: "ff-post-bundle-1",
       })
       .execute();

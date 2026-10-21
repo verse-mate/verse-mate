@@ -1,12 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
-import {
-  attributeSession,
-  leaderSlug,
-  loadAttributionRoster,
-} from "./coach-attribution";
-import coachDataJson from "./coach.data.json";
+import { attributeSession, loadAttributionRoster } from "./coach-attribution";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
@@ -21,20 +16,6 @@ async function clear() {
   await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
 }
 
-/**
- * The gap a real browser drive found, and the reason task 7.1 is dangerous
- * without it.
- *
- * A roster record's id has to be the SLUG. Every overlay keys on it —
- * coach_reports.coach_id, coach_notes.coach_id, coach_recording_links.coach_id
- *, so a record carrying coach_leaders' uuid joins to nothing.
- *
- * It looked harmless while the compiled-in bundle supplied slug-keyed records
- * for every real leader and only admin-added placeholders (who have no reports)
- * came through the database path. After 7.1 deletes the bundle, EVERY leader
- * resolves through that path, so the uuid would empty every leader's history
- * at once, silently, on the deploy that removed the file.
- */
 describe("a roster leader resolves to their reports", () => {
   beforeEach(async () => {
     await clear();
@@ -98,7 +79,6 @@ describe("a roster leader resolves to their reports", () => {
   });
 
   it("a roster row with no slug yet still resolves, by its uuid", async () => {
-    // 3.10's backfill fills the slug; a row added before it must not 500.
     await conn
       .updateTable("coach_leaders")
       .set({ slug: null })
@@ -172,16 +152,6 @@ describe("a leader added through the admin route can be attributed a session", (
     expect(match).toEqual({ coachId: "quill-added", matchedBy: "name" });
   });
 
-  it("every roster slug in the bundle is the name run through the same rule", () => {
-    const coaches = (
-      coachDataJson as unknown as {
-        coaches: Array<{ id: string; name: string }>;
-      }
-    ).coaches;
-    expect(coaches.length).toBeGreaterThan(0);
-    for (const c of coaches) expect(leaderSlug(c.name)).toBe(c.id);
-  });
-
   it.each(["Grace", "Grace Kim"])(
     "a name %p carrying another leader's keyword is refused, naming the keyword and the leader, and nothing is stored",
     async (name) => {
@@ -209,25 +179,6 @@ describe("a leader added through the admin route can be attributed a session", (
       ).toBeUndefined();
     },
   );
-
-  it("a name whose slug a roster leader already holds is refused", async () => {
-    const [rosterLeader] = coachDataJson.coaches;
-    const result = await service.addLeader(inviter, {
-      email: ADDED,
-      name: rosterLeader.name,
-    });
-    expect(result).toEqual({
-      ok: false,
-      reason: "slug-taken",
-      slug: rosterLeader.id,
-    });
-    const row = await conn
-      .selectFrom("coach_leaders")
-      .select("email")
-      .where("email", "=", ADDED)
-      .executeTakeFirst();
-    expect(row).toBeUndefined();
-  });
 
   it("a name whose slug an added leader already holds is refused", async () => {
     await service.addLeader(inviter, { email: ADDED, name: "Twin Name" });

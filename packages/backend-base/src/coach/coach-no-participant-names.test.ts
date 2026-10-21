@@ -2,8 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
-import coachDataJson from "./coach.data.json";
-
 const conn = Database.getOrCreateConnection();
 
 /**
@@ -80,18 +78,5 @@ describe("no participant name is captured anywhere", () => {
     expect(schema).toMatch(
       /attendees:\s*t\.Union\(\[t\.Number\(\), t\.Null\(\)\]\)/,
     );
-  });
-
-  it("the deployed corpus itself only ever stored a count", async () => {
-    // If any historical report carried a list, the backfill would import it and
-    // the guard would be false from day one.
-    const bundle = coachDataJson as unknown as {
-      coaches: Array<{ reports: Array<Record<string, unknown>> }>;
-    };
-    for (const coach of bundle.coaches) {
-      for (const report of coach.reports) {
-        expect(typeof report.attendees).not.toBe("object");
-      }
-    }
   });
 });
