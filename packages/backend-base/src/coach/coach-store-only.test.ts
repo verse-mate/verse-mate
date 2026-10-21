@@ -10,6 +10,7 @@ import {
   clearCoachFixture,
   seedCoachFixture,
 } from "./coach-fixture";
+import { CoachGovernanceService } from "./coach-governance.service";
 import { isolateTable } from "./coach-test-tables";
 import { CoachService } from "./coach.service";
 import { CoachRepository } from "./repository/coach.repository";
@@ -142,5 +143,36 @@ describe("the coach service reads the database only", () => {
 
   it("an unknown leader id resolves to nothing", async () => {
     expect(await service.getReportsById("fixture-nobody")).toBeNull();
+  });
+});
+
+describe("an environment with no benchmark leader marked", () => {
+  beforeAll(() => seedCoachFixture(Database));
+  afterAll(() => clearCoachFixture(Database));
+
+  it("does not hold a report that names another leader", async () => {
+    const rolledBack = new Error("rolled back");
+    let verdict: unknown;
+    await conn
+      .transaction()
+      .execute(async (trx) => {
+        await trx
+          .updateTable("coach_leaders")
+          .set({ is_benchmark: false })
+          .execute();
+        verdict = await new CoachGovernanceService({
+          getOrCreateConnection: () => trx,
+        } as never).check({
+          reportId: "fixture-governance",
+          coachId: JORDAN.slug,
+          body: `${AVERY.name} opened with a question the room could answer.`,
+          evidence: { quotes: [], timestamps: [] },
+        });
+        throw rolledBack;
+      })
+      .catch((e) => {
+        if (e !== rolledBack) throw e;
+      });
+    expect(verdict).toEqual({ passed: true, violations: [] });
   });
 });
