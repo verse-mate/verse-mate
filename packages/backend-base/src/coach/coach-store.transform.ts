@@ -45,19 +45,6 @@ const METRICS_KEYS = [
 ];
 const BODY_KEYS = ["bigIdeas", "feedback", "sections"];
 
-/**
- * The `source_session_id` a backfilled report takes. Deterministic, so a second
- * backfill run matches the row the first one wrote rather than inserting beside
- * it, the whole reason the column is NOT NULL.
- *
- * `ordinal` separates two sessions the same leader ran on the same day. The
- * unique key is (coach_id, session_date, source_session_id), so without it the
- * second such report would have upserted OVER the first and one session's
- * report would have disappeared with nothing raised. Today's bundle has no such
- * pair, but a leader running a Saturday morning and a make-up class on one date
- * is an ordinary week, not an exotic case. The first report on a date keeps the
- * unsuffixed id, so every row the current backfill wrote still matches.
- */
 export function legacySourceSessionId(
   coachId: string,
   date: string,
@@ -77,12 +64,6 @@ export function reportToRow(
     id: String(report.id),
     coach_id: coachId,
     session_date: String(report.date),
-    // Backfilled reports predate intake and have no source session. The
-    // sentinel is title-free by construction: deriving it from the legacy id
-    // would embed the session title (those ids are slugs like
-    // `bryan-bailey-2026-08-22-saturday-morning-group-austin-ri`), which report
-    // identity forbids and which stops the backfill being idempotent across a
-    // re-title.
     source_session_id: legacySourceSessionId(
       coachId,
       String(report.date),
