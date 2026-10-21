@@ -338,11 +338,6 @@ export class CoachReportsRepository {
     }));
   }
 
-  /**
-   * Just the distinct coach ids in the store. The snapshot used to call
-   * `listAllMetrics()` for this, which loads every report's `summary` and
-   * `metrics` jsonb across the whole table to extract one distinct column.
-   */
   async listCoachIds(): Promise<string[]> {
     const rows = await this.db
       .getOrCreateConnection()
@@ -352,18 +347,6 @@ export class CoachReportsRepository {
       .orderBy("coach_id")
       .execute();
     return rows.map((r) => r.coach_id);
-  }
-
-  async backfilledCounts(): Promise<Map<string, number>> {
-    const rows = await this.db
-      .getOrCreateConnection()
-      .selectFrom("coach_reports")
-      .select(sql<string>`split_part(source_session_id, ':', 2)`.as("coach_id"))
-      .select((eb) => eb.fn.countAll<string>().as("n"))
-      .where("source_session_id", "like", "legacy:%")
-      .groupBy(sql`split_part(source_session_id, ':', 2)`)
-      .execute();
-    return new Map(rows.map((r) => [r.coach_id, Number(r.n)]));
   }
 
   /** Metrics for every coach, the program-wide monthly rollup. */

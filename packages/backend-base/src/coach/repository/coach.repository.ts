@@ -368,12 +368,11 @@ export class CoachRepository {
       .execute();
   }
 
-  /** Lookup by email (lowercased). null when not an admin-added leader. */
   async findAddedLeaderByEmail(email: string): Promise<AddedLeaderRow | null> {
     const row = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_leaders")
-      .where("email", "=", email.trim().toLowerCase())
+      .where(sql`lower(email)`, "=", email.trim().toLowerCase())
       .select(["id", "slug", "email", "name", "group_name", "coach_name"])
       .executeTakeFirst();
     return row ?? null;

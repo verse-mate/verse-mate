@@ -26,7 +26,7 @@ function coachDataViolations(dir: string): string[] {
   const found: string[] = [];
   if (existsSync(join(dir, DATASET)))
     found.push(`${DATASET} is committed again`);
-  for (const file of new Bun.Glob("**/*.{ts,json}").scanSync(dir)) {
+  for (const file of new Bun.Glob("**/*.{ts,tsx,js,json,md}").scanSync(dir)) {
     const text = readFileSync(join(dir, file), "utf8");
     for (const [address, domain] of text.matchAll(ADDRESS))
       if (!allowedDomain(domain)) found.push(`${file}: ${address}`);
@@ -54,6 +54,17 @@ describe("the coaching dataset stays out of the repository", () => {
     );
     expect(coachDataViolations(dir)).toEqual([
       `nested/leaders.fixture.ts: someone@${"gmail"}.com`,
+    ]);
+  });
+
+  it("names a renamed copy of the dataset by the address inside it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "coach-guard-"));
+    writeFileSync(
+      join(dir, "roster.backup.md"),
+      `leader: someone@${"gmail"}.com`,
+    );
+    expect(coachDataViolations(dir)).toEqual([
+      `roster.backup.md: someone@${"gmail"}.com`,
     ]);
   });
 

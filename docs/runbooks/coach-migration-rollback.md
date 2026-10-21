@@ -102,6 +102,9 @@ INSERT INTO coach_admins (email) VALUES ('<admin address>');
 UPDATE coach_leaders SET is_benchmark = true WHERE slug = '<leader slug>';
 ```
 
+Check the address with its owner before the insert: whoever confirms it at sign-in becomes a
+program admin. Read it back afterwards with `SELECT email, user_id FROM coach_admins;`.
+
 The admin signs in with that address confirmed and claims the role. At most one leader is the
 benchmark; with none marked, the benchmark-name check holds nothing back.
 
