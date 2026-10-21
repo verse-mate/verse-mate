@@ -3,8 +3,8 @@ import { db as Database } from "database";
 
 import { Value } from "@sinclair/typebox/value";
 
+import { fixtureReport } from "./coach-fixture";
 import { reportToRow } from "./coach-store.transform";
-import coachData from "./coach.data.json";
 import { LeaderMonthlyResponseSchema } from "./coach.schema";
 import { CoachService } from "./coach.service";
 
@@ -13,13 +13,7 @@ const service = new CoachService(Database);
 const SLUG = "pipeline-only-leader";
 const EMAIL = "pipeline-only-leader@example.test";
 
-type Report = Record<string, unknown> & {
-  feedback: { strengths: string[]; improvements: string[] };
-  dimensions: { n: number; name: string; score: number | null }[];
-  clusters: { name: string; scorePct: number | null }[];
-};
-const template = (coachData as unknown as { coaches: { reports: Report[] }[] })
-  .coaches[0].reports[0];
+const template = fixtureReport("template", "2031-01-01", 70);
 
 const sessions = [
   { date: "2031-02-20", score: 70 },

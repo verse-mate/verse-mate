@@ -1,13 +1,27 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { db as Database } from "database";
 
-import coachDataJson from "./coach.data.json";
+import {
+  FIXTURE_LEADERS,
+  clearCoachFixture,
+  seedCoachFixture,
+} from "./coach-fixture";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
 const service = new CoachService(Database);
-const COACH = (coachDataJson as unknown as { coaches: Array<{ id: string }> })
-  .coaches[0].id;
+const COACH = FIXTURE_LEADERS[0].slug;
+
+beforeAll(() => seedCoachFixture(Database));
+afterAll(() => clearCoachFixture(Database));
 
 async function storeReport(id: string, date: string) {
   await conn
@@ -158,19 +172,5 @@ describe("an admin's drill-in marks held duplicates and leaves them out of the s
     expect(page.streakWeeks).toBe(
       (await service.getReportSummaries(STORE_ONLY)).streakWeeks,
     );
-  });
-
-  it("a bundled leader whose list merges the bundle with the store", async () => {
-    const before = await service.getReportSummaries(COACH, {}, "admin");
-    await held("admin-list-dup", COACH, "2026-10-06");
-    const after = await service.getReportSummaries(
-      COACH,
-      { limit: 100 },
-      "admin",
-    );
-    expect(after.items.find((i) => i.id === "admin-list-dup")?.held).toBe(true);
-    expect(after.items.every((i) => typeof i.held === "boolean")).toBe(true);
-    expect(after.quarterSessions).toBe(before.quarterSessions);
-    expect(after.streakWeeks).toBe(before.streakWeeks);
   });
 });

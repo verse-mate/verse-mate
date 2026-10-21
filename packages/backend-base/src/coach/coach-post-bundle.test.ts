@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
-import { type CoachDataset, CoachService } from "./coach.service";
+import { CoachService } from "./coach.service";
 import { CLUSTERS, RUBRIC_MODEL_VERSION, STATUS_BANDS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
@@ -9,9 +9,7 @@ const SLUG = "post-bundle-reader";
 const EMAIL = "post-bundle-reader@example.test";
 const MONTH = "2031-01";
 
-const noBundle = new CoachService(Database, undefined, {
-  coaches: [],
-} as unknown as CoachDataset);
+const noBundle = new CoachService(Database);
 
 const importedSummary = {
   month: MONTH,

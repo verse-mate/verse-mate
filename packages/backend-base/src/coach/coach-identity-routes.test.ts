@@ -5,9 +5,8 @@ import { Elysia } from "elysia";
 
 import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
-import coachData from "./coach.data.json";
 import coachPlugin from "./coach.plugin";
-import { type CoachDataset, CoachService } from "./coach.service";
+import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
 const LEADER_EMAIL = "xacct-leader@example.test";
@@ -73,10 +72,7 @@ beforeAll(async () => {
     .values({ slug: SLUG, email: LEADER_EMAIL, name: "Cross Account" })
     .execute();
   original = await account(LEADER_EMAIL);
-  store.coachService = new CoachService(Database, undefined, {
-    ...(coachData as unknown as CoachDataset),
-    admins: [FORMER_ADMIN],
-  });
+  store.coachService = new CoachService(Database);
 });
 
 afterAll(async () => {

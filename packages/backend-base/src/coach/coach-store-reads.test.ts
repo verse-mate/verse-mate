@@ -1,6 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import {
+  FIXTURE_LEADERS,
+  clearCoachFixture,
+  seedCoachFixture,
+} from "./coach-fixture";
 import { CoachService } from "./coach.service";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
 
@@ -94,31 +99,29 @@ describe("store-backed report reads", () => {
   });
 
   it("addNote against a LEGACY id persists the CANONICAL id (notes cannot orphan)", async () => {
-    // Use a coach that exists in the bundle so resolveById finds a record; the
-    // store rows below shadow the bundled ones for this leader.
-    const bundledCoach = (require("./coach.data.json") as { coaches: any[] })
-      .coaches[0].id as string;
+    await seedCoachFixture(Database);
+    const coachId: string = FIXTURE_LEADERS[0].slug;
     await conn
       .deleteFrom("coach_reports")
-      .where("coach_id", "=", bundledCoach)
+      .where("coach_id", "=", coachId)
       .execute();
     await conn
       .deleteFrom("coach_notes")
-      .where("coach_id", "=", bundledCoach)
+      .where("coach_id", "=", coachId)
       .execute();
 
     await repo.upsert({
       ...row("original-id", "2026-08-01"),
-      coach_id: bundledCoach,
+      coach_id: coachId,
     });
     await repo.upsert({
       ...row("retitled-id", "2026-08-01"),
-      coach_id: bundledCoach,
+      coach_id: coachId,
     });
 
     // Write the note addressed by the OLD id, what a stale admin UI would send.
     const saved = await service.addNote(
-      bundledCoach,
+      coachId,
       "retitled-id",
       null,
       "note against a stale id",
@@ -129,21 +132,18 @@ describe("store-backed report reads", () => {
     const persisted = await conn
       .selectFrom("coach_notes")
       .select(["report_id", "body"])
-      .where("coach_id", "=", bundledCoach)
+      .where("coach_id", "=", coachId)
       .executeTakeFirstOrThrow();
     expect(persisted.report_id).toBe("original-id");
 
     // ...and it surfaces on the report the leader actually opens.
-    const detail = await service.getReportDetail(bundledCoach, "original-id");
+    const detail = await service.getReportDetail(coachId, "original-id");
     expect((detail as any)?.notes?.length).toBeGreaterThan(0);
 
     await conn
       .deleteFrom("coach_notes")
-      .where("coach_id", "=", bundledCoach)
+      .where("coach_id", "=", coachId)
       .execute();
-    await conn
-      .deleteFrom("coach_reports")
-      .where("coach_id", "=", bundledCoach)
-      .execute();
+    await clearCoachFixture(Database);
   });
 });

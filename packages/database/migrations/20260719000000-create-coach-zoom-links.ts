@@ -1,13 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
 
-/**
- * Bible-Coach portal: per-leader meeting link.
- *
- * The coach portal's reports + trends are served from the coaching-pipeline
- * dataset (backend-base/src/coach/coach.data.json); the leader's Zoom / Meet
- * link is the one mutable field, stored here keyed by user. One row per user.
- */
 export async function up(db: Kysely<Database>): Promise<void> {
   console.log("Creating coach_zoom_links table...");
 

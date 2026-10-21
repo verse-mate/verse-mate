@@ -26,9 +26,6 @@ describe("the pipeline's clock lives inside VerseMate", () => {
   });
 
   it("no coach module holds a source-control credential or an operator-host address", async () => {
-    // The old host pushed a rebuilt coach.data.json to verse-mate's default
-    // branch on a timer, using a credential with write access to production
-    // source control. Nothing here may reacquire that.
     const dir = new URL(".", import.meta.url).pathname;
     const files = [...new Bun.Glob("*.ts").scanSync(dir)].filter(
       (f) => !f.endsWith(".test.ts"),

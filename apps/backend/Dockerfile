@@ -32,5 +32,4 @@ EXPOSE 3000
 HEALTHCHECK CMD curl -sf http://localhost:${PORT}/health || exit 1
 
 CMD bun run ./dist/migrator.js migrate-deploy && \
-    (timeout 300 bun --bun run ./dist/coach-deploy.js || echo "[coach-deploy] did not finish; the API starts anyway") && \
     bun --bun run ./dist/index.js
