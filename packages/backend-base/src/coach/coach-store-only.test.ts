@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import {
   FIXTURE_ADMIN,
@@ -143,6 +144,96 @@ describe("the coach service reads the database only", () => {
 
   it("an unknown leader id resolves to nothing", async () => {
     expect(await service.getReportsById("fixture-nobody")).toBeNull();
+  });
+
+  it("a note or recording link on a report the store does not hold writes nothing", async () => {
+    const before = await new CoachRepository(Database).listNotes(AVERY.slug);
+    expect(
+      await service.addNote(AVERY.slug, "fixture-unknown", null, "Note"),
+    ).toBeNull();
+    expect(
+      await service.addNote(JORDAN.slug, LEGACY.report.id, null, "Note"),
+    ).toBeNull();
+    expect(
+      await service.setRecordingLink(
+        JORDAN.slug,
+        LEGACY.report.id,
+        "https://example.org/recordings/two",
+      ),
+    ).toBeNull();
+    expect(await new CoachRepository(Database).listNotes(AVERY.slug)).toEqual(
+      before,
+    );
+    expect(
+      await new CoachRepository(Database).getRecordingLinksForCoach(
+        JORDAN.slug,
+      ),
+    ).toEqual({});
+  });
+});
+
+describe("a roster leader with no reports yet", () => {
+  const QUINN = {
+    slug: "fixture-quinn-empty",
+    email: "Quinn.Empty@Example.org",
+  };
+  let userId = "";
+
+  async function clearQuinn() {
+    await conn
+      .deleteFrom("coach_leaders")
+      .where(sql`lower(email)`, "=", QUINN.email.toLowerCase())
+      .execute();
+    await conn
+      .deleteFrom("user")
+      .where("email", "=", QUINN.email.toLowerCase())
+      .execute();
+  }
+
+  beforeAll(async () => {
+    await clearQuinn();
+    await conn
+      .insertInto("coach_leaders")
+      .values({
+        slug: QUINN.slug,
+        email: QUINN.email,
+        name: "Quinn Empty",
+        group_name: "Monday Group",
+        coach_name: "Morgan Reed",
+      })
+      .execute();
+    userId = await confirmedUser(QUINN.email.toLowerCase());
+  });
+  afterAll(clearQuinn);
+
+  it("signs in on a lowercase address and sees an empty history", async () => {
+    const me = await service.getMe(userId);
+    expect(me?.isCoach).toBe(true);
+    expect(me?.profile?.id).toBe(QUINN.slug);
+
+    expect((await service.getReportSummaries(QUINN.slug)).total).toBe(0);
+    expect((await service.getTrends(userId))?.scoreSeries).toEqual([]);
+    expect(
+      (await service.getMyMonthlySummary(userId, FIXTURE_MONTH))
+        ?.availableMonths,
+    ).toEqual([]);
+
+    const entry = (await service.listCoaches()).find(
+      (c) => c.id === QUINN.slug,
+    );
+    expect({ sessions: entry?.sessionCount, latest: entry?.latest }).toEqual({
+      sessions: 0,
+      latest: null,
+    });
+  });
+
+  it("refuses to add the same leader again whatever case the stored address has", async () => {
+    expect(
+      await service.addLeader(userId, {
+        email: QUINN.email.toLowerCase(),
+        name: "Quinn Again",
+      }),
+    ).toEqual({ ok: false, reason: "duplicate" });
   });
 });
 

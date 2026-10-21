@@ -199,4 +199,4 @@ playwright-report/
 test-results/
 .gstack/
 
-/packages/backend-base/src/coach/coach.data.json
+coach.data.json
