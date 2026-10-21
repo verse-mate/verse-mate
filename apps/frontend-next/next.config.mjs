@@ -17,9 +17,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // Keep image optimization settings for Workers
   images: {
     unoptimized: true,
