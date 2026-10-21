@@ -158,6 +158,11 @@ jobs:
         with:
           bun-version: 1.4.0
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install dependencies
         run: bun install
 
@@ -172,6 +177,10 @@ jobs:
       - name: Build frontend
         working-directory: ./apps/frontend-next
         run: bun run build
+
+      - name: Build worker
+        working-directory: ./apps/frontend-next
+        run: bun run build:worker
 
   build-website:
     name: Build Website
@@ -218,6 +227,11 @@ jobs:
         with:
           bun-version: 1.4.0
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install dependencies
         run: bun install
 
@@ -253,6 +267,11 @@ jobs:
         with:
           bun-version: 1.4.0
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install dependencies
         run: bun install
 
@@ -286,6 +305,11 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: 1.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
         run: bun install
