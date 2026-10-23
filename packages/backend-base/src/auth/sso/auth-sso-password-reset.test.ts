@@ -126,7 +126,7 @@ describe("SSO Password Reset Integration", () => {
         const resetKey = faker.string.uuid();
         await cache.set(
           cacheConstants.resetPassword(resetKey),
-          { id: ssoUser.id },
+          { id: ssoUser.id, email: ssoUserEmail },
           "1h",
         );
 
@@ -200,7 +200,7 @@ describe("SSO Password Reset Integration", () => {
         const resetKey = faker.string.uuid();
         await cache.set(
           cacheConstants.resetPassword(resetKey),
-          { id: ssoUser.id },
+          { id: ssoUser.id, email: ssoUserEmail },
           "1h",
         );
 
@@ -319,7 +319,7 @@ describe("SSO Password Reset Integration", () => {
       }
     });
 
-    it("should show both providers in error message when SSO-only user with multiple providers tries password login", async () => {
+    it("answers a password login on an account linked to two providers without naming them", async () => {
       const userEmail =
         `multi-sso-error-${faker.string.uuid()}@example.com`.toLowerCase();
 
@@ -361,10 +361,8 @@ describe("SSO Password Reset Integration", () => {
         // Should not reach here
         expect(true).toBe(false);
       } catch (error: any) {
-        expect(error.code).toBe("SSO_ACCOUNT_NO_PASSWORD");
-        // Error message should mention both providers
-        expect(error.message).toContain("Google");
-        expect(error.message).toContain("Apple");
+        expect(error.code).toBe("UNAUTHORIZED");
+        expect(error.message).toBe("Invalid credentials");
       } finally {
         // Clean up
         await db

@@ -149,7 +149,8 @@ const fetcher = async (
     if (
       !pathWithQuery.includes("/auth/login") &&
       !pathWithQuery.includes("/auth/signup") &&
-      !pathWithQuery.includes("/auth/refresh")
+      !pathWithQuery.includes("/auth/refresh") &&
+      !pathWithQuery.includes("/auth/sso/exchange")
     ) {
       const newToken = await refreshAccessToken();
 
@@ -167,6 +168,9 @@ const fetcher = async (
   return response;
 };
 
+export const authFetch = (url: string, init?: RequestInit) =>
+  fetcher(url, init);
+
 export const api = treaty<App>($env.get().apiUrl, {
   fetcher: fetcher as typeof fetch,
   onResponse(response) {
@@ -176,7 +180,8 @@ export const api = treaty<App>($env.get().apiUrl, {
       url.includes("/auth/login") ||
       url.includes("/auth/signup") ||
       url.includes("/auth/refresh") ||
-      url.includes("/auth/forgot-password");
+      url.includes("/auth/forgot-password") ||
+      url.includes("/auth/sso/exchange");
 
     // Only redirect to logout if refresh also failed (fetcher already tried refresh)
     if (response.status === 401 && !getRefreshToken() && !isAuthEndpoint) {

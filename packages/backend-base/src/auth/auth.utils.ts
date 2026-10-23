@@ -1,5 +1,6 @@
 import type { Context } from "elysia";
 
+import { ForbiddenError, UnauthorizedError } from "../common/errors";
 import cacheConstants from "../shared/cache.constants";
 import type { JWT, cache } from "../shared/shared.plugin";
 
@@ -40,21 +41,15 @@ export const authGuard = {
  */
 export const authDerive = async ({
   jwt,
-  bearer,
-  query,
+  bearer: token,
   store: { cache },
 }: {
   bearer: string | undefined;
   jwt: JWT;
-  query: {
-    accessToken?: string;
-  };
   store: {
     cache: cache;
   };
 }): Promise<{ currentUserId: string | null }> => {
-  const token = bearer ?? query.accessToken;
-
   if (!token) {
     return { currentUserId: null };
   }
@@ -80,4 +75,20 @@ export const authDerive = async ({
   return {
     currentUserId: validBearer.sub,
   };
+};
+
+export const requireCurrentUser = (
+  currentUserId: string | null,
+  claimedUserId?: string,
+): string => {
+  if (!currentUserId) {
+    throw new UnauthorizedError("Authentication required");
+  }
+  if (
+    claimedUserId !== undefined &&
+    claimedUserId.toLowerCase() !== currentUserId.toLowerCase()
+  ) {
+    throw new ForbiddenError("You can only access your own data");
+  }
+  return currentUserId;
 };

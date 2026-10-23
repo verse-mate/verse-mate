@@ -36,15 +36,31 @@ export const CLASS_RECURRENCES = [
 
 /** Body for POST / PUT /coach/classes. `classDate` is an ISO yyyy-mm-dd string
  *  or empty (no pinned date); `zoomLink` is empty or a well-formed http(s) URL
- *  (validated in the plugin so the message matches the zoom-link route). */
-export const CoachClassDto = t.Object({
+ *  (validated in the plugin so the message matches the zoom-link route).
+ *  `startTime` (HH:MM, 24-hour) and `timeZone` (IANA) are empty until set;
+ *  the notetaker needs both, and the date, to join. Optional so a client that
+ *  predates them keeps working; `notetaker` then defaults to true. */
+const CLASS_BODY = {
   name: t.String({ minLength: 1, maxLength: 200 }),
   classDate: t.String({ maxLength: 10 }),
   recurrence: t.Union(CLASS_RECURRENCES.map((r) => t.Literal(r))),
   zoomLink: t.String({ maxLength: 2048 }),
-});
+  startTime: t.Optional(t.String({ maxLength: 5 })),
+  timeZone: t.Optional(t.String({ maxLength: 64 })),
+  notetaker: t.Optional(t.Boolean()),
+};
+
+export const CoachClassDto = t.Object(CLASS_BODY);
 
 export type CoachClassDto = typeof CoachClassDto.static;
+
+/** Body for POST /coach/admin/classes: a class for the roster leader `coachId`. */
+export const AdminCoachClassDto = t.Object({
+  ...CLASS_BODY,
+  coachId: t.String({ minLength: 1, maxLength: 200 }),
+});
+
+export type AdminCoachClassDto = typeof AdminCoachClassDto.static;
 
 /** Body for POST /coach/admin/leaders. `email` is required; name/group/coach
  *  are optional (name is derived from the email when omitted). */

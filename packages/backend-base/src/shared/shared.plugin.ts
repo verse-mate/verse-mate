@@ -1,35 +1,24 @@
-import { bearer } from "@elysiajs/bearer";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
-import { UserService } from "../user/user.service";
+import { ApiError } from "../common/errors";
 
+import { answerError, isRouteNotFound } from "../common/error-handler";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
 import bullmqRedisConnection from "./bullmq-redis";
 import { type Logger, PosthogService } from "./posthog.service";
 import redisClient from "./redis-client";
+import { signingSecret } from "./signing-secret";
 
 export type cache = typeof redisClient;
 
 export type db = typeof Database;
 
-// Security (audit #2): never sign sessions with a hardcoded or publicly-known
-// secret — either lets any attacker forge a valid JWT for any user. Fail closed
-// at startup when the secret is unset OR still the historical default that was
-// shipped in .env.example on a public repo (so setting it to that known value
-// does not sneak past this guard).
-const authTokenSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
-if (!authTokenSecret || authTokenSecret === "my-super-secret") {
-  throw new Error(
-    "AUTH_ACCESS_TOKEN_SECRET is unset or the known-public default — refusing to start; set a unique secret",
-  );
-}
-
 const jwt = ElysiaJwt({
   name: "jwt",
-  secret: authTokenSecret,
+  secret: signingSecret(),
   // Per spec feat-auth-platform br-auth-001 (D-005): access token IS the
   // persistent session token; refresh tokens eliminated. Backend Redis cache
   // validates every token so server-side logout immediately revokes regardless
@@ -61,15 +50,12 @@ const posthogService = new PosthogService({ logger });
  * Used in global error handler to add user context to exceptions
  */
 async function maybeCurrentUserId({
-  bearer: bearerToken,
-  query,
+  bearer: token,
   jwt: jwtVerifier,
 }: {
   bearer: string | undefined;
-  query: { accessToken?: string };
   jwt: JWT;
 }): Promise<string | null> {
-  const token = bearerToken ?? query?.accessToken;
   if (!token) return null;
 
   try {
@@ -85,8 +71,19 @@ async function maybeCurrentUserId({
 
 // const storage = new ObjectStorageService();
 
+const answeredErrors = new Elysia({ name: "answered-errors" }).onError(
+  { as: "global" },
+  ({ code, error, path, set }) => answerError(path, code, error, set),
+);
+
+const BEARER_PREFIX = "Bearer ";
+
 const setup = new Elysia({ name: "shared" })
-  .use(bearer())
+  .derive({ as: "global" }, ({ headers: { authorization } }) => ({
+    bearer: authorization?.startsWith(BEARER_PREFIX)
+      ? authorization.slice(BEARER_PREFIX.length)
+      : undefined,
+  }))
   .use(jwt)
   .state("db", Database)
   .state("cache", redisClient)
@@ -95,71 +92,40 @@ const setup = new Elysia({ name: "shared" })
   .decorate("posthog", posthogService)
   .onError(
     { as: "global" },
-    async ({
-      bearer: bearerToken,
-      query,
-      jwt: jwtVerifier,
-      error,
-      code,
-      path,
-    }) => {
-      // NOT_FOUND is expected HTTP behavior (404s), not an application exception
-      if (code === "NOT_FOUND") return;
+    async ({ bearer: bearerToken, jwt: jwtVerifier, error, code, path }) => {
+      if (
+        code === "NOT_FOUND" &&
+        (error instanceof ApiError || isRouteNotFound(error))
+      )
+        return;
+      if (
+        !(error instanceof Error) &&
+        (error as { status?: unknown }).status === 429
+      )
+        return;
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403)
+      )
+        return;
 
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,
-        query: query as { accessToken?: string },
         jwt: jwtVerifier,
       });
-      posthogService.captureException(error, distinctId ?? "anonymous", {
+      const reported =
+        code === "VALIDATION"
+          ? new Error(
+              `validation failed on ${error.type} ${error.valueError?.path ?? ""}`.trim(),
+            )
+          : error;
+      posthogService.captureException(reported, distinctId ?? "anonymous", {
         code,
         $current_url: path,
       });
     },
   )
-  .derive(async ({ jwt, cookie: { auth }, store }) => {
-    let payload: any;
-    try {
-      payload = await jwt.verify(auth?.value as string | undefined);
-    } catch {
-      console.warn("JWT verification failed");
-      return { user: null };
-    }
-
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      typeof (payload as any).id !== "string" ||
-      !(payload as any).id
-    ) {
-      return { user: null };
-    }
-
-    try {
-      const userService = new UserService(store.db);
-      const user = await userService.findOne((payload as any).id);
-      if (!user) return { user: null };
-      return { user };
-    } catch {
-      console.error("Failed to load user from store");
-      return { user: null };
-    }
-  })
-  // @ts-ignore - Elysia macro types are complex and not fully inferred
-  .macro(({ onBeforeHandle }: any) => ({
-    isAuthenticated() {
-      onBeforeHandle(({ user, set }: any) => {
-        if (!user) {
-          set.status = 401;
-          return {
-            error: "UNAUTHORIZED",
-            message: "Authentication required",
-            details: undefined,
-          };
-        }
-      });
-    },
-  }));
+  .use(answeredErrors as unknown as Elysia);
 
 import { audioCleanupQueue } from "../bible/audio/audio-cleanup.queue";
 import {
@@ -168,6 +134,26 @@ import {
 } from "../bible/audio/audio-cleanup.worker";
 import { audioGenerationQueue } from "../bible/audio/audio-generation.queue";
 import { audioGenerationWorker } from "../bible/audio/audio-generation.worker";
+import { coachIntakeQueue } from "../coach/coach-intake.queue";
+import {
+  coachIntakeWorker,
+  registerCoachIntakeCron,
+} from "../coach/coach-intake.worker";
+import {
+  coachMondayReminderQueue,
+  coachMondayReminderWorker,
+  registerCoachMondayReminderCron,
+} from "../coach/coach-monday-reminder.worker";
+import { coachMonthlyQueue } from "../coach/coach-monthly.queue";
+import {
+  coachMonthlyWorker,
+  registerCoachMonthlyCron,
+} from "../coach/coach-monthly.worker";
+import { coachReminderQueue } from "../coach/coach-reminder.queue";
+import {
+  coachReminderWorker,
+  registerCoachReminderCron,
+} from "../coach/coach-reminder.worker";
 import { verseNotificationQueue } from "../notifications/verse-notification.queue";
 import {
   registerVerseNotificationCron,
@@ -175,66 +161,91 @@ import {
 } from "../notifications/verse-notification.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
+import { imageMigrator, waitForMigrations } from "./migration-wait";
+import { type WorkerRole, runsWorkers, workerRole } from "./worker-role";
 
-setup.onStart(async () => {
-  console.log("[QUEUE] Starting BullMQ workers...");
-  if (!batchMonitoringWorker.isRunning()) {
-    console.log("[QUEUE] Monitoring worker not running, starting it now...");
-    batchMonitoringWorker.run();
-    console.log("[QUEUE] Monitoring worker started successfully");
-  } else {
-    console.log("[QUEUE] Monitoring worker already running");
+export interface QueueWorkerEntry {
+  name: string;
+  worker: { isRunning(): boolean; run(): unknown };
+  registerCron?: () => Promise<unknown>;
+}
+
+export const QUEUE_WORKERS: QueueWorkerEntry[] = [
+  { name: "Monitoring", worker: batchMonitoringWorker },
+  { name: "Processing", worker: batchProcessingWorker },
+  { name: "Audio generation", worker: audioGenerationWorker },
+  {
+    name: "Audio cleanup",
+    worker: audioCleanupWorker,
+    registerCron: registerAudioCleanupCron,
+  },
+  {
+    name: "Verse notification",
+    worker: verseNotificationWorker,
+    registerCron: registerVerseNotificationCron,
+  },
+  {
+    name: "Coach intake",
+    worker: coachIntakeWorker,
+    registerCron: registerCoachIntakeCron,
+  },
+  {
+    name: "Coach reminder",
+    worker: coachReminderWorker,
+    registerCron: registerCoachReminderCron,
+  },
+  {
+    name: "Coach monthly",
+    worker: coachMonthlyWorker,
+    registerCron: registerCoachMonthlyCron,
+  },
+  {
+    name: "Coach Monday reminder",
+    worker: coachMondayReminderWorker,
+    registerCron: registerCoachMondayReminderCron,
+  },
+];
+
+export async function startQueueWorkers(
+  entries: QueueWorkerEntry[],
+): Promise<void> {
+  for (const entry of entries) {
+    if (entry.worker.isRunning()) {
+      console.log(`[QUEUE] ${entry.name} worker already running`);
+    } else {
+      entry.worker.run();
+      console.log(`[QUEUE] ${entry.name} worker started successfully`);
+    }
+    if (!entry.registerCron) continue;
+    try {
+      await entry.registerCron();
+    } catch (error) {
+      console.error(`[QUEUE] Failed to register ${entry.name} cron:`, error);
+    }
   }
+}
 
-  if (!batchProcessingWorker.isRunning()) {
-    console.log("[QUEUE] Processing worker not running, starting it now...");
-    batchProcessingWorker.run();
-    console.log("[QUEUE] Processing worker started successfully");
-  } else {
-    console.log("[QUEUE] Processing worker already running");
+export interface BackgroundSteps {
+  waitForMigrations(): Promise<void>;
+  startWorkers(): Promise<void>;
+  resumeBatchMonitoring(): Promise<void>;
+}
+
+export async function startBackgroundWork(
+  role: WorkerRole,
+  steps: BackgroundSteps,
+): Promise<void> {
+  if (!runsWorkers(role)) {
+    console.log(`[QUEUE] No BullMQ workers in this process (role: ${role})`);
+    return;
   }
+  if (role === "worker") await steps.waitForMigrations();
+  console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
+  await steps.startWorkers();
+  await steps.resumeBatchMonitoring();
+}
 
-  if (!audioGenerationWorker.isRunning()) {
-    console.log(
-      "[QUEUE] Audio generation worker not running, starting it now...",
-    );
-    audioGenerationWorker.run();
-    console.log("[QUEUE] Audio generation worker started successfully");
-  } else {
-    console.log("[QUEUE] Audio generation worker already running");
-  }
-
-  if (!audioCleanupWorker.isRunning()) {
-    console.log("[QUEUE] Audio cleanup worker not running, starting it now...");
-    audioCleanupWorker.run();
-    console.log("[QUEUE] Audio cleanup worker started successfully");
-  } else {
-    console.log("[QUEUE] Audio cleanup worker already running");
-  }
-
-  try {
-    await registerAudioCleanupCron();
-  } catch (error) {
-    console.error("[QUEUE] Failed to register audio cleanup cron:", error);
-  }
-
-  if (!verseNotificationWorker.isRunning()) {
-    console.log(
-      "[QUEUE] Verse notification worker not running, starting it now...",
-    );
-    verseNotificationWorker.run();
-    console.log("[QUEUE] Verse notification worker started successfully");
-  } else {
-    console.log("[QUEUE] Verse notification worker already running");
-  }
-
-  try {
-    await registerVerseNotificationCron();
-  } catch (error) {
-    console.error("[QUEUE] Failed to register verse notification cron:", error);
-  }
-
-  // Check for existing active batches and start monitoring them
+export async function resumeActiveBatchMonitoring(): Promise<void> {
   console.log("[QUEUE] Checking for existing active batches to monitor...");
   try {
     const activeBatches = await Database.getOrCreateConnection()
@@ -281,6 +292,18 @@ setup.onStart(async () => {
   } catch (error) {
     console.error("[QUEUE] Error checking for active batches:", error);
   }
+}
+
+setup.onStart(() => {
+  startBackgroundWork(workerRole(), {
+    waitForMigrations: () =>
+      waitForMigrations(imageMigrator(Database.getOrCreateConnection())),
+    startWorkers: () => startQueueWorkers(QUEUE_WORKERS),
+    resumeBatchMonitoring: resumeActiveBatchMonitoring,
+  }).catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 });
 
 setup.onStop(async () => {
@@ -299,6 +322,14 @@ setup.onStop(async () => {
   audioCleanupWorker.close();
   verseNotificationQueue.close();
   verseNotificationWorker.close();
+  coachIntakeQueue.close();
+  coachIntakeWorker.close();
+  coachReminderQueue.close();
+  coachReminderWorker.close();
+  coachMonthlyQueue.close();
+  coachMonthlyWorker.close();
+  coachMondayReminderQueue.close();
+  coachMondayReminderWorker.close();
 });
 
 export default setup;

@@ -6,6 +6,7 @@
     "./admin": "./admin/index.ts",
     "./styles/*": "./styles/*",
     "./src/analytics": "./src/analytics/index.ts",
+    "./src/api/auth": "./src/api/auth.ts",
     "./src/auth/lib": "./src/auth/lib.ts",
     "./src/utils/auth-utils": "./src/utils/auth-utils.ts",
     "./package.json": "./package.json"
@@ -49,7 +50,7 @@
     "react-feather": "^2.0.10",
     "react-hook-form": "^7.51.5",
     "react-markdown": "^9.0.1",
-    "react-router-dom": "^6.27.0",
+    "react-router-dom": "^6.30.4",
     "react-swipeable": "^7.0.2",
     "swr": "^2.2.5",
     "zod": "^3.23.8"

@@ -1,15 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
 
-/**
- * Bible-Coach portal: admin-added leaders.
- *
- * The coach roster is primarily served from the bundled coaching-pipeline
- * dataset (backend-base/src/coach/coach.data.json). This table lets a program
- * admin add a brand-new leader by email before any report exists — the row is
- * merged into the roster (0 sessions) and, once a VerseMate account with the
- * same email signs in, that account becomes a coachee. One row per email.
- */
 export async function up(db: Kysely<Database>): Promise<void> {
   console.log("Creating coach_leaders table...");
 

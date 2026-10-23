@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
+import { signupPassword } from "../shared/signup-password";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./user.plugin";
 
@@ -11,13 +13,14 @@ describe("User", () => {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password(),
+    password: signupPassword(),
   };
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - TODO: Fix this
   const testClient = getTestClient<typeof plugin>(plugin);
 
   beforeAll(async () => {
+    await Backend.store.cache.delete("rate-limit:signup:unknown");
     const { data, error } = await testClient.auth.signup.post(authSignupInput);
     if (error) throw error;
 
@@ -41,6 +44,7 @@ describe("User", () => {
     expect(data?.email).toBe(authSignupInput.email);
     expect(data?.firstName).toBe(authSignupInput.firstName);
     expect(data?.lastName).toBe(authSignupInput.lastName);
+    expect(typeof data?.emailVerified).toBe("boolean");
   });
 
   it("update", async () => {

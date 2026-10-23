@@ -1,8 +1,11 @@
 export type {
+  AiChatBatch,
+  AiChatBatchRequest,
   AiChatMessage,
   AiChatOptions,
   AiChatResponse,
   AiProvider,
+  AiTranscription,
 } from "./ai-provider.interface";
 export {
   getAiProvider,

@@ -1,11 +1,14 @@
 "use client";
 
+import { exchangeSSOCode } from "frontend-base/src/api/auth";
 import {
+  completeSSOCallback,
   getSSOErrorMessage,
-  handleSSOCallback,
+  startSSOSignIn,
 } from "frontend-base/src/auth/lib";
+import { $env } from "frontend-envs";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import styles from "../callback.module.css";
 
 /**
@@ -121,12 +124,13 @@ function AppleCallbackContent() {
     code: string;
     message: string;
   } | null>(null);
+  const handled = useRef(false);
 
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || handled.current) {
       return;
     }
+    handled.current = true;
 
     // Handle null searchParams (shouldn't happen with Suspense, but be safe)
     if (!searchParams) {
@@ -138,34 +142,28 @@ function AppleCallbackContent() {
       return;
     }
 
-    // Convert ReadonlyURLSearchParams to URLSearchParams for compatibility
-    const params = new URLSearchParams(searchParams.toString());
+    completeSSOCallback(searchParams.toString(), exchangeSSOCode).then(
+      (result) => {
+        if (result.success && result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+        } else {
+          setIsLoading(false);
 
-    // Parse the callback parameters
-    const result = handleSSOCallback(params);
-
-    if (result.success && result.redirectUrl) {
-      // Admin app: no analytics. Redirect straight to the destination.
-      window.location.href = result.redirectUrl;
-    } else {
-      // Error - show error state with Apple-specific message
-      setIsLoading(false);
-
-      const errorCode = result.error || "unknown_error";
-      setError({
-        code: errorCode,
-        message: getAppleErrorMessage(
-          errorCode,
-          // Parse error_description from URL if present
-          searchParams.get("error_description") || undefined,
-        ),
-      });
-    }
+          const errorCode = result.error || "unknown_error";
+          setError({
+            code: errorCode,
+            message: getAppleErrorMessage(
+              errorCode,
+              searchParams.get("error_description") || undefined,
+            ),
+          });
+        }
+      },
+    );
   }, [searchParams]);
 
-  // Handle retry - redirect back to Apple OAuth
   const handleRetry = () => {
-    window.location.href = "/api/auth/sso/apple/redirect";
+    void startSSOSignIn($env.get().apiUrl, "apple");
   };
 
   return (
@@ -179,26 +177,6 @@ function AppleCallbackContent() {
   );
 }
 
-/**
- * Apple Sign In Callback Page
- *
- * This page handles the redirect from Apple Sign In after user authentication.
- * It extracts tokens from URL parameters, stores them, and redirects to the app.
- *
- * Expected URL parameters on success:
- * - accessToken: The access token for API requests
- * - refreshToken: The refresh token for session renewal
- * - verified: Whether the user's email is verified
- *
- * Expected URL parameters on error:
- * - error: Error code (e.g., "user_cancelled_authorize", "access_denied")
- * - error_description: Human-readable error description
- *
- * Apple-specific notes:
- * - Apple may use "user_cancelled_authorize" when user cancels
- * - Apple sends callbacks as POST, which backend handles and redirects as GET
- * - First-time sign-in includes user name data, subsequent logins may not
- */
 export default function AppleCallbackPage() {
   return (
     <Suspense

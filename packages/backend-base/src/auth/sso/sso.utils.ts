@@ -5,8 +5,23 @@
  * and configuration management.
  */
 
+import { createHash } from "node:crypto";
+import { clientIp } from "../../common/client-ip";
+
 // OAuth state TTL in seconds (10 minutes)
 export const SSO_STATE_TTL = 600;
+
+export const SSO_EXCHANGE_CODE_TTL = 60;
+
+const SSO_CHALLENGE_FORMAT = /^[A-Za-z0-9_-]{43}$/;
+
+export function isSSOChallenge(value: unknown): value is string {
+  return typeof value === "string" && SSO_CHALLENGE_FORMAT.test(value);
+}
+
+export function ssoChallengeOf(verifier: string): string {
+  return createHash("sha256").update(verifier).digest("base64url");
+}
 
 /**
  * SSO configuration interface
@@ -70,35 +85,39 @@ export function buildAppleOAuthUrl(state: string): string {
   return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
 }
 
-/**
- * Parameters for building frontend callback URL
- */
 export interface FrontendCallbackParams {
-  accessToken?: string;
-  verified?: boolean;
+  code?: string;
   error?: string;
   errorDescription?: string;
 }
 
-/**
- * Build frontend callback URL with tokens or error
- *
- * @param provider - SSO provider (google or apple)
- * @param params - Callback parameters (tokens or error)
- * @returns Full frontend callback URL
- */
+function originOf(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    const web = parsed.protocol === "https:" || parsed.protocol === "http:";
+    return web && parsed.origin !== "null" ? parsed.origin : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function ssoReturnOrigin(requested: unknown): string | undefined {
+  const admin = originOf(process.env.ADMIN_URL);
+  return admin !== undefined && requested === admin ? admin : undefined;
+}
+
 export function buildFrontendCallbackUrl(
   provider: "google" | "apple",
   params: FrontendCallbackParams,
+  returnOrigin?: unknown,
 ): string {
   const config = getSSOConfig();
+  const appUrl = ssoReturnOrigin(returnOrigin) ?? config.frontendUrl;
   const searchParams = new URLSearchParams();
 
-  if (params.accessToken) {
-    searchParams.set("accessToken", params.accessToken);
-  }
-  if (params.verified !== undefined) {
-    searchParams.set("verified", String(params.verified));
+  if (params.code) {
+    searchParams.set("code", params.code);
   }
   if (params.error) {
     searchParams.set("error", params.error);
@@ -107,18 +126,9 @@ export function buildFrontendCallbackUrl(
     searchParams.set("error_description", params.errorDescription);
   }
 
-  return `${config.frontendUrl}/auth/callback/${provider}?${searchParams.toString()}`;
+  return `${appUrl}/auth/callback/${provider}?${searchParams.toString()}`;
 }
 
-/**
- * Extract client IP address from request headers
- *
- * Safely parses x-forwarded-for (which may be comma-separated) and falls back
- * to x-real-ip. Returns undefined if no IP can be determined.
- *
- * @param request - The incoming HTTP request
- * @returns The client IP address or undefined
- */
 /**
  * Create a redirect Response object
  *
@@ -132,16 +142,10 @@ export function createRedirectResponse(url: string): Response {
   });
 }
 
-export function extractClientIp(request: Request): string | undefined {
-  const xff = request.headers.get("x-forwarded-for") || "";
-  const xri = request.headers.get("x-real-ip") || "";
-
-  // x-forwarded-for may contain multiple IPs (client, proxies...)
-  // Take the first one which is the original client
-  const parsedXff = xff
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)[0];
-
-  return parsedXff || xri || undefined;
+export function extractClientIp(
+  request: Request,
+  server?: Parameters<typeof clientIp>[1],
+): string | undefined {
+  const ip = clientIp(request, server);
+  return ip === "unknown" ? undefined : ip;
 }

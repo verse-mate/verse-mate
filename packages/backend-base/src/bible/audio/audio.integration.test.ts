@@ -26,9 +26,11 @@ import {
   AUDIO_GENERATION_QUEUE,
   type AudioGenerationJobData,
 } from "./audio-generation.queue";
+import { AudioRepository } from "./audio.repository";
 import { AudioService } from "./audio.service";
 
 const BUCKET = process.env.OBJECT_STORAGE_BUCKET ?? "saas-starter-dev";
+const DEFAULT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
 
 // The fixture MP3 lives under apps/backend (TASK-001 decision — it's the
 // deployable unit's fixture). Tests run from packages/backend-base, so
@@ -136,7 +138,6 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const result = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: "integration-user-1",
       });
@@ -147,11 +148,11 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
       // br-audio-007: reader payload is the narrow four-field shape.
       expect(result.audio).not.toHaveProperty("tts_provider");
       expect(result.audio).not.toHaveProperty("storage_key");
-      expect(result.audio.voice).toBe("stub");
+      expect(result.audio.voice).toBe(DEFAULT_VOICE);
       expect(result.audio.language_code).toBe("en");
       expect(result.audio.url).toContain(BUCKET);
       expect(result.audio.url).toContain(
-        `explanation-audio/${testExplanationId}/stub/en/`,
+        `explanation-audio/${testExplanationId}/${DEFAULT_VOICE}/en/`,
       );
 
       // Verify the presigned URL actually resolves to the object we just
@@ -172,13 +173,11 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const first = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: "integration-user-1",
       });
       const second = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: "integration-user-1",
       });
@@ -204,11 +203,78 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const result = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: null,
       });
       expect(result.kind).toBe("ready");
+    });
+
+    it("parallel upserts of one variant all resolve to a single row", async () => {
+      const repository = new AudioRepository(Database);
+      const variant = {
+        explanation_id: testExplanationId,
+        voice: DEFAULT_VOICE,
+        language_code: "en-GB",
+      };
+      const row = (n: number) => ({
+        ...variant,
+        storage_key: `audio/test/${testExplanationId}-${n}.mp3`,
+        duration_seconds: 1,
+        character_count: TEST_TEXT.length,
+        content_hash: "a".repeat(64),
+        tts_provider: "stub",
+        tts_model: "stub",
+      });
+
+      for (let round = 0; round < 5; round++) {
+        const results = await Promise.allSettled(
+          Array.from({ length: 8 }, (_, n) => repository.upsert(row(n))),
+        );
+        expect(results.map((r) => r.status)).toEqual(
+          Array(8).fill("fulfilled"),
+        );
+      }
+
+      const stored = await Database.getOrCreateConnection()
+        .selectFrom("explanation_audios")
+        .select(["audio_id", "storage_key"])
+        .where("explanation_id", "=", testExplanationId)
+        .where("voice", "=", variant.voice)
+        .where("language_code", "=", variant.language_code)
+        .execute();
+      expect(stored).toHaveLength(1);
+    });
+
+    it("an upsert keeps the row id and replaces its content", async () => {
+      const repository = new AudioRepository(Database);
+      const base = {
+        explanation_id: testExplanationId,
+        voice: DEFAULT_VOICE,
+        language_code: "en-AU",
+        duration_seconds: 1,
+        character_count: TEST_TEXT.length,
+        tts_provider: "stub",
+        tts_model: "stub",
+      };
+      const first = await repository.upsert({
+        ...base,
+        storage_key: "audio/test/first.mp3",
+        content_hash: "a".repeat(64),
+      });
+      await repository.markStale(testExplanationId);
+      const second = await repository.upsert({
+        ...base,
+        storage_key: "audio/test/second.mp3",
+        content_hash: "b".repeat(64),
+      });
+
+      expect(second.audio_id).toBe(first.audio_id);
+      expect(second.storage_key).toBe("audio/test/second.mp3");
+      expect(second.content_hash).toBe("b".repeat(64));
+      expect(second.is_stale).toBe(false);
+      expect(second.generated_at.getTime()).toBeGreaterThanOrEqual(
+        first.generated_at.getTime(),
+      );
     });
   });
 
@@ -230,7 +296,6 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const result = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "alloy",
         language: "en",
         currentUserId: "integration-user-openai",
       });

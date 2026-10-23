@@ -65,3 +65,41 @@ describe("BunS3Helper (D-002 migration)", () => {
     expect(url).toContain(BUCKET);
   });
 });
+
+describe("a PUT address signed for one content length", () => {
+  const helper = new BunS3Helper(
+    "http://localhost:9000",
+    "us-east-1",
+    "bucket",
+    "key",
+    "secret",
+  );
+
+  it("signs the length into the address, so each length gets its own signature", () => {
+    const five = new URL(helper.presignPutOfLength("coach/uploads/a/p", 60, 5));
+    const six = new URL(helper.presignPutOfLength("coach/uploads/a/p", 60, 6));
+    expect(five.searchParams.get("X-Amz-SignedHeaders")).toBe(
+      "content-length;host",
+    );
+    expect(five.pathname).toBe(six.pathname);
+    expect(five.searchParams.get("X-Amz-Signature")).toMatch(/^[0-9a-f]{64}$/);
+    expect(five.searchParams.get("X-Amz-Signature")).not.toBe(
+      six.searchParams.get("X-Amz-Signature"),
+    );
+  });
+
+  it("signs the content type when given, so an address for one type does not take another", () => {
+    const mp4 = new URL(
+      helper.presignPutOfLength("coach/uploads/a/p", 60, 5, "video/mp4"),
+    );
+    const webm = new URL(
+      helper.presignPutOfLength("coach/uploads/a/p", 60, 5, "video/webm"),
+    );
+    expect(mp4.searchParams.get("X-Amz-SignedHeaders")).toBe(
+      "content-length;content-type;host",
+    );
+    expect(mp4.searchParams.get("X-Amz-Signature")).not.toBe(
+      webm.searchParams.get("X-Amz-Signature"),
+    );
+  });
+});

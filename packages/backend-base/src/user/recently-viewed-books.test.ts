@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
+import { signupPassword } from "../shared/signup-password";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./user.plugin";
 
@@ -11,9 +13,9 @@ describe("Recently Viewed Books", () => {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password(),
+    password: signupPassword(),
   };
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - TODO: Fix this
   const testClient = getTestClient<typeof plugin>(plugin);
 
@@ -281,7 +283,7 @@ describe("Recently Viewed Books", () => {
 
     // Mock email sending for this signup
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // Create a fresh user for this test to avoid state pollution from previous tests
@@ -289,7 +291,7 @@ describe("Recently Viewed Books", () => {
       email: faker.internet.email().toLocaleLowerCase(),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password(),
+      password: signupPassword(),
     };
     const { data: signupData, error: signupError } =
       await testClient.auth.signup.post(freshUserSignup);

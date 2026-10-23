@@ -1,11 +1,14 @@
 "use client";
 
+import { exchangeSSOCode } from "frontend-base/src/api/auth";
 import {
+  completeSSOCallback,
   getSSOErrorMessage,
-  handleSSOCallback,
+  startSSOSignIn,
 } from "frontend-base/src/auth/lib";
+import { $env } from "frontend-envs";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import styles from "../callback.module.css";
 
 /**
@@ -84,12 +87,13 @@ function GoogleCallbackContent() {
     code: string;
     message: string;
   } | null>(null);
+  const handled = useRef(false);
 
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || handled.current) {
       return;
     }
+    handled.current = true;
 
     // Handle null searchParams (shouldn't happen with Suspense, but be safe)
     if (!searchParams) {
@@ -101,30 +105,25 @@ function GoogleCallbackContent() {
       return;
     }
 
-    // Convert ReadonlyURLSearchParams to URLSearchParams for compatibility
-    const params = new URLSearchParams(searchParams.toString());
-
-    // Parse the callback parameters
-    const result = handleSSOCallback(params);
-
-    if (result.success && result.redirectUrl) {
-      // Admin app: no analytics. Redirect straight to the destination.
-      window.location.href = result.redirectUrl;
-    } else {
-      // Error - show error state
-      setIsLoading(false);
-      setError({
-        code: result.error || "unknown_error",
-        message:
-          result.errorMessage ||
-          getSSOErrorMessage(result.error || "unknown_error"),
-      });
-    }
+    completeSSOCallback(searchParams.toString(), exchangeSSOCode).then(
+      (result) => {
+        if (result.success && result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+        } else {
+          setIsLoading(false);
+          setError({
+            code: result.error || "unknown_error",
+            message:
+              result.errorMessage ||
+              getSSOErrorMessage(result.error || "unknown_error"),
+          });
+        }
+      },
+    );
   }, [searchParams]);
 
-  // Handle retry - redirect back to Google OAuth
   const handleRetry = () => {
-    window.location.href = "/api/auth/sso/google/redirect";
+    void startSSOSignIn($env.get().apiUrl, "google");
   };
 
   return (
@@ -138,21 +137,6 @@ function GoogleCallbackContent() {
   );
 }
 
-/**
- * Google OAuth Callback Page
- *
- * This page handles the redirect from Google OAuth after user authentication.
- * It extracts tokens from URL parameters, stores them, and redirects to the app.
- *
- * Expected URL parameters on success:
- * - accessToken: The access token for API requests
- * - refreshToken: The refresh token for session renewal
- * - verified: Whether the user's email is verified
- *
- * Expected URL parameters on error:
- * - error: Error code (e.g., "access_denied", "invalid_state")
- * - error_description: Human-readable error description
- */
 export default function GoogleCallbackPage() {
   return (
     <Suspense

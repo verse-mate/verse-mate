@@ -1,0 +1,137 @@
+export interface CoachReportRow {
+  id: string;
+  coach_id: string;
+  session_date: string;
+  /** The provider's session identifier; part of the row's natural key. */
+  source_session_id: string;
+  legacy_ids: string[];
+  summary: Record<string, unknown>;
+  metrics: Record<string, unknown>;
+  body: Record<string, unknown>;
+  held?: boolean;
+}
+
+/** Pick a subset of keys that are present on the source object. */
+function pick(
+  src: Record<string, unknown>,
+  keys: string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) {
+    if (k in src) out[k] = src[k];
+  }
+  return out;
+}
+
+const SUMMARY_KEYS = [
+  "dateLabel",
+  "session",
+  "topic",
+  "duration",
+  "attendees",
+  "newcomers",
+  "score",
+  "status",
+  "statusEmoji",
+  "pdfUrl",
+  "docUrl",
+];
+const METRICS_KEYS = [
+  "base",
+  "newcomerBonus",
+  "sizeBonus",
+  "clusters",
+  "dimensions",
+];
+const BODY_KEYS = ["bigIdeas", "feedback", "sections"];
+
+export function legacySourceSessionId(
+  coachId: string,
+  date: string,
+  ordinal = 0,
+): string {
+  const base = `legacy:${coachId}:${date}`;
+  return ordinal === 0 ? base : `${base}#${ordinal}`;
+}
+
+/** One dataset report (under coach `coachId`) → one coach_reports row. */
+export function reportToRow(
+  coachId: string,
+  report: Record<string, unknown>,
+  ordinal = 0,
+): CoachReportRow {
+  return {
+    id: String(report.id),
+    coach_id: coachId,
+    session_date: String(report.date),
+    source_session_id: legacySourceSessionId(
+      coachId,
+      String(report.date),
+      ordinal,
+    ),
+    legacy_ids: [],
+    summary: pick(report, SUMMARY_KEYS),
+    metrics: pick(report, METRICS_KEYS),
+    body: withoutMonologueDetails(pick(report, BODY_KEYS)),
+  };
+}
+
+export function withoutMonologueDetails(
+  body: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!Array.isArray(body.sections)) return body;
+  return {
+    ...body,
+    sections: body.sections.map((section: Record<string, unknown>) =>
+      Array.isArray(section?.bullets)
+        ? {
+            ...section,
+            bullets: section.bullets.filter(
+              (b: unknown) =>
+                !(typeof b === "string" && b.startsWith("Monologue details")),
+            ),
+          }
+        : section,
+    ),
+  };
+}
+
+/**
+ * Inverse of `reportToRow`: reassemble the report contract the API serves from
+ * the stored jsonb columns. Round-trips exactly (see the transform test), so
+ * moving reads onto the store cannot silently drop a field.
+ */
+export function rowToReport(row: {
+  id: string;
+  /** yyyy-mm-dd. Accepts either the DB column name or the API field name. */
+  session_date?: string;
+  date?: string;
+  summary: Record<string, unknown>;
+  metrics: Record<string, unknown>;
+  body: Record<string, unknown>;
+}): Record<string, unknown> {
+  return {
+    id: row.id,
+    date: row.session_date ?? row.date ?? "",
+    ...row.summary,
+    ...row.metrics,
+    ...row.body,
+  };
+}
+
+/**
+ * The list-view projection: identity + summary only, never prose. This is what
+ * a paginated session list returns, so a long history stays bounded.
+ */
+export function rowToSummary(row: {
+  id: string;
+  session_date?: string;
+  date?: string;
+  summary: Record<string, unknown>;
+}): Record<string, unknown> {
+  return {
+    id: row.id,
+    date: row.session_date ?? row.date ?? "",
+    ...row.summary,
+  };
+}

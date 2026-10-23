@@ -1,0 +1,587 @@
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { db as Database } from "database";
+import { sql } from "kysely";
+
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import { CoachIntakeService } from "./coach-intake.service";
+import { calendarDate } from "./coach-reminder.service";
+import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
+
+const conn = Database.getOrCreateConnection();
+
+const COACH_EMAIL = "intake-leader@example.test";
+const COACH_SLUG = "intake-leader";
+const TODAY = calendarDate(new Date());
+const HOST_DAY = "2026-08-22T14:00:00.000Z";
+
+function transcript(
+  id: string,
+  over: Partial<FirefliesTranscript> = {},
+): FirefliesTranscript {
+  return {
+    id,
+    title: "Avery — Saturday Morning, Cedar Hollow",
+    host_email: "fred@fireflies.ai",
+    organizer_email: "fred@fireflies.ai",
+    dateString: `${TODAY}T17:00:00.000Z`,
+    duration: 62,
+    ...over,
+  };
+}
+
+/** Records what the service asked for, so the watermark is observable. */
+class FakeFireflies implements FirefliesClient {
+  calls: Array<{ since: Date | null }> = [];
+  constructor(private pages: FirefliesTranscript[][]) {}
+  async listTranscripts(opts: {
+    since: Date | null;
+    limit: number;
+  }): Promise<FirefliesTranscript[]> {
+    this.calls.push({ since: opts.since });
+    return this.pages.shift() ?? [];
+  }
+}
+
+async function clear() {
+  // Scoped: an unscoped wipe of the intake ledger strands every published
+  // report's watermark, dedupe record and report_id link.
+  await conn
+    .deleteFrom("coach_intake_sessions")
+    .where("source_session_id", "like", "ff-%")
+    .execute();
+  await conn
+    .deleteFrom("coach_leaders")
+    .where("email", "=", COACH_EMAIL)
+    .execute();
+}
+
+async function pipelineFirstPolled(on: string) {
+  await conn
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: "ff-first-poll",
+      source: "bot",
+      matched_by: "unresolved",
+      title: "first poll",
+      session_date: on,
+      observed_at: `${on} 15:00:00`,
+    })
+    .execute();
+}
+
+async function seedLeader() {
+  await conn
+    .insertInto("coach_leaders")
+    .values({
+      slug: COACH_SLUG,
+      email: COACH_EMAIL,
+      name: "Avery Hollis",
+      title_match: ["cedar hollow", "saturday morning"],
+      created_at: "2026-01-01 00:00:00",
+    })
+    .execute();
+}
+
+describe("session intake polls the recording bot, not the leader's inbox", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeader();
+  });
+  afterEach(clear);
+
+  it("a bot-covered leader's session arrives with the leader sending nothing", async () => {
+    const client = new FakeFireflies([[transcript("ff-1")]]);
+    const service = new CoachIntakeService(Database, client);
+
+    const result = await service.poll();
+    expect(result.observed).toBe(1);
+
+    const rows = await conn
+      .selectFrom("coach_intake_sessions")
+      .selectAll()
+      .execute();
+    expect(rows.length).toBe(1);
+    expect(rows[0].source_session_id).toBe("ff-1");
+    expect(rows[0].state).toBe("observed");
+    // Nothing was sent by the leader; the session is theirs all the same.
+    expect(rows[0].coach_id).toBe(COACH_SLUG);
+  });
+
+  it("the first poll asks for everything; later polls carry a watermark", async () => {
+    const client = new FakeFireflies([[transcript("ff-1")], []]);
+    const service = new CoachIntakeService(Database, client);
+
+    await service.poll();
+    expect(client.calls[0].since).toBeNull();
+
+    await service.poll();
+    expect(client.calls[1].since).toBeInstanceOf(Date);
+  });
+
+  it("an uploaded session does not move the recording bot's watermark", async () => {
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "ff-upload-1",
+        source: "upload",
+        coach_id: COACH_SLUG,
+        matched_by: "upload",
+        title: "Uploaded",
+        session_date: "2026-10-02",
+        state: "received",
+      })
+      .execute();
+    const client = new FakeFireflies([[]]);
+    await new CoachIntakeService(Database, client).poll();
+    expect(client.calls[0].since).toBeNull();
+  });
+
+  it("the watermark looks BACK past the newest session, so a late arrival is still seen", async () => {
+    const client = new FakeFireflies([[transcript("ff-1")], []]);
+    const service = new CoachIntakeService(Database, client);
+    await service.poll();
+    await service.poll();
+
+    const observed = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("observed_at")
+      .executeTakeFirstOrThrow();
+    const since = client.calls[1].since as Date;
+    // Strictly earlier than what we have already seen, a watermark set to the
+    // newest observation skips anything that lands a moment later.
+    expect(since.getTime()).toBeLessThan(
+      new Date(observed.observed_at).getTime(),
+    );
+  });
+
+  it("re-polling the same session produces no second row", async () => {
+    const client = new FakeFireflies([
+      [transcript("ff-1")],
+      [transcript("ff-1")],
+    ]);
+    const service = new CoachIntakeService(Database, client);
+
+    await service.poll();
+    const second = await service.poll();
+    expect(second.observed).toBe(0);
+    expect(second.alreadySeen).toBe(1);
+
+    const rows = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("source_session_id")
+      .execute();
+    expect(rows.length).toBe(1);
+  });
+
+  it("a genuinely new session in the overlap window is still picked up", async () => {
+    const client = new FakeFireflies([
+      [transcript("ff-1")],
+      [transcript("ff-1"), transcript("ff-2")],
+    ]);
+    const service = new CoachIntakeService(Database, client);
+
+    await service.poll();
+    const second = await service.poll();
+    expect(second.observed).toBe(1);
+    expect(second.alreadySeen).toBe(1);
+
+    const ids = (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select("source_session_id")
+        .orderBy("source_session_id")
+        .execute()
+    ).map((r) => r.source_session_id);
+    expect(ids).toEqual(["ff-1", "ff-2"]);
+  });
+
+  it("two sessions for one leader on one date are two sessions, not a duplicate", async () => {
+    // Deduping on leader+date would delete exactly what task 2.4 exists to
+    // preserve. There is one intake path now, so 'first path wins' is gone.
+    const client = new FakeFireflies([
+      [
+        transcript("ff-morning", { dateString: `${TODAY}T15:00:00.000Z` }),
+        transcript("ff-evening", { dateString: `${TODAY}T22:00:00.000Z` }),
+      ],
+    ]);
+    const service = new CoachIntakeService(Database, client);
+
+    const result = await service.poll();
+    expect(result.observed).toBe(2);
+    const rows = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["source_session_id", "session_date"])
+      .execute();
+    expect(rows.length).toBe(2);
+  });
+
+  it("a session it cannot attribute is INGESTED and flagged, never dropped", async () => {
+    const client = new FakeFireflies([
+      [transcript("ff-x", { title: "Some unrelated meeting" })],
+    ]);
+    const service = new CoachIntakeService(Database, client);
+
+    const result = await service.poll();
+    expect(result.observed).toBe(1);
+    expect(result.unresolved).toBe(1);
+
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .selectAll()
+      .where("source_session_id", "=", "ff-x")
+      .executeTakeFirstOrThrow();
+    expect(row.coach_id).toBeNull();
+    expect(row.matched_by).toBe("unresolved");
+  });
+});
+
+describe("bot intake and the host's reports", () => {
+  const hostReport = (date: string) =>
+    conn
+      .insertInto("coach_reports")
+      .values({
+        id: `intake-host-${date}`,
+        coach_id: COACH_SLUG,
+        session_date: date,
+        source_session_id: `legacy:${COACH_SLUG}:${date}`,
+        legacy_ids: [],
+        summary: {},
+        metrics: {},
+        body: {},
+      })
+      .execute();
+  const sessions = () =>
+    conn
+      .selectFrom("coach_intake_sessions")
+      .select(["source_session_id", "state", "duplicate_of"])
+      .where("source_session_id", "like", "ff-%")
+      .orderBy("source_session_id")
+      .execute();
+
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", COACH_SLUG)
+      .execute();
+    await seedLeader();
+    await hostReport("2026-08-22");
+  });
+  afterEach(async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await clear();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", COACH_SLUG)
+      .execute();
+  });
+
+  it("sessions dated before the leader's newest host report are ignored, and counted", async () => {
+    const result = await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-old", { dateString: "2026-08-15T14:00:00.000Z" }),
+          transcript("ff-new", { dateString: "2026-08-29T14:00:00.000Z" }),
+        ],
+      ]),
+    ).poll();
+    expect(await sessions()).toEqual([
+      { source_session_id: "ff-new", state: "observed", duplicate_of: null },
+    ]);
+    expect(result).toMatchObject({ observed: 1, floorSkipped: 1 });
+  });
+
+  it("after cutover, a session on a date the host reported is a likely duplicate, not scored", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([[transcript("ff-same", { dateString: HOST_DAY })]]),
+    ).poll();
+    expect(await sessions()).toEqual([
+      {
+        source_session_id: "ff-same",
+        state: "duplicate",
+        duplicate_of: "intake-host-2026-08-22",
+      },
+    ]);
+  });
+
+  it("during the parallel run the same session is ingested, so the comparison sees it", async () => {
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([[transcript("ff-same", { dateString: HOST_DAY })]]),
+    ).poll();
+    expect(await sessions()).toEqual([
+      { source_session_id: "ff-same", state: "observed", duplicate_of: null },
+    ]);
+  });
+});
+
+describe("a leader with no host report is bounded by their roster join and the week before the first poll", () => {
+  const kept = async () =>
+    (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select("source_session_id")
+        .where("source_session_id", "like", "ff-%")
+        .where("source_session_id", "!=", "ff-first-poll")
+        .orderBy("source_session_id")
+        .execute()
+    ).map((r) => r.source_session_id);
+
+  async function leaderJoined(on: string) {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ created_at: `${on} 15:00:00` })
+      .where("email", "=", COACH_EMAIL)
+      .execute();
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await seedLeader();
+  });
+  afterEach(clear);
+
+  it("nothing dated more than a week before the pipeline's first poll is taken, even for a leader who joined long before", async () => {
+    await leaderJoined("2026-07-01");
+    await pipelineFirstPolled("2026-09-15");
+    const result = await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-a-before-join", {
+            dateString: "2026-06-20T14:00:00.000Z",
+          }),
+          transcript("ff-b-week-before-poll", {
+            dateString: "2026-09-05T14:00:00.000Z",
+          }),
+          transcript("ff-c-after", { dateString: "2026-09-20T14:00:00.000Z" }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-c-after"]);
+    expect(result).toMatchObject({ observed: 1, floorSkipped: 2 });
+  });
+
+  it("nothing dated before the leader joined the roster is taken when they joined after the first poll", async () => {
+    await pipelineFirstPolled("2026-09-01");
+    await leaderJoined("2026-09-20");
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-a-before-join", {
+            dateString: "2026-09-10T14:00:00.000Z",
+          }),
+          transcript("ff-b-join-day", {
+            dateString: "2026-09-20T14:00:00.000Z",
+          }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-b-join-day"]);
+  });
+
+  it("an unattributed session dated before the first poll is not taken", async () => {
+    await pipelineFirstPolled("2026-09-15");
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-x-old", {
+            title: "Some unrelated meeting",
+            dateString: "2026-09-01T14:00:00.000Z",
+          }),
+          transcript("ff-x-new", {
+            title: "Some unrelated meeting",
+            dateString: "2026-09-16T14:00:00.000Z",
+          }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-x-new"]);
+  });
+
+  it("a session from the days before a first poll that took nothing is still taken when it arrives late", async () => {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await new CoachIntakeService(Database, new FakeFireflies([[]])).poll();
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [transcript("ff-late", { dateString: yesterday.toISOString() })],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-late"]);
+  });
+
+  it("on the very first poll, only the last week's sessions are taken", async () => {
+    const today = new Date();
+    const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    await new CoachIntakeService(
+      Database,
+      new FakeFireflies([
+        [
+          transcript("ff-a-last-month", {
+            dateString: lastMonth.toISOString(),
+          }),
+          transcript("ff-b-today", { dateString: today.toISOString() }),
+        ],
+      ]),
+    ).poll();
+    expect(await kept()).toEqual(["ff-b-today"]);
+  });
+});
+
+describe("the poll reads the whole history, not the first page", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeader();
+  });
+  afterEach(clear);
+
+  /** A client that hands back a full page until it runs out. */
+  class PagingFireflies implements FirefliesClient {
+    calls: Array<{ since: Date | null; skip: number }> = [];
+    constructor(private readonly total: number) {}
+    async listTranscripts(opts: {
+      since: Date | null;
+      limit: number;
+      skip?: number;
+    }): Promise<FirefliesTranscript[]> {
+      const skip = opts.skip ?? 0;
+      this.calls.push({ since: opts.since, skip });
+      const remaining = Math.max(0, this.total - skip);
+      return Array.from({ length: Math.min(opts.limit, remaining) }, (_, i) =>
+        transcript(`ff-page-${skip + i}`),
+      );
+    }
+  }
+
+  it("pages until a short page comes back", async () => {
+    // One 50-row request was all it ever made, with no truncation check, so on
+    // the FIRST run, which asks for everything, any history past row 50 became
+    // permanently unreachable: the next watermark is far narrower, and nothing
+    // would ever ask for that range again.
+    const client = new PagingFireflies(120);
+    const result = await new CoachIntakeService(Database, client).poll();
+
+    expect(result.observed).toBe(120);
+    expect(client.calls.map((c) => c.skip)).toEqual([0, 50, 100]);
+  });
+
+  it("stops after ONE call when the first page is short", async () => {
+    const client = new PagingFireflies(3);
+    await new CoachIntakeService(Database, client).poll();
+    expect(client.calls.length).toBe(1);
+  });
+
+  it("a session with an unparseable date is SKIPPED, not fatal to the batch", async () => {
+    // It used to throw RangeError from inside the insert loop, so every session
+    // after it went uninserted and the next tick hit the same record again.
+    const client = new FakeFireflies([
+      [
+        transcript("ff-ok-1"),
+        transcript("ff-bad", { dateString: "not a date at all" }),
+        transcript("ff-ok-2"),
+      ],
+    ]);
+    const result = await new CoachIntakeService(Database, client).poll();
+
+    expect(result.observed).toBe(2);
+    const ids = (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select("source_session_id")
+        .orderBy("source_session_id")
+        .execute()
+    ).map((r) => r.source_session_id);
+    expect(ids).toEqual(["ff-ok-1", "ff-ok-2"]);
+  });
+
+  it("the watermark uses the PROVIDER's clock, not our insertion time", async () => {
+    // It was max(observed_at), our own timestamp, compared against fromDate,
+    // which filters the provider's session date. A session recorded three weeks
+    // ago but first observed today pushed the window to "now minus a week",
+    // excluding its still-unobserved neighbours forever.
+    await pipelineFirstPolled("2026-01-01");
+    const client = new FakeFireflies([
+      [transcript("ff-old", { dateString: "2026-06-01T10:00:00.000Z" })],
+      [],
+    ]);
+    const service = new CoachIntakeService(Database, client);
+    await service.poll();
+
+    const since = await service.watermark();
+    expect(since).toBeInstanceOf(Date);
+    // Anchored to the June session date, not to today.
+    expect((since as Date).getUTCFullYear()).toBe(2026);
+    expect((since as Date) < new Date("2026-06-02T00:00:00.000Z")).toBe(true);
+  });
+
+  it("the sender address is NOT persisted", async () => {
+    const client = new FakeFireflies([[transcript("ff-1")]]);
+    await new CoachIntakeService(Database, client).poll();
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("host_email")
+      .where("source_session_id", "=", "ff-1")
+      .executeTakeFirstOrThrow();
+    expect(row.host_email).toBeNull();
+  });
+
+  it("a title carrying CRLF is stripped before it can reach a mail header", async () => {
+    const client = new FakeFireflies([
+      [transcript("ff-1", { title: "Obadiah\r\nBcc: someone@evil.test" })],
+    ]);
+    await new CoachIntakeService(Database, client).poll();
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("title")
+      .where("source_session_id", "=", "ff-1")
+      .executeTakeFirstOrThrow();
+    expect(row.title).not.toMatch(/[\r\n]/);
+    expect(row.title).toContain("Obadiah");
+  });
+});
+
+describe("a session's date is the America/Chicago calendar date of its start", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeader();
+  });
+  afterEach(clear);
+
+  async function stored(id: string) {
+    return conn
+      .selectFrom("coach_intake_sessions")
+      .select([
+        sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"),
+        "session_started_at",
+      ])
+      .where("source_session_id", "=", id)
+      .executeTakeFirstOrThrow();
+  }
+
+  it("a Thursday 6:30pm class after daylight saving ends is stored as Thursday, with its start", async () => {
+    const client = new FakeFireflies([
+      [transcript("ff-cst", { dateString: "2026-11-06T00:30:00.000Z" })],
+    ]);
+    await new CoachIntakeService(Database, client).poll();
+    const row = await stored("ff-cst");
+    expect(row.date).toBe("2026-11-05");
+    expect(new Date(row.session_started_at as Date).toISOString()).toBe(
+      "2026-11-06T00:30:00.000Z",
+    );
+  });
+
+  it("a Thursday 7pm class in daylight time is stored as Thursday", async () => {
+    await pipelineFirstPolled("2026-01-01");
+    const client = new FakeFireflies([
+      [transcript("ff-cdt", { dateString: "2026-10-02T00:00:00.000Z" })],
+    ]);
+    await new CoachIntakeService(Database, client).poll();
+    expect((await stored("ff-cdt")).date).toBe("2026-10-01");
+  });
+});

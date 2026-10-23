@@ -126,7 +126,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Install dependencies
         run: bun install
@@ -156,7 +156,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
         run: bun install
@@ -173,6 +178,10 @@ jobs:
         working-directory: ./apps/frontend-next
         run: bun run build
 
+      - name: Build worker
+        working-directory: ./apps/frontend-next
+        run: bun run build:worker
+
   build-website:
     name: Build Website
     runs-on: ubuntu-latest
@@ -184,7 +193,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
 
       - name: Install dependencies
         run: bun install
@@ -216,7 +225,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
         run: bun install
@@ -251,7 +265,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
         run: bun install
@@ -285,7 +304,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: 1.2.23
+          bun-version: 1.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
         run: bun install

@@ -1,4 +1,5 @@
-import { sql } from "kysely";
+import type Database from "database/src/models/Database";
+import { type ExpressionBuilder, sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 
 /** The coach portal's user-writable setup fields (one row per user). */
@@ -9,13 +10,18 @@ export interface CoachSettings {
 }
 
 /** A persisted class row as returned to the service layer (dates normalized
- *  to ISO yyyy-mm-dd strings so the JSON contract is stable). */
+ *  to ISO yyyy-mm-dd strings so the JSON contract is stable). `startTime` is a
+ *  local 24-hour HH:MM in `timeZone` (an IANA name); both are null until set.
+ *  `notetaker` false keeps the class listed without the bot joining it. */
 export interface CoachClassRow {
   id: string;
   name: string;
   classDate: string | null;
   recurrence: string;
   zoomLink: string;
+  startTime: string | null;
+  timeZone: string | null;
+  notetaker: boolean;
 }
 
 /** Fields a caller may set when creating / updating a class. */
@@ -24,16 +30,31 @@ export interface CoachClassInput {
   classDate: string | null;
   recurrence: string;
   zoomLink: string;
+  startTime: string | null;
+  timeZone: string | null;
+  notetaker: boolean;
+}
+
+/** Who a class belongs to: the leader's account (null when an admin scheduled
+ *  it before the leader signed up) and roster id (null on rows made before
+ *  classes carried it). At least one is set. */
+export interface CoachClassOwner {
+  userId: string | null;
+  coachId: string | null;
 }
 
 /** One leader's classes plus who they belong to (admin export shape). */
-export interface CoachClassWithOwner extends CoachClassRow {
-  userId: string;
-}
+export interface CoachClassWithOwner extends CoachClassRow, CoachClassOwner {}
 
-/** An admin-added leader row (roster placeholder before any report exists). */
+/** A roster leader row from coach_leaders. */
 export interface AddedLeaderRow {
   id: string;
+  /**
+   * The dataset slug every overlay keys on, coach_reports.coach_id,
+   * coach_notes.coach_id, coach_recording_links.coach_id. Null only for a row
+   * added before task 3.1, or one 3.10's backfill has not reached.
+   */
+  slug: string | null;
   email: string;
   name: string;
   group_name: string;
@@ -52,9 +73,9 @@ export interface CoachNoteRow {
 
 /**
  * Persistence for the coach portal's mutable state:
- *   - coach_zoom_links — the leader's single quick meeting link + affiliated
+ *   - coach_zoom_links, the leader's single quick meeting link + affiliated
  *     church (one row per user)
- *   - coach_classes    — the leader's registered classes (many rows per user)
+ *   - coach_classes   , the leader's registered classes (many rows per user)
  *
  * Reports + trends come from the bundled dataset; these tables are the only
  * user-writable state.
@@ -159,9 +180,22 @@ export class CoachRepository {
   private static toIsoDate(value: Date | string | null): string | null {
     if (value == null) return null;
     if (value instanceof Date) return value.toISOString().slice(0, 10);
-    // Already a string like "2026-07-21" (or an ISO timestamp) — keep the day.
+    // Already a string like "2026-07-21" (or an ISO timestamp), keep the day.
     return String(value).slice(0, 10);
   }
+
+  private static readonly CLASS_COLUMNS = [
+    "id",
+    "name",
+    "class_date",
+    "recurrence",
+    "zoom_link",
+    "start_time",
+    "time_zone",
+    "notetaker",
+    "user_id",
+    "coach_id",
+  ] as const;
 
   private static rowToClass(row: {
     id: string;
@@ -169,6 +203,9 @@ export class CoachRepository {
     class_date: Date | string | null;
     recurrence: string;
     zoom_link: string;
+    start_time: string | null;
+    time_zone: string | null;
+    notetaker: boolean;
   }): CoachClassRow {
     return {
       id: row.id,
@@ -176,100 +213,149 @@ export class CoachRepository {
       classDate: CoachRepository.toIsoDate(row.class_date),
       recurrence: row.recurrence,
       zoomLink: row.zoom_link,
+      startTime: row.start_time,
+      timeZone: row.time_zone,
+      notetaker: row.notetaker,
     };
   }
 
+  private static rowToOwnedClass(
+    row: Parameters<typeof CoachRepository.rowToClass>[0] & {
+      user_id: string | null;
+      coach_id: string | null;
+    },
+  ): CoachClassWithOwner {
+    return {
+      ...CoachRepository.rowToClass(row),
+      userId: row.user_id,
+      coachId: row.coach_id,
+    };
+  }
+
+  private static classValues(input: CoachClassInput) {
+    return {
+      name: input.name,
+      class_date: input.classDate,
+      recurrence: input.recurrence,
+      zoom_link: input.zoomLink,
+      start_time: input.startTime,
+      time_zone: input.timeZone,
+      notetaker: input.notetaker,
+    };
+  }
+
+  /** The rows a leader owns: made from their account, or scheduled for their
+   *  roster id (by an admin, possibly before they signed up). */
+  private static ownedBy(owner: CoachClassOwner) {
+    return (eb: ExpressionBuilder<Database, "coach_classes">) =>
+      eb.or([
+        ...(owner.userId ? [eb("user_id", "=", owner.userId as never)] : []),
+        ...(owner.coachId ? [eb("coach_id", "=", owner.coachId)] : []),
+      ]);
+  }
+
   /** A leader's classes, most-recently-updated first. */
-  async listClasses(userId: string): Promise<CoachClassRow[]> {
+  async listClasses(owner: CoachClassOwner): Promise<CoachClassRow[]> {
+    if (!owner.userId && !owner.coachId) return [];
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_classes")
-      .where("user_id", "=", userId)
-      .select(["id", "name", "class_date", "recurrence", "zoom_link"])
+      .where(CoachRepository.ownedBy(owner))
+      .select(CoachRepository.CLASS_COLUMNS)
       .orderBy("updated_at", "desc")
       .execute();
     return rows.map(CoachRepository.rowToClass);
   }
 
-  /** Insert a class for a user and return the stored row. */
+  /** Insert a class for a leader and return the stored row. */
   async createClass(
-    userId: string,
+    owner: CoachClassOwner,
     input: CoachClassInput,
   ): Promise<CoachClassRow> {
     const row = await this.db
       .getOrCreateConnection()
       .insertInto("coach_classes")
       .values({
-        user_id: userId,
-        name: input.name,
-        class_date: input.classDate,
-        recurrence: input.recurrence,
-        zoom_link: input.zoomLink,
+        user_id: owner.userId as never,
+        coach_id: owner.coachId,
+        ...CoachRepository.classValues(input),
       })
-      .returning(["id", "name", "class_date", "recurrence", "zoom_link"])
+      .returning(CoachRepository.CLASS_COLUMNS)
       .executeTakeFirstOrThrow();
     return CoachRepository.rowToClass(row);
   }
 
-  /** Update a class the user owns. Returns the stored row, or null when no row
-   *  matches (unknown id or not the owner). */
+  /** Update a class. With an owner, only one of theirs; without (an admin),
+   *  any. Returns the stored row, or null when no row matches. A leader who
+   *  edits a class takes it into their account and roster id (an admin's
+   *  class for them, or one made before classes carried the roster id). */
   async updateClass(
-    userId: string,
+    owner: CoachClassOwner | null,
     classId: string,
     input: CoachClassInput,
   ): Promise<CoachClassRow | null> {
-    const row = await this.db
+    if (owner && !owner.userId && !owner.coachId) return null;
+    let query = this.db
       .getOrCreateConnection()
       .updateTable("coach_classes")
       .set({
-        name: input.name,
-        class_date: input.classDate,
-        recurrence: input.recurrence,
-        zoom_link: input.zoomLink,
+        ...CoachRepository.classValues(input),
+        ...(owner?.userId ? { user_id: owner.userId as never } : {}),
+        ...(owner?.coachId ? { coach_id: owner.coachId } : {}),
         updated_at: sql`NOW()`,
       })
-      .where("id", "=", classId)
-      .where("user_id", "=", userId)
-      .returning(["id", "name", "class_date", "recurrence", "zoom_link"])
+      .where("id", "=", classId);
+    if (owner) query = query.where(CoachRepository.ownedBy(owner));
+    const row = await query
+      .returning(CoachRepository.CLASS_COLUMNS)
       .executeTakeFirst();
     return row ? CoachRepository.rowToClass(row) : null;
   }
 
-  /** Delete a class the user owns. Returns true when a row was removed. */
-  async deleteClass(userId: string, classId: string): Promise<boolean> {
-    const res = await this.db
+  /** Delete a class (one of the owner's; any, without an owner). Returns true
+   *  when a row was removed. */
+  async deleteClass(
+    owner: CoachClassOwner | null,
+    classId: string,
+  ): Promise<boolean> {
+    if (owner && !owner.userId && !owner.coachId) return false;
+    let query = this.db
       .getOrCreateConnection()
       .deleteFrom("coach_classes")
-      .where("id", "=", classId)
-      .where("user_id", "=", userId)
-      .executeTakeFirst();
+      .where("id", "=", classId);
+    if (owner) query = query.where(CoachRepository.ownedBy(owner));
+    const res = await query.executeTakeFirst();
     // Number() rather than a 0n/`> 0n` BigInt comparison: the frontend-next
     // build compiles this file under a tsconfig target below ES2020, which
     // rejects BigInt literals (TS2737). numDeletedRows is a bigint; coerce it.
     return Number(res?.numDeletedRows ?? 0) > 0;
   }
 
-  /** Every class across all leaders (admin export). Ordered by owner then
-   *  name so the Fireflies feed is stable. */
+  /** The account bound to a roster leader, if they have signed in. */
+  async leaderUserId(coachId: string): Promise<string | null> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_leaders")
+      .select("user_id")
+      .where((eb) =>
+        eb.or([eb("slug", "=", coachId), eb(sql`id::text`, "=", coachId)]),
+      )
+      .executeTakeFirst();
+    return (row?.user_id as string | null | undefined) ?? null;
+  }
+
+  /** Every class across all leaders (admin export, notetaker feed). Ordered
+   *  by owner then name so the feed is stable. */
   async listAllClasses(): Promise<CoachClassWithOwner[]> {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_classes")
-      .select([
-        "id",
-        "user_id",
-        "name",
-        "class_date",
-        "recurrence",
-        "zoom_link",
-      ])
+      .select(CoachRepository.CLASS_COLUMNS)
+      .orderBy("coach_id")
       .orderBy("user_id")
       .orderBy("name")
       .execute();
-    return rows.map((r) => ({
-      userId: r.user_id,
-      ...CoachRepository.rowToClass(r),
-    }));
+    return rows.map(CoachRepository.rowToOwnedClass);
   }
   // ─── Admin-added leaders ─────────────────────────────────────────────────
 
@@ -278,23 +364,32 @@ export class CoachRepository {
     return this.db
       .getOrCreateConnection()
       .selectFrom("coach_leaders")
-      .select(["id", "email", "name", "group_name", "coach_name"])
+      .select(["id", "slug", "email", "name", "group_name", "coach_name"])
       .execute();
   }
 
-  /** Lookup by email (lowercased). null when not an admin-added leader. */
   async findAddedLeaderByEmail(email: string): Promise<AddedLeaderRow | null> {
     const row = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_leaders")
-      .where("email", "=", email.trim().toLowerCase())
-      .select(["id", "email", "name", "group_name", "coach_name"])
+      .where(sql`lower(email)`, "=", email.trim().toLowerCase())
+      .select(["id", "slug", "email", "name", "group_name", "coach_name"])
       .executeTakeFirst();
     return row ?? null;
   }
 
-  /** Insert a new leader. Assumes the caller already checked for duplicates. */
+  async findLeaderBySlug(slug: string): Promise<AddedLeaderRow | null> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_leaders")
+      .where("slug", "=", slug)
+      .select(["id", "slug", "email", "name", "group_name", "coach_name"])
+      .executeTakeFirst();
+    return row ?? null;
+  }
+
   async addLeader(input: {
+    slug: string;
     email: string;
     name: string;
     group: string;
@@ -305,13 +400,14 @@ export class CoachRepository {
       .getOrCreateConnection()
       .insertInto("coach_leaders")
       .values({
+        slug: input.slug,
         email: input.email.trim().toLowerCase(),
         name: input.name,
         group_name: input.group,
         coach_name: input.coachName,
         invited_by: input.invitedBy,
       })
-      .returning(["id", "email", "name", "group_name", "coach_name"])
+      .returning(["id", "slug", "email", "name", "group_name", "coach_name"])
       .executeTakeFirstOrThrow();
   }
 
