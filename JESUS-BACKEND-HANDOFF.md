@@ -16,8 +16,9 @@ land and one content job that needs production access.
 ## 1. Land the backend PR
 
 **[verse-mate/verse-mate#333](https://github.com/verse-mate/verse-mate/pull/333)** —
-branch `claude/jesus-verses-explanations-fu4div`, head `e23d22b`, base `main` at
-`7be9c3c`. Open, ready for review, no reviews yet. 9 files, +718 / −5.
+branch `claude/jesus-verses-explanations-fu4div`, head `aaa78f0`, base `main` at
+`7be9c3c`. Open, ready for review, no reviews yet, CI green, `mergeable_state: clean`.
+10 files, +897 / −5 (the tenth is this handoff doc).
 
 | file | what it is |
 | --- | --- |
@@ -30,29 +31,29 @@ branch `claude/jesus-verses-explanations-fu4div`, head `e23d22b`, base `main` at
 | `src/jesus/repository/jesus.repository.ts` | legacy entry related — limit as the default arg |
 | `packages/backend-base/package.json` | the `jesus:byline` script entry |
 | `docs/runbooks/fill-jesus-byline.md` | the fill runbook (section 2 below summarises it) |
+| `JESUS-BACKEND-HANDOFF.md` | this document |
 
-### Why CI is red, and why it is not this PR
+### CI is green (was a runner outage, now resolved)
 
-CI on this PR fails, and it is a repo-wide runner problem rather than anything in
-the diff. Please confirm this yourself before treating the red as a review finding:
+Run [541](https://github.com/verse-mate/verse-mate/actions/runs/40127780201) on `aaa78f0`
+passed every job — Compile, Lint, TypeScript Check, Test, Stylelint, Build Backend, with
+Docker Build & Push and Deploy skipped as they are on any PR. ~3m 36s wall clock.
+`mergeable_state` is `clean`. **No review action needed on CI.**
 
-- Jobs complete in **~3 seconds** with `runner_id: 0`, `runner_name: ""`, and the
-  logs endpoint 404s — no runner was ever assigned, so nothing ran.
-- **`main` is red identically** at `7be9c3c` (run 539, 4s), as is PR #332 and
-  `feature/github-actions-migration`.
-- Everything through 2026-10-21 (run 536) passed, in minutes.
-- Onset was ~14:45 UTC 2026-10-23, which lines up with the in-flight GitHub
-  Actions / registry migration on `feature/github-actions-migration` — that branch's
-  own runs are failing the same way.
-- As of 19:26 UTC 2026-10-24 no runner had picked up a job anywhere in the repo for
-  ~28 hours. Run 540 attempt 2 (my one re-run) is still the newest run in the repo.
+For context, in case you see the red history on the PR: from ~14:45 UTC 2026-10-23 to
+~20:00 UTC 2026-10-24 every run in the repo failed in ~3 seconds with `runner_id: 0`,
+an empty `runner_name` and no logs — no runner was ever assigned. `main` was red the
+same way at `7be9c3c`, as were PR #332 and `feature/github-actions-migration`. It
+cleared on its own, most likely with the Actions/registry migration. Nothing in this
+diff changed to fix it; the only commit since is this handoff doc.
 
-**Action:** once runners are healthy, re-run the checks on `e23d22b` and review
-normally. No code change is needed to make them pass as far as I can tell.
+The `Test` job also settles a caveat from the PR description: it ran against CI's
+Postgres and passed, so the 2 `ECONNREFUSED` failures seen locally really were just a
+missing database in the authoring container.
 
-### What was validated locally instead
+### What was also validated locally
 
-On the merge commit `e23d22b`, in a container without Docker:
+On the merge commit `e23d22b`, in a container without Docker (CI has since confirmed all of it):
 
 - `bun run lint` — clean (8 warnings, all pre-existing in files this PR does not touch)
 - `bun tsc` — clean
@@ -60,7 +61,7 @@ On the merge commit `e23d22b`, in a container without Docker:
 - Jesus suite — **155 passed**, including the 14 new coverage tests
 - 2 failures in `jesus.repository.test.ts` with `ECONNREFUSED 127.0.0.1:5432` — they
   are `main`'s own live-Postgres integration tests, byte-identical to `main`'s copy
-  (they arrived in `0a91207`, PR #338) and unrelated to this diff. CI provides Postgres.
+  (they arrived in `0a91207`, PR #338) and unrelated to this diff. They pass in CI.
 - Cloudflare independently built and deployed `e23d22b` successfully.
 
 ### One thing to look at in review
