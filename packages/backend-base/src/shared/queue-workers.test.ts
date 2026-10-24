@@ -12,6 +12,7 @@ const ALL_WORKERS = [
   "Processing",
   "Audio generation",
   "Audio cleanup",
+  "Verse popularity",
   "Verse notification",
   "Coach intake",
   "Coach reminder",
@@ -20,6 +21,7 @@ const ALL_WORKERS = [
 ];
 const ALL_CRONS = [
   "Audio cleanup",
+  "Verse popularity",
   "Verse notification",
   "Coach intake",
   "Coach reminder",
@@ -94,7 +96,7 @@ describe("the container starts only the workers its role owns", () => {
     expect(await startAs("api")).toEqual({ ran: [], crons: [] });
   });
 
-  it("the worker container starts all nine workers and all six crons", async () => {
+  it("the worker container starts all ten workers and all seven crons", async () => {
     expect(await startAs("worker")).toEqual({
       ran: [...ALL_WORKERS].sort(),
       crons: [...ALL_CRONS].sort(),

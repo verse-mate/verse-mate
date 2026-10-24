@@ -134,6 +134,11 @@ import {
 } from "../bible/audio/audio-cleanup.worker";
 import { audioGenerationQueue } from "../bible/audio/audio-generation.queue";
 import { audioGenerationWorker } from "../bible/audio/audio-generation.worker";
+import { versePopularityQueue } from "../bible/search/verse-popularity.queue";
+import {
+  registerVersePopularityCron,
+  versePopularityWorker,
+} from "../bible/search/verse-popularity.worker";
 import { coachIntakeQueue } from "../coach/coach-intake.queue";
 import {
   coachIntakeWorker,
@@ -178,6 +183,11 @@ export const QUEUE_WORKERS: QueueWorkerEntry[] = [
     name: "Audio cleanup",
     worker: audioCleanupWorker,
     registerCron: registerAudioCleanupCron,
+  },
+  {
+    name: "Verse popularity",
+    worker: versePopularityWorker,
+    registerCron: registerVersePopularityCron,
   },
   {
     name: "Verse notification",
@@ -320,6 +330,8 @@ setup.onStop(async () => {
   audioGenerationWorker.close();
   audioCleanupQueue.close();
   audioCleanupWorker.close();
+  versePopularityQueue.close();
+  versePopularityWorker.close();
   verseNotificationQueue.close();
   verseNotificationWorker.close();
   coachIntakeQueue.close();
