@@ -219,8 +219,13 @@ interface VisualJudgement {
   unobserved?: string;
 }
 
+const MAX_PLAUSIBLE_ATTENDEES = 200;
+
 function countOf(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value > 0
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value > 0 &&
+    value <= MAX_PLAUSIBLE_ATTENDEES
     ? value
     : null;
 }
@@ -477,12 +482,14 @@ export class CoachScoringService {
       "  treats as new. If the session does not tell you, report 0 rather than",
       "  estimating.",
       "",
-      "- Also report `attendees`: how many distinct people took part in this",
-      "  session, the leader included. Count everyone who speaks and everyone",
-      "  the session names as present (called on, greeted, prayed for in the",
-      "  room). Labels can merge or miss people, so count from names and turns,",
-      "  not from the labels alone. Count only: never list names. Give null",
-      "  when the transcript does not let you count.",
+      "- Also report `attendees`: how many distinct people are in this",
+      "  session, the leader included. Count everyone who speaks, and anyone",
+      "  addressed or called on as being there. Do not count people who are",
+      "  only mentioned and not present: family, friends or others named in",
+      "  prayer requests, biblical or historical figures, people in stories.",
+      "  Labels can merge or miss people, so count from names and turns, not",
+      "  from the labels alone. Count only: never list names. Give null when",
+      "  the transcript does not let you count.",
       "",
       "- Also answer `firstLesson`: does the session title or the transcript show",
       "  the group is beginning a new study or a new book? A title such as",

@@ -658,15 +658,43 @@ describe("the attendee count the group-size bonus is built from", () => {
     expect((await score(22, null)).attendees).toBe(22);
   });
 
+  it("is the transcript count when there were no frames, or the vision call failed", async () => {
+    const noFrames = await new CoachScoringService(
+      Database,
+      new Counts(22, 30),
+    ).scoreSession({ ...INPUT, frames: [] });
+    expect(noFrames.attendees).toBe(22);
+
+    class VisionDown extends Counts {
+      override async chatComplete(
+        opts: AiChatOptions,
+      ): Promise<AiChatResponse> {
+        if (opts.messages.some((m) => m.images?.length))
+          throw new Error("vision model 503");
+        return super.chatComplete(opts);
+      }
+    }
+    const visionDown = await new CoachScoringService(
+      Database,
+      new VisionDown(22, 30),
+    ).scoreSession({ ...INPUT, frames: [new Uint8Array([1])] });
+    expect(visionDown.attendees).toBe(22);
+  });
+
   it("is null when neither call could count, and junk is no count", async () => {
     expect((await score(null, null)).attendees).toBeNull();
     expect((await score("about thirty", 0)).attendees).toBeNull();
   });
 
-  it("the transcript prompt asks for a count of people, never their names", () => {
+  it("an implausible count falls back to the other source", async () => {
+    expect((await score(450, 9)).attendees).toBe(9);
+  });
+
+  it("the transcript prompt asks for the people present, never their names", () => {
     const prompt = CoachScoringService.buildInstructions();
     expect(prompt).toContain('"attendees"');
     expect(prompt).toMatch(/never list (their )?names/i);
+    expect(prompt).toMatch(/only mentioned and not present/);
   });
 });
 

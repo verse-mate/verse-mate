@@ -36,8 +36,9 @@ const COACH = "batch-coach";
 const EMAIL = "batch-leader@example.test";
 const MODEL = "astra-test";
 
-function textAnswer(score: number): string {
+function textAnswer(score: number, attendees?: number): string {
   return JSON.stringify({
+    attendees,
     dimensions: DIMENSIONS.filter((d) => d.n !== 7).map((d) => ({
       n: d.n,
       score,
@@ -322,7 +323,7 @@ describe("coach scoring goes through the batch API", () => {
     const ai = new BatchAi();
     await pipeline(ai).run();
     ai.outcome = completed(
-      { content: textAnswer(3), model: "astra-served" },
+      { content: textAnswer(3, 23), model: "astra-served" },
       { content: visionAnswer, model: "astra-served-vision" },
     );
 
@@ -345,7 +346,7 @@ describe("coach scoring goes through the batch API", () => {
       .select("summary")
       .where("id", "=", after.report_id as string)
       .executeTakeFirstOrThrow();
-    expect(report.summary).toMatchObject({ attendees: 9 });
+    expect(report.summary).toMatchObject({ attendees: 23 });
   });
 
   it("a batch that failed or expired is a failed attempt, and the next tick sends a new batch", async () => {
