@@ -9,16 +9,22 @@ const MIGRATIONS = path.resolve(
 const FIRST_COACH = "-coach-reports-and-roster.ts";
 
 describe("the coach migrations deploy after every migration production has run", () => {
-  it("no other migration sorts after the first coach migration", () => {
+  it("no other migration sorts in among the coach migrations", () => {
     const names = readdirSync(MIGRATIONS)
       .filter((name) => name.endsWith(".ts"))
       .sort();
     const first = names.findIndex((name) => name.endsWith(FIRST_COACH));
+    const last =
+      names.length -
+      1 -
+      [...names].reverse().findIndex((n) => /coach/i.test(n));
 
     expect(first).toBeGreaterThan(0);
-    expect(names.slice(first).filter((name) => !/coach/i.test(name))).toEqual(
-      [],
-    );
+    // Migrations written after the coach ones shipped sort after the last of
+    // them, which production has run, so they deploy in order too.
+    expect(
+      names.slice(first, last + 1).filter((name) => !/coach/i.test(name)),
+    ).toEqual([]);
   });
 });
 

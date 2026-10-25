@@ -12,6 +12,7 @@ import {
   AuthErrorResponses,
   StandardErrorResponses,
 } from "../common/response-schemas";
+import { createIpRateLimit } from "../middleware/rate-limit";
 import { type AiProvider, getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
@@ -44,12 +45,22 @@ import {
   StudySchema,
   TestamentsSchema,
 } from "./schemas/bible-response.schema";
+import { BibleSearchRepository } from "./search/bible-search.repository";
+import {
+  BibleSearchQuerySchema,
+  BibleSearchResponseSchema,
+} from "./search/bible-search.schemas";
+import { BibleSearchService } from "./search/bible-search.service";
 import { AutoHighlightService } from "./services/auto-highlight.service";
 import { BibleService } from "./services/bible.service";
 import { PromptService } from "./services/prompt.service";
 
 const model = "gpt-5-nano";
 const NOTE_CONTENT_MAX_LENGTH = 20_000;
+
+// Search-as-you-type sends a request per typing pause; 120/min per client
+// leaves room for that while capping what one client can make Postgres do.
+const searchRateLimit = createIpRateLimit(120);
 
 // Lazy AiProvider singleton — module-level use means we can't construct in
 // the constructor body; eager init would fail in test envs without OPEN_AI_KEY.
@@ -112,6 +123,9 @@ const plugin = new Elysia()
         new PromptRepository(state.db),
       ),
       autoHighlightService: new AutoHighlightService(state.db, bibleRepository),
+      bibleSearchService: new BibleSearchService(
+        new BibleSearchRepository(state.db),
+      ),
     };
   })
   .group("/bible", (app) =>
@@ -211,6 +225,30 @@ const plugin = new Elysia()
           }),
           response: {
             200: ChapterSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/search",
+        async ({ query, set, store: { bibleSearchService } }) => {
+          // No login and no per-user data, so responses can be shared by
+          // caches. Results only move when verse_popularity refreshes.
+          set.headers["Cache-Control"] = "public, max-age=600";
+          return bibleSearchService.search({
+            q: query.q,
+            versionKey: query.bible_version ?? "NASB1995",
+            testament: query.testament,
+            bookId: query.book,
+            cursor: query.cursor,
+            limit: query.limit,
+          });
+        },
+        {
+          query: BibleSearchQuerySchema,
+          beforeHandle: [searchRateLimit],
+          response: {
+            200: BibleSearchResponseSchema,
             ...StandardErrorResponses,
           },
         },
