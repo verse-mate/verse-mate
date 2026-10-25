@@ -619,6 +619,57 @@ describe("the first-timer count the newcomer bonus is built from", () => {
   });
 });
 
+describe("the attendee count the group-size bonus is built from", () => {
+  class Counts extends FakeAi {
+    constructor(
+      heard: unknown,
+      private readonly seen: unknown,
+    ) {
+      super(JSON.stringify({ ...JSON.parse(ALL_FOURS), attendees: heard }));
+    }
+    override async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+      if (opts.messages.some((m) => m.images?.length))
+        return {
+          content: JSON.stringify({
+            score: 4,
+            rationale: "the shared Bible screen",
+            attendees: this.seen,
+          }),
+          model: "fake",
+        };
+      return super.chatComplete(opts);
+    }
+  }
+  const score = (heard: unknown, seen: unknown) =>
+    new CoachScoringService(Database, new Counts(heard, seen)).scoreSession({
+      ...INPUT,
+      frames: [new Uint8Array([1])],
+    });
+
+  it("a room heard in the transcript is not shrunk to the faces on a screen share", async () => {
+    expect((await score(28, 4)).attendees).toBe(28);
+  });
+
+  it("takes the frames when they show more people than the transcript names", async () => {
+    expect((await score(6, 14)).attendees).toBe(14);
+  });
+
+  it("is the transcript count when no frame let the model count", async () => {
+    expect((await score(22, null)).attendees).toBe(22);
+  });
+
+  it("is null when neither call could count, and junk is no count", async () => {
+    expect((await score(null, null)).attendees).toBeNull();
+    expect((await score("about thirty", 0)).attendees).toBeNull();
+  });
+
+  it("the transcript prompt asks for a count of people, never their names", () => {
+    const prompt = CoachScoringService.buildInstructions();
+    expect(prompt).toContain('"attendees"');
+    expect(prompt).toMatch(/never list (their )?names/i);
+  });
+});
+
 describe("authenticity is scored against the leader's established baseline", () => {
   const withAuthenticity = (score: number, others = 3) =>
     payload(

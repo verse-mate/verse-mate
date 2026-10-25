@@ -225,6 +225,12 @@ function countOf(value: unknown): number | null {
     : null;
 }
 
+function largerCount(a: number | null, b: number | null): number | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return Math.max(a, b);
+}
+
 const UNREACHED_VISION: VisualJudgement = {
   score: {
     n: VISUAL_AIDS_DIMENSION,
@@ -471,6 +477,13 @@ export class CoachScoringService {
       "  treats as new. If the session does not tell you, report 0 rather than",
       "  estimating.",
       "",
+      "- Also report `attendees`: how many distinct people took part in this",
+      "  session, the leader included. Count everyone who speaks and everyone",
+      "  the session names as present (called on, greeted, prayed for in the",
+      "  room). Labels can merge or miss people, so count from names and turns,",
+      "  not from the labels alone. Count only: never list names. Give null",
+      "  when the transcript does not let you count.",
+      "",
       "- Also answer `firstLesson`: does the session title or the transcript show",
       "  the group is beginning a new study or a new book? A title such as",
       '  "Lesson 1" or "Week 1" counts, and so does someone saying it, directly',
@@ -480,7 +493,7 @@ export class CoachScoringService {
       "  `line` is the exact words of the title or of the transcript line that",
       "  shows it; when no, `line` is empty.",
       "",
-      'Return JSON: {"newcomers":0,"firstLesson":{"answer":false,"line":""},"dimensions":[{"n":1,"score":4,"rationale":"..."}, ...]}',
+      'Return JSON: {"newcomers":0,"attendees":12,"firstLesson":{"answer":false,"line":""},"dimensions":[{"n":1,"score":4,"rationale":"..."}, ...]}',
     ].join("\n");
   }
 
@@ -747,15 +760,18 @@ export class CoachScoringService {
   ): Promise<ScoringResult> {
     let raw: RawDimensionScore[];
     let newcomers = 0;
+    let heard: number | null = null;
     let firstLessonLine: string | null = null;
     try {
       const parsed = JSON.parse(response.content) as {
         dimensions?: RawDimensionScore[];
         newcomers?: unknown;
+        attendees?: unknown;
         firstLesson?: unknown;
       };
       raw = parsed.dimensions ?? [];
       newcomers = clampNewcomers(parsed.newcomers);
+      heard = countOf(parsed.attendees);
       firstLessonLine = firstLessonShown(
         parsed.firstLesson,
         input.sessionTitle,
@@ -820,7 +836,7 @@ export class CoachScoringService {
       base,
       clusters,
       newcomers,
-      attendees: visual.attendees ?? null,
+      attendees: largerCount(heard, visual.attendees ?? null),
       ...(visual.unobserved ? { visualsUnobserved: visual.unobserved } : {}),
       status: statusForScore(base),
       modelVersion: RUBRIC_MODEL_VERSION,
