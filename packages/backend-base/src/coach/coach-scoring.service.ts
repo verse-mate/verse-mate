@@ -219,10 +219,21 @@ interface VisualJudgement {
   unobserved?: string;
 }
 
+const MAX_PLAUSIBLE_ATTENDEES = 200;
+
 function countOf(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value > 0
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value > 0 &&
+    value <= MAX_PLAUSIBLE_ATTENDEES
     ? value
     : null;
+}
+
+function largerCount(a: number | null, b: number | null): number | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return Math.max(a, b);
 }
 
 const UNREACHED_VISION: VisualJudgement = {
@@ -471,6 +482,15 @@ export class CoachScoringService {
       "  treats as new. If the session does not tell you, report 0 rather than",
       "  estimating.",
       "",
+      "- Also report `attendees`: how many distinct people are in this",
+      "  session, the leader included. Count everyone who speaks, and anyone",
+      "  addressed or called on as being there. Do not count people who are",
+      "  only mentioned and not present: family, friends or others named in",
+      "  prayer requests, biblical or historical figures, people in stories.",
+      "  Labels can merge or miss people, so count from names and turns, not",
+      "  from the labels alone. Count only: never list names. Give null when",
+      "  the transcript does not let you count.",
+      "",
       "- Also answer `firstLesson`: does the session title or the transcript show",
       "  the group is beginning a new study or a new book? A title such as",
       '  "Lesson 1" or "Week 1" counts, and so does someone saying it, directly',
@@ -480,7 +500,7 @@ export class CoachScoringService {
       "  `line` is the exact words of the title or of the transcript line that",
       "  shows it; when no, `line` is empty.",
       "",
-      'Return JSON: {"newcomers":0,"firstLesson":{"answer":false,"line":""},"dimensions":[{"n":1,"score":4,"rationale":"..."}, ...]}',
+      'Return JSON: {"newcomers":0,"attendees":12,"firstLesson":{"answer":false,"line":""},"dimensions":[{"n":1,"score":4,"rationale":"..."}, ...]}',
     ].join("\n");
   }
 
@@ -747,15 +767,18 @@ export class CoachScoringService {
   ): Promise<ScoringResult> {
     let raw: RawDimensionScore[];
     let newcomers = 0;
+    let heard: number | null = null;
     let firstLessonLine: string | null = null;
     try {
       const parsed = JSON.parse(response.content) as {
         dimensions?: RawDimensionScore[];
         newcomers?: unknown;
+        attendees?: unknown;
         firstLesson?: unknown;
       };
       raw = parsed.dimensions ?? [];
       newcomers = clampNewcomers(parsed.newcomers);
+      heard = countOf(parsed.attendees);
       firstLessonLine = firstLessonShown(
         parsed.firstLesson,
         input.sessionTitle,
@@ -820,7 +843,7 @@ export class CoachScoringService {
       base,
       clusters,
       newcomers,
-      attendees: visual.attendees ?? null,
+      attendees: largerCount(heard, visual.attendees ?? null),
       ...(visual.unobserved ? { visualsUnobserved: visual.unobserved } : {}),
       status: statusForScore(base),
       modelVersion: RUBRIC_MODEL_VERSION,
