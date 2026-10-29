@@ -1063,14 +1063,20 @@ const plugin = new Elysia()
                     ? result.highlight.updated_at.toISOString()
                     : result.highlight.updated_at || new Date().toISOString(),
               },
+              // Char-precise adds only: the highlights merged into this one.
+              ...("merged_highlight_ids" in result
+                ? { merged_highlight_ids: result.merged_highlight_ids }
+                : {}),
             };
           }
 
           // Return error response with proper literal type
           return {
             success: false as const,
-            error: result.error || "Failed to create highlight",
-            overlaps: result.overlaps,
+            error:
+              ("error" in result ? result.error : undefined) ||
+              "Failed to create highlight",
+            overlaps: "overlaps" in result ? result.overlaps : undefined,
           };
         },
         {

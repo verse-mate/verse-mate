@@ -360,11 +360,15 @@ export const HighlightsSchema = t.Object({
   highlights: t.Array(HighlightResponseType),
 });
 
-// createHighlight() returns { highlight, success } or { success: false, error, overlaps? }
+// createHighlight() returns { highlight, success, merged_highlight_ids? } or { success: false, error, overlaps? }
 export const HighlightAddSchema = t.Union([
   t.Object({
     highlight: HighlightResponseType,
     success: t.Literal(true),
+    // Present on char-precise adds (start_char and end_char given): ids of
+    // the user's overlapping char-precise highlights that were deleted and
+    // merged into `highlight`. Empty when nothing overlapped.
+    merged_highlight_ids: t.Optional(t.Array(t.Number())),
   }),
   t.Object({
     success: t.Literal(false),
