@@ -20,6 +20,7 @@ import type { GetHighlightsServiceDto } from "../dto/highlight/get-highlights-se
 import type { UpdateHighlightDto } from "../dto/highlight/update-highlight.dto";
 import type { UserDto } from "../dto/user/user.dto";
 import type { BibleRepository } from "../repository/bible.repository";
+import { normaliseCharRange } from "../utils/highlight-range";
 
 /**
  * Curated overrides for the language picker labels. `refreshLanguageStats`
@@ -672,15 +673,32 @@ export class BibleService {
       return { success: false, error: "Chapter not found" };
     }
 
-    // Check for overlaps
+    // Char-precise: overlapping char-precise highlights merge into this one.
+    if (typeof start_char === "number" && typeof end_char === "number") {
+      const range = normaliseCharRange({
+        start_verse,
+        start_char,
+        end_verse,
+        end_char,
+      });
+      return this.bibleRepository.addCharHighlight({
+        user_id,
+        chapter_id,
+        book_id,
+        chapter_number,
+        color,
+        selected_text,
+        range,
+      });
+    }
+
+    // Whole verses: an overlap is refused (the web client checks first).
     const { hasOverlap, overlaps } =
       await this.bibleRepository.checkHighlightOverlap({
         user_id,
         chapter_id,
         start_verse,
         end_verse,
-        start_char,
-        end_char,
       });
 
     if (hasOverlap) {
