@@ -715,6 +715,7 @@ const plugin = new Elysia()
             book_id: body.book_id,
             chapter_number: body.chapter_number,
             verse_id,
+            verse_number: body.verse_number,
             content,
           });
 
@@ -739,6 +740,8 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
             verse_id: t.Optional(t.Number()),
+            // A note on one verse, by its number (the mobile reader's Note on a selection).
+            verse_number: t.Optional(t.Integer({ minimum: 1 })),
             content: t.String({ maxLength: NOTE_CONTENT_MAX_LENGTH }),
           }),
           response: {

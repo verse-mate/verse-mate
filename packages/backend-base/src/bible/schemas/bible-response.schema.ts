@@ -299,6 +299,8 @@ const NoteCreatedType = t.Object({
   user_id: t.String(), // UUID
   chapter_id: t.Number(),
   verse_id: t.Union([t.Number(), t.Null()]),
+  /** The verse the note is on, by number, when it was created with one. */
+  verse_number: t.Optional(t.Union([t.Number(), t.Null()])),
   content: t.String(),
   created_at: t.String(), // ISO date string
   updated_at: t.String(), // ISO date string

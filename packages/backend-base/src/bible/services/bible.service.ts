@@ -1099,6 +1099,8 @@ export class BibleService {
     book_id: number;
     chapter_number: number;
     verse_id?: number;
+    /** The verse the note is on, by number: what clients know. Resolved to `verse_id` here. */
+    verse_number?: number;
     content: string;
   }) {
     console.log("=== BibleService.addNote ===");
@@ -1117,14 +1119,30 @@ export class BibleService {
         );
       }
 
+      let verse_id = noteData.verse_id;
+      if (verse_id === undefined && noteData.verse_number !== undefined) {
+        const resolved = await this.bibleRepository.getVerseIdByNumber({
+          chapter_id,
+          verse_number: noteData.verse_number,
+        });
+        if (resolved === null) {
+          throw new ValidationError(
+            `Verse ${noteData.verse_number} not found in book_id=${noteData.book_id} chapter_number=${noteData.chapter_number}`,
+          );
+        }
+        verse_id = resolved;
+      }
+
       const { note } = await this.bibleRepository.addNote({
         user_id: noteData.user_id,
         chapter_id,
-        verse_id: noteData.verse_id,
+        verse_id,
         content: noteData.content,
       });
       console.log("Successfully added note with ID:", note.note_id);
-      return { note };
+      return {
+        note: { ...note, verse_number: noteData.verse_number ?? null },
+      };
     } catch (error) {
       console.error("ERROR in BibleService.addNote:", error);
       throw error;
