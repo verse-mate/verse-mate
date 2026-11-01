@@ -1490,6 +1490,31 @@ export class BibleRepository {
     }
   }
 
+  /**
+   * A verse row of this chapter with this number, for a note's `verse_id`.
+   *
+   * Verses are stored once per Bible version; any of them will do, since a note reads its verse
+   * back as `verse_number` through this same join. Null when the chapter has no such verse.
+   */
+  async getVerseIdByNumber({
+    chapter_id,
+    verse_number,
+  }: {
+    chapter_id: number;
+    verse_number: number;
+  }): Promise<number | null> {
+    const connection = this.db.getOrCreateConnection();
+    const verse = await connection
+      .selectFrom("verses")
+      .select("verse_id")
+      .where("chapter_id", "=", chapter_id as any)
+      .where("verse_number", "=", verse_number)
+      .orderBy("verse_id")
+      .limit(1)
+      .executeTakeFirst();
+    return verse ? Number(verse.verse_id) : null;
+  }
+
   async addNote(noteData: {
     user_id: string;
     chapter_id: number;
