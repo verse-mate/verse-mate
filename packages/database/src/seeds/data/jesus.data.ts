@@ -2927,6 +2927,75 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     themes: ["money", "kingdom"],
     harmony: "taxes-to-caesar",
   },
+
+  // ── Sending out the Twelve (Matthew 10) ────────────────────────────────
+  //
+  // The mission discourse had no entry at all, so the second of Matthew's
+  // five discourses was missing from the corpus and from every study built
+  // on it. Mark and Luke tell only the sending; Matthew carries the sermon.
+  // The commission is its own harmony cluster so later facets can attach to
+  // the event without moving its URL (see the seeding notes in
+  // docs/jesus-content-status.md §8).
+  {
+    slug: "sending-out-the-twelve",
+    kind: "COMMAND",
+    title: "Go and preach: the kingdom is at hand",
+    summary:
+      "He sends the Twelve out with His own authority and His own message — and tells them to go without provisions.",
+    quote: "And as you go, preach, saying, ‘The kingdom of heaven is at hand.’",
+    quoteRef: "Matthew 10:7",
+    refs: ["Matthew 10:5-15", "Mark 6:7-13", "Luke 9:1-6"],
+    themes: ["kingdom", "discipleship"],
+    harmony: "sending-the-twelve",
+  },
+  {
+    slug: "sheep-in-the-midst-of-wolves",
+    kind: "TEACHING",
+    title: "Sheep in the midst of wolves",
+    summary:
+      "He promises the Twelve opposition, not success — courts, floggings, family betrayal — and the Spirit's words when they are on trial.",
+    quote:
+      "Behold, I send you out as sheep in the midst of wolves; so be shrewd as serpents and innocent as doves.",
+    quoteRef: "Matthew 10:16",
+    refs: ["Matthew 10:16-25"],
+    themes: ["discipleship", "warnings"],
+  },
+  {
+    slug: "do-not-fear-those-who-kill-the-body",
+    kind: "COMMAND",
+    title: "Do not fear those who kill the body",
+    summary:
+      "Fear moves from men to God, and in the same breath the God who numbers every hair on their heads.",
+    quote:
+      "Do not fear those who kill the body but are unable to kill the soul; but rather fear Him who is able to destroy both soul and body in hell.",
+    quoteRef: "Matthew 10:28",
+    refs: ["Matthew 10:26-33"],
+    themes: ["discipleship", "judgment"],
+  },
+  {
+    slug: "not-peace-but-a-sword",
+    kind: "CLAIM",
+    title: "I did not come to bring peace, but a sword",
+    summary:
+      "Loyalty to Him will divide households, and whoever will not take up the cross is not worthy of Him.",
+    quote:
+      "Do not think that I came to bring peace on the earth; I did not come to bring peace, but a sword.",
+    quoteRef: "Matthew 10:34",
+    refs: ["Matthew 10:34-39", "Luke 12:51-53"],
+    themes: ["discipleship", "warnings"],
+  },
+  {
+    slug: "whoever-receives-you-receives-me",
+    kind: "CLAIM",
+    title: "He who receives you receives Me",
+    summary:
+      "His messengers carry Him with them: to welcome them is to welcome Him and the Father who sent Him, down to a cup of cold water.",
+    quote:
+      "He who receives you receives Me, and he who receives Me receives Him who sent Me.",
+    quoteRef: "Matthew 10:40",
+    refs: ["Matthew 10:40-42"],
+    themes: ["discipleship", "salvation"],
+  },
 ];
 
 // ── The chronological walk ────────────────────────────────────────────────
@@ -3044,6 +3113,11 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "do-you-believe-that-i-am-able",
     "healing-a-mute-demoniac",
     "moved-with-compassion-for-the-crowds",
+    "sending-out-the-twelve",
+    "sheep-in-the-midst-of-wolves",
+    "do-not-fear-those-who-kill-the-body",
+    "not-peace-but-a-sword",
+    "whoever-receives-you-receives-me",
     "feeding-the-five-thousand",
     "how-many-loaves-do-you-have",
     "walking-on-water",
