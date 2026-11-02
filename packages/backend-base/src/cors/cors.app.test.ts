@@ -110,8 +110,9 @@ describe("CORS on the composed API over a real connection", () => {
         const response = await request("/api/version-policy", origin);
 
         expect(response.status).toBe(200);
+        // private since the policy follows the asking platform's store
         expect(response.headers.get("cache-control")).toBe(
-          "public, max-age=300",
+          "private, max-age=300",
         );
         expect(response.headers.get("vary")).toBe("Origin");
       });

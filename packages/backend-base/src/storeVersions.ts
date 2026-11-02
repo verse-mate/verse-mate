@@ -77,8 +77,8 @@ interface ServiceAccount {
   private_key: string;
 }
 
-function base64url(input: Buffer | string): string {
-  return Buffer.from(input).toString("base64url");
+function base64url(text: string): string {
+  return Buffer.from(text, "utf8").toString("base64url");
 }
 
 async function playAccessToken(
@@ -98,7 +98,7 @@ async function playAccessToken(
   );
   const signer = createSign("RSA-SHA256");
   signer.update(`${header}.${claims}`);
-  const signature = base64url(signer.sign(sa.private_key));
+  const signature = signer.sign(sa.private_key, "base64url");
   const res = await fetchImpl("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },

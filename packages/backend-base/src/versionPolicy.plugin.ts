@@ -31,10 +31,10 @@ const plugin = new Elysia().use(shared).group("/api/version-policy", (app) =>
     .get(
       "",
       async ({ store: { cache }, set, query, headers }) => {
-        // The answer depends on the asking platform (query or User-Agent), so
-        // no shared cache may keep one platform's answer for the other.
+        // The answer depends on the asking platform (query or User-Agent), so it
+        // is private: no shared cache may serve one platform's answer to the
+        // other. A device's own cache only ever sees its own platform.
         set.headers["Cache-Control"] = "private, max-age=300";
-        set.headers.Vary = "User-Agent";
         let stored: StoredPolicy = DEFAULT_POLICY;
         try {
           stored =
