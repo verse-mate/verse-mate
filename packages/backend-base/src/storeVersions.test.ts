@@ -43,10 +43,13 @@ describe("versionFromStoreName", () => {
     expect(versionFromStoreName("v1.6.0")).toBe("1.6.0");
     expect(versionFromStoreName("1.7.0")).toBe("1.7.0");
     expect(versionFromStoreName("1.7")).toBe("1.7.0");
+    // Play's default name once a bundle is added: version code, then the version.
+    expect(versionFromStoreName("124 (1.7.0)")).toBe("1.7.0");
   });
 
   it("rejects names that are not a version", () => {
     expect(versionFromStoreName("Holiday release")).toBeNull();
+    expect(versionFromStoreName("124")).toBeNull();
     expect(versionFromStoreName(undefined)).toBeNull();
   });
 });

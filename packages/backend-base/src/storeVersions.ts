@@ -48,14 +48,15 @@ export function platformFrom(
   return null;
 }
 
-/** "v1.6.0", "1.6.0" or "1.6" → "1.6.0"; anything else → null. */
+/**
+ * The version in a store release name: "v1.6.0", "1.7.0", "1.7", or Play's default when a bundle is
+ * added, "124 (1.7.0)" (version code, then the version). Anything without an x.y version → null.
+ */
 export function versionFromStoreName(name: unknown): string | null {
   if (typeof name !== "string") return null;
-  const trimmed = name.trim().replace(/^v/i, "");
-  const exact = semver.valid(trimmed);
-  if (exact) return exact;
-  if (!/^\d+(\.\d+){0,2}$/.test(trimmed)) return null;
-  return semver.coerce(trimmed)?.version ?? null;
+  const match = name.match(/(?:^|[^\d.])v?(\d+\.\d+(?:\.\d+)?)(?![\d.])/i);
+  if (!match) return null;
+  return semver.valid(match[1]) ?? semver.coerce(match[1])?.version ?? null;
 }
 
 export async function fetchIosStoreVersion(
