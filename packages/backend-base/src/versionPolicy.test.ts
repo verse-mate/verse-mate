@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import { getTestClient } from "./shared/test-client";
+import { STORE_VERSION_CACHE_KEY } from "./storeVersions";
 import Backend, { type VersionPolicyPlugin } from "./versionPolicy.plugin";
 
 const VERSION_POLICY_KEY = "version_policy";
@@ -151,6 +152,87 @@ describe("VersionPolicy", () => {
 
       expect(error).toBeNull();
       expect(data).toEqual(body);
+    });
+  });
+
+  describe("following the stores", () => {
+    const realFetch = globalThis.fetch;
+    const appStore = (version: string) => {
+      globalThis.fetch = (async () =>
+        new Response(JSON.stringify({ results: [{ version }] }), {
+          headers: { "content-type": "application/json" },
+        })) as unknown as typeof fetch;
+    };
+
+    afterEach(async () => {
+      globalThis.fetch = realFetch;
+      await cache.delete(VERSION_POLICY_KEY);
+      await cache.delete(STORE_VERSION_CACHE_KEY("ios"));
+      await cache.delete(STORE_VERSION_CACHE_KEY("android"));
+    });
+
+    it("raises minVersion to the live store version for the asking platform", async () => {
+      appStore("v1.7.0");
+      await cache.setPersistent(VERSION_POLICY_KEY, {
+        minVersion: "1.0.0",
+        version: "1.6.0",
+        releaseNotes: "",
+      });
+      const { data } = await client.api["version-policy"].get({
+        query: { platform: "ios" },
+      });
+      expect(data).toEqual({
+        minVersion: "1.7.0",
+        version: "1.7.0",
+        releaseNotes: "",
+      });
+    });
+
+    it("tells an old iOS build apart by its User-Agent", async () => {
+      appStore("1.7.0");
+      const { data } = await client.api["version-policy"].get({
+        headers: {
+          "user-agent": "VerseMate/115 CFNetwork/3826.500.111 Darwin/24.4.0",
+        },
+      });
+      expect(data?.minVersion).toBe("1.7.0");
+    });
+
+    it("never lowers a stored minVersion", async () => {
+      appStore("1.5.0");
+      await cache.setPersistent(VERSION_POLICY_KEY, {
+        minVersion: "1.6.0",
+        version: "1.6.0",
+        releaseNotes: "",
+      });
+      const { data } = await client.api["version-policy"].get({
+        query: { platform: "ios" },
+      });
+      expect(data?.minVersion).toBe("1.6.0");
+    });
+
+    it("leaves the stored policy alone with followStores false", async () => {
+      appStore("9.9.9");
+      await cache.setPersistent(VERSION_POLICY_KEY, {
+        minVersion: "1.0.0",
+        version: "1.0.0",
+        releaseNotes: "",
+        followStores: false,
+      });
+      const { data } = await client.api["version-policy"].get({
+        query: { platform: "ios" },
+      });
+      expect(data).toEqual({
+        minVersion: "1.0.0",
+        version: "1.0.0",
+        releaseNotes: "",
+      });
+    });
+
+    it("returns the stored policy when the platform is unknown", async () => {
+      appStore("9.9.9");
+      const { data } = await client.api["version-policy"].get();
+      expect(data?.minVersion).toBe("0.0.0");
     });
   });
 });
