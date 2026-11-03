@@ -516,12 +516,25 @@ export const JESUS_REVEAL_CHANNELS = [
 ] as const;
 export type JesusRevealChannel = (typeof JESUS_REVEAL_CHANNELS)[number];
 
-/** Generated narrative attached to an event. */
-export const JESUS_EVENT_EXPLANATION_TYPES = [
+/** Generated narrative (prose) attached to an event — served as `explanation`. */
+export const JESUS_EVENT_NARRATIVE_TYPES = [
   "overview",
   "compare",
   "insights",
   "application",
+] as const;
+export type JesusEventNarrativeType =
+  (typeof JESUS_EVENT_NARRATIVE_TYPES)[number];
+
+/**
+ * Every generated layer of an event: the narratives, plus `study` — one
+ * inductive study across all of the event's Gospel accounts, stored as JSON in
+ * the `InductiveStudy` shape and served parsed as `study` (see
+ * utils/event-study). Only generated for events more than one Gospel tells.
+ */
+export const JESUS_EVENT_EXPLANATION_TYPES = [
+  ...JESUS_EVENT_NARRATIVE_TYPES,
+  "study",
 ] as const;
 export type JesusEventExplanationType =
   (typeof JESUS_EVENT_EXPLANATION_TYPES)[number];

@@ -232,6 +232,9 @@ const EventDetailResponseSchema = t.Object({
   }),
   reactions: t.Array(t.Any()),
   explanation: t.Record(t.String(), t.String()),
+  // One inductive study across every Gospel account (InductiveStudy shape),
+  // or null — single-account events, and events not yet generated.
+  study: t.Union([t.Record(t.String(), t.Any()), t.Null()]),
   related: t.Array(EventCardSchema),
 });
 
