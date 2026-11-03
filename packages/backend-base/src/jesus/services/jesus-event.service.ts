@@ -2,12 +2,12 @@ import { BibleRepository } from "../../bible/repository/bible.repository";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
 import {
-  JESUS_EVENT_EXPLANATION_TYPES,
+  JESUS_EVENT_NARRATIVE_TYPES,
   JESUS_FACET_META,
   JESUS_FACET_TYPES,
   JESUS_SECTIONS,
   JESUS_SECTION_META,
-  type JesusEventExplanationType,
+  type JesusEventNarrativeType,
   type JesusFacetType,
   getFacetTypeFromSlug,
   resolveFacetTypeFilter,
@@ -322,7 +322,7 @@ export class JesusEventService {
     }
     if (!event) return null;
 
-    const [passages, reveals, reactions, people, explanation] =
+    const [passages, reveals, reactions, people, explanation, study] =
       await Promise.all([
         bibleVersion
           ? this.hydratePassages(event, bibleVersion)
@@ -331,6 +331,7 @@ export class JesusEventService {
         this.events.getReactions(event.event_id, languageCode),
         this.events.getPeople(event.event_id),
         this.getExplanations(event.event_id, languageCode, bibleVersion),
+        this.getStudy(event.event_id, languageCode),
       ]);
 
     const related = await this.getRelated(event, languageCode);
@@ -361,6 +362,7 @@ export class JesusEventService {
         provenance: r.provenance,
       })),
       explanation,
+      study,
       related: related.map((e) => toEventCard(e)),
     };
   }
@@ -580,9 +582,9 @@ export class JesusEventService {
     eventId: string,
     languageCode: string,
     bibleVersion?: string,
-  ): Promise<Record<JesusEventExplanationType, string>> {
+  ): Promise<Record<JesusEventNarrativeType, string>> {
     const entries = await Promise.all(
-      JESUS_EVENT_EXPLANATION_TYPES.map(async (type) => {
+      JESUS_EVENT_NARRATIVE_TYPES.map(async (type) => {
         let row = await this.events.getExplanation(eventId, languageCode, type);
         if (!row && languageCode !== FALLBACK_LANGUAGE) {
           row = await this.events.getExplanation(
@@ -601,9 +603,41 @@ export class JesusEventService {
       }),
     );
     return Object.fromEntries(entries) as Record<
-      JesusEventExplanationType,
+      JesusEventNarrativeType,
       string
     >;
+  }
+
+  /**
+   * The event's cross-Gospel study, parsed — or null when none has been
+   * generated (single-account events never get one). Kept off the narrative
+   * path above: that one injects verse text into prose, which would corrupt
+   * JSON. A row that no longer parses is treated as absent rather than
+   * failing the whole event.
+   */
+  private async getStudy(
+    eventId: string,
+    languageCode: string,
+  ): Promise<Record<string, unknown> | null> {
+    let row = await this.events.getExplanation(eventId, languageCode, "study");
+    if (!row && languageCode !== FALLBACK_LANGUAGE) {
+      row = await this.events.getExplanation(
+        eventId,
+        FALLBACK_LANGUAGE,
+        "study",
+      );
+    }
+    if (!row?.content) return null;
+    try {
+      const parsed: unknown = JSON.parse(row.content);
+      return typeof parsed === "object" &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   /** Events sharing themes, nearest in the timeline first. */

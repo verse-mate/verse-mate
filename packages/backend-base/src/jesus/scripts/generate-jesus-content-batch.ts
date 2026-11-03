@@ -40,9 +40,9 @@ import {
 import { JesusEventRepository } from "../repository/jesus-event.repository";
 import {
   EXTRACTION_MAX_OUTPUT_TOKENS,
-  GENERATION_MAX_OUTPUT_TOKENS,
   GENERATION_REASONING_EFFORT,
   JesusGenerationService,
+  maxOutputTokensFor,
 } from "../services/jesus-generation.service";
 import {
   DEFAULT_PER_EVENT_TYPE_CAP,
@@ -251,7 +251,7 @@ async function submit(argv: string[]) {
           reasoning: { effort: GENERATION_REASONING_EFFORT },
           instructions: built.instructions,
           input: built.input,
-          max_output_tokens: GENERATION_MAX_OUTPUT_TOKENS,
+          max_output_tokens: maxOutputTokensFor(type),
         },
       });
     }
