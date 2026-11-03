@@ -184,7 +184,11 @@ jobs:
 
   build-website:
     name: Build Website
-    runs-on: ubuntu-latest
+    # Pinned: on ubuntu-latest (now 26.04) Google Fonts hands the runner a
+    # font URL with no file extension, and next/font's loader crashes on it
+    # ("Cannot read properties of null (reading '1')", loader.js:122). The
+    # same build passes off-runner. Unpin once next/font or the image copes.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
