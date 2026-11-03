@@ -258,7 +258,8 @@ jobs:
 
   website-cloudflare-deploy:
     name: Website CloudFlare Deploy
-    runs-on: ubuntu-latest
+    # Same next/font crash as build-website on ubuntu-latest; see that job.
+    runs-on: ubuntu-24.04
     needs: [build-backend, build-website]
     if: github.event_name != 'pull_request'
 
@@ -294,7 +295,8 @@ jobs:
   # Optional: Deploy preview for PRs
   website-cloudflare-deploy-preview:
     name: Website CloudFlare PR Preview
-    runs-on: ubuntu-latest
+    # Same next/font crash as build-website on ubuntu-latest; see that job.
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: write
