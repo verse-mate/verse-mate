@@ -1047,18 +1047,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     refs: ["John 10:1-18"],
     themes: ["salvation", "love"],
   },
-  {
-    slug: "parable-of-the-vine-and-branches",
-    kind: "PARABLE",
-    title: "The Vine and the Branches",
-    summary:
-      'Fruit is not produced by effort but by connection. "Apart from me you can do nothing."',
-    quote:
-      "I am the vine, you are the branches; he who abides in Me and I in him, he bears much fruit, for apart from Me you can do nothing.",
-    quoteRef: "John 15:5",
-    refs: ["John 15:1-8"],
-    themes: ["discipleship", "faith"],
-  },
 
   // ═══ CLAIMS ═════════════════════════════════════════════════════════════
   {
@@ -1187,17 +1175,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     themes: ["faith"],
   },
   {
-    slug: "all-authority-has-been-given-to-me",
-    kind: "CLAIM",
-    title: "All authority has been given to me",
-    summary:
-      "The claim that grounds the Great Commission — the sending rests on the authority.",
-    quote: "All authority in heaven and on earth has been given to me.",
-    quoteRef: "Matthew 28:18",
-    refs: ["Matthew 28:18-20"],
-    themes: ["kingdom", "discipleship"],
-  },
-  {
     slug: "i-who-speak-to-you-am-he",
     kind: "CLAIM",
     title: "I who speak to you am He",
@@ -1207,17 +1184,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     quoteRef: "John 4:26",
     refs: ["John 4:25-26"],
     themes: ["salvation"],
-  },
-  {
-    slug: "to-seek-and-save-the-lost",
-    kind: "CLAIM",
-    title: "The Son of Man came to seek and to save the lost",
-    summary:
-      "His own summary of why He came, said in the house of a tax collector everyone was grumbling about.",
-    quote: "The Son of Man came to seek and to save the lost.",
-    quoteRef: "Luke 19:10",
-    refs: ["Luke 19:1-10"],
-    themes: ["salvation", "love"],
   },
   {
     slug: "i-came-to-fulfil-the-law",
@@ -1337,17 +1303,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     harmony: "bleeding-woman",
   },
   {
-    slug: "do-you-want-to-be-healed",
-    kind: "QUESTION",
-    title: "Do you want to be healed?",
-    summary:
-      "Asked of a man who had been lying by the pool for thirty-eight years.",
-    quote: "Do you want to be healed?",
-    quoteRef: "John 5:6",
-    refs: ["John 5:1-9"],
-    themes: ["faith"],
-  },
-  {
     slug: "what-are-you-seeking",
     kind: "QUESTION",
     title: "What are you seeking?",
@@ -1356,17 +1311,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     quoteRef: "John 1:38",
     refs: ["John 1:35-39"],
     themes: ["discipleship"],
-  },
-  {
-    slug: "do-you-love-me",
-    kind: "QUESTION",
-    title: "Do you love me?",
-    summary:
-      "Asked three times on a beach, once for each denial, and answered with a commission each time.",
-    quote: "Simon, son of John, do you love me?",
-    quoteRef: "John 21:16",
-    refs: ["John 21:15-19"],
-    themes: ["love", "discipleship"],
   },
   {
     slug: "why-do-you-call-me-good",
@@ -1477,29 +1421,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     harmony: "taxes-to-caesar",
   },
   {
-    slug: "which-proved-to-be-a-neighbour",
-    kind: "QUESTION",
-    title: "Which of these three proved to be a neighbour?",
-    summary:
-      "The lawyer asked who his neighbour was. Jesus makes him answer who acted like one.",
-    quote:
-      "Which of these three, do you think, proved to be a neighbor to the man who fell among the robbers?",
-    quoteRef: "Luke 10:36",
-    refs: ["Luke 10:25-37"],
-    themes: ["love"],
-  },
-  {
-    slug: "where-are-the-nine",
-    kind: "QUESTION",
-    title: "Were not ten cleansed? Where are the nine?",
-    summary:
-      "Ten lepers healed, one returned. The question is about gratitude, and it is left open.",
-    quote: "Were not ten cleansed? Where are the nine?",
-    quoteRef: "Luke 17:17",
-    refs: ["Luke 17:11-19"],
-    themes: ["faith", "salvation"],
-  },
-  {
     slug: "could-you-not-watch-one-hour",
     kind: "QUESTION",
     title: "Could you not watch with me one hour?",
@@ -1533,28 +1454,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     refs: ["Matthew 27:45-50", "Mark 15:33-37", "Psalms 22:1"],
     themes: ["salvation", "prophecy"],
     harmony: "cry-of-dereliction",
-  },
-  {
-    slug: "woman-why-are-you-weeping",
-    kind: "QUESTION",
-    title: "Woman, why are you weeping?",
-    summary:
-      "The risen Christ's first recorded words, asked of someone who thought He was the gardener.",
-    quote: "Woman, why are you weeping? Whom are you seeking?",
-    quoteRef: "John 20:15",
-    refs: ["John 20:11-18"],
-    themes: ["love", "salvation"],
-  },
-  {
-    slug: "do-you-believe-that-i-am-able",
-    kind: "QUESTION",
-    title: "Do you believe that I am able to do this?",
-    summary:
-      "Asked of two blind men before He touches their eyes — the healing follows the answer.",
-    quote: "Do you believe that I am able to do this?",
-    quoteRef: "Matthew 9:28",
-    refs: ["Matthew 9:27-31"],
-    themes: ["faith"],
   },
   {
     slug: "what-is-written-in-the-law",
@@ -1811,17 +1710,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     harmony: "taxes-to-caesar",
   },
   {
-    slug: "abide-in-me",
-    kind: "COMMAND",
-    title: "Abide in me",
-    summary:
-      "The one command in the vineyard discourse, and everything else is said to follow from it.",
-    quote: "Abide in me, and I in you.",
-    quoteRef: "John 15:4",
-    refs: ["John 15:1-11"],
-    themes: ["discipleship", "faith"],
-  },
-  {
     slug: "watch-and-pray",
     kind: "COMMAND",
     title: "Watch and pray",
@@ -1847,39 +1735,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     themes: ["faith", "love"],
   },
   {
-    slug: "feed-my-sheep",
-    kind: "COMMAND",
-    title: "Feed my sheep",
-    summary:
-      "Peter's restoration is not a pardon and a discharge — it is a pardon and a job.",
-    quote: "Feed my sheep.",
-    quoteRef: "John 21:17",
-    refs: ["John 21:15-19"],
-    themes: ["discipleship", "love"],
-  },
-  {
-    slug: "go-and-sin-no-more",
-    kind: "COMMAND",
-    title: "Go, and from now on sin no more",
-    summary:
-      "Said after every accuser had walked away — neither condemnation nor permission.",
-    quote: "Neither do I condemn you; go, and from now on sin no more.",
-    quoteRef: "John 8:11",
-    refs: ["John 8:1-11"],
-    themes: ["salvation", "love"],
-  },
-  {
-    slug: "give-to-the-one-who-asks",
-    kind: "COMMAND",
-    title: "Give to the one who asks of you",
-    summary:
-      "No means test, no assessment of deserving — an instruction that assumes you will sometimes be taken advantage of.",
-    quote: "Give to the one who begs from you.",
-    quoteRef: "Matthew 5:42",
-    refs: ["Matthew 5:38-42", "Luke 6:30-35"],
-    themes: ["money", "love"],
-  },
-  {
     slug: "the-golden-rule",
     kind: "COMMAND",
     title: "Do to others as you would have them do to you",
@@ -1890,18 +1745,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     refs: ["Matthew 7:12", "Luke 6:31"],
     themes: ["love"],
     harmony: "golden-rule",
-  },
-  {
-    slug: "let-your-light-shine",
-    kind: "COMMAND",
-    title: "Let your light shine before others",
-    summary:
-      "Visibility with a redirected credit line — so they see your works and glorify your Father.",
-    quote:
-      "Let your light shine before others, so that they may see your good works and give glory to your Father.",
-    quoteRef: "Matthew 5:16",
-    refs: ["Matthew 5:13-16"],
-    themes: ["discipleship"],
   },
   {
     slug: "sell-what-you-have-and-give",
@@ -2090,30 +1933,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     harmony: "tree-and-fruit",
   },
   {
-    slug: "you-must-be-born-again",
-    kind: "TEACHING",
-    title: "You must be born again",
-    summary:
-      "To a Pharisee who came at night, He says the kingdom is not entered by improvement but by birth.",
-    quote:
-      "Truly, truly, I say to you, unless one is born again he cannot see the kingdom of God.",
-    quoteRef: "John 3:3",
-    refs: ["John 3:1-21"],
-    themes: ["salvation", "kingdom"],
-  },
-  {
-    slug: "living-water",
-    kind: "TEACHING",
-    title: "Living water",
-    summary:
-      "At a well at noon, to a woman with five husbands, He offers water that ends thirst permanently.",
-    quote:
-      "but whoever drinks of the water that I will give him shall never thirst; but the water that I will give him will become in him a well of water springing up to eternal life.",
-    quoteRef: "John 4:14",
-    refs: ["John 4:1-26"],
-    themes: ["salvation"],
-  },
-  {
     slug: "the-bread-of-life-discourse",
     kind: "TEACHING",
     title: "The bread of life discourse",
@@ -2123,18 +1942,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     quoteRef: "John 6:67",
     refs: ["John 6:22-71"],
     themes: ["salvation", "faith"],
-  },
-  {
-    slug: "the-good-shepherd-discourse",
-    kind: "TEACHING",
-    title: "The Good Shepherd discourse",
-    summary:
-      "Sheep, shepherd, hired hand, thief, and one flock — an extended claim about who He is and what He will do.",
-    quote:
-      "I am the good shepherd; the good shepherd lays down His life for the sheep.",
-    quoteRef: "John 10:11",
-    refs: ["John 10:1-21"],
-    themes: ["salvation", "love"],
   },
   {
     slug: "the-olivet-discourse",
@@ -2645,15 +2452,6 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     harmony: "gerasene-demoniac",
   },
   {
-    slug: "the-widow-of-nain",
-    kind: "COMPASSION",
-    title: '"Do not weep"',
-    summary:
-      "He interrupts a funeral for a woman who has now lost both husband and only son, because He saw her.",
-    refs: ["Luke 7:11-17"],
-    themes: ["love"],
-  },
-  {
     slug: "healing-all-who-came",
     // "Many healed at sunset" in the traditional catalogues. Typed COMPASSION
     // when HEALING did not yet exist; it is a bodily restoration like any
@@ -3024,9 +2822,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "water-into-wine",
     "cleansing-the-temple",
     "nicodemus",
-    "you-must-be-born-again",
     "the-samaritan-woman",
-    "living-water",
     "i-who-speak-to-you-am-he",
     "healing-the-officials-son",
   ],
@@ -3048,7 +2844,6 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "eating-with-tax-collectors-and-sinners",
     "parable-of-new-wine-and-old-wineskins",
     "healing-at-bethesda",
-    "do-you-want-to-be-healed",
     "teaching-on-the-sabbath",
     "lord-of-the-sabbath",
     "greater-than-the-temple",
@@ -3057,12 +2852,10 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "the-beatitudes",
     "i-came-to-fulfil-the-law",
     "salt-and-light",
-    "let-your-light-shine",
     "teaching-on-anger",
     "teaching-on-lust",
     "teaching-on-oaths",
     "teaching-on-retaliation",
-    "give-to-the-one-who-asks",
     "love-your-enemies",
     "teaching-on-giving",
     "teaching-on-prayer",
@@ -3081,7 +2874,6 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "parable-of-the-wise-and-foolish-builders",
     "healing-the-centurions-servant",
     "raising-the-widows-son-at-nain",
-    "the-widow-of-nain",
     "come-to-me-all-who-labour",
     "woe-to-the-unrepentant-cities",
     "the-woman-who-anointed-his-feet",
@@ -3110,7 +2902,6 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "raising-jairus-daughter",
     "taking-the-dead-girl-by-the-hand",
     "healing-two-blind-men",
-    "do-you-believe-that-i-am-able",
     "healing-a-mute-demoniac",
     "moved-with-compassion-for-the-crowds",
     "sending-out-the-twelve",
@@ -3151,7 +2942,6 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "teaching-on-forgiveness-and-prayer",
     "what-is-written-in-the-law",
     "parable-of-the-good-samaritan",
-    "which-proved-to-be-a-neighbour",
     "mary-and-martha",
     "parable-of-the-friend-at-midnight",
     "parable-of-the-rich-fool",
@@ -3169,7 +2959,6 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "parable-of-the-rich-man-and-lazarus",
     "parable-of-the-unworthy-servants",
     "cleansing-ten-lepers",
-    "where-are-the-nine",
     "parable-of-the-persistent-widow",
     "parable-of-the-pharisee-and-tax-collector",
     "teaching-on-divorce-and-marriage",
@@ -3185,11 +2974,9 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "healing-blind-bartimaeus",
     "stopping-for-bartimaeus",
     "zacchaeus",
-    "to-seek-and-save-the-lost",
     "parable-of-the-minas",
     "why-do-you-seek-to-kill-me",
     "forgiving-the-woman-caught-in-adultery",
-    "go-and-sin-no-more",
     "i-am-the-light-of-the-world",
     "before-abraham-was-i-am",
     "you-are-of-your-father-the-devil",
@@ -3199,7 +2986,6 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "i-came-that-they-may-have-life",
     "i-am-the-door",
     "i-am-the-good-shepherd",
-    "the-good-shepherd-discourse",
     "i-and-the-father-are-one",
     "raising-lazarus",
     "jesus-wept-at-the-tomb",
@@ -3240,8 +3026,6 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "whoever-has-seen-me-has-seen-the-father",
     "teaching-on-the-helper",
     "i-am-the-true-vine",
-    "abide-in-me",
-    "parable-of-the-vine-and-branches",
     "the-upper-room-discourse",
     "the-high-priestly-prayer",
   ],
@@ -3263,16 +3047,12 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
   ],
   resurrection: [
     "mary-magdalene-at-the-tomb",
-    "woman-why-are-you-weeping",
     "he-said-her-name",
     "the-road-to-emmaus",
     "doubting-thomas",
     "the-second-catch-of-fish",
     "restoring-peter",
-    "do-you-love-me",
-    "feed-my-sheep",
     "make-disciples-of-all-nations",
-    "all-authority-has-been-given-to-me",
     "the-ascension",
   ],
 };
@@ -3431,7 +3211,6 @@ export const JESUS_COLLECTIONS: SeedCollection[] = [
     members: [
       "the-beatitudes",
       "salt-and-light",
-      "let-your-light-shine",
       "i-came-to-fulfil-the-law",
       "teaching-on-anger",
       "teaching-on-lust",
