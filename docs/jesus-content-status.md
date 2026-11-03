@@ -483,3 +483,45 @@ counts every imperative, so "stretch out your hand" and "go, show yourself to
 the priest" — real imperatives addressed to one person in one moment — will
 come through alongside "love your enemies". Reaching 50 is not the same as
 reaching the right 50, and that pass is editorial.
+
+---
+
+## 9. Studies across the Gospels (new layer)
+
+Reported from the app: *"Cleansing of the temple study also only shows Matthew
+detail."* The Study tab is built from the app's inductive studies, which are
+written per chapter, so an event the Gospels tell more than once could only be
+studied one chapter at a time. 90 of the 211 events are told by more than one
+Gospel (43 by two, 42 by three, 5 by four).
+
+Two layers now answer it:
+
+- **Mobile merges** every account's chapter study, narrowed to that account's
+  verses, step by step and labelled by Gospel (verse-mate-mobile#409). No new
+  content; works for all 90 events today; juxtaposes rather than synthesises.
+- **`study`, a generated event layer**, reads the accounts together — one
+  nine-step Precept study of the event, with the comparisons between accounts a
+  merge cannot make. It is a fifth `jesus_event_explanations` type, stored as
+  JSON in the `InductiveStudy` shape and served parsed as `study` on
+  `/jesus/events/:slug` (null until generated). Clients prefer it over the
+  merge when present.
+
+Gates (`utils/event-study.ts`), on top of the shared refusal check: nine steps
+of fixed kinds with the fields each card renders; every **Gospel** reference
+inside the event's own accounts (other scripture may be cited, as the chapter
+studies do); every quotation present in the supplied passage text. Single-
+Gospel events are skipped — their chapter study already covers them.
+
+### Running it
+
+Needs migration `20261103120000-add-jesus-event-study-prompt` (the
+`jesus-event-study` template) and a provider key:
+
+```bash
+cd packages/backend-base
+bun run jesus:generate -- --types=study --dry-run   # count and cost
+bun run jesus:generate:batch -- --types=study       # 90 events, Batch API
+```
+
+Like every generated layer, nothing here is reviewed until someone sets
+`reviewed_by` / `reviewed_at`.

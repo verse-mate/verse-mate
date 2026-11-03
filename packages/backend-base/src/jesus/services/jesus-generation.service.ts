@@ -12,6 +12,7 @@ import {
 } from "../jesus.constants";
 import { JesusEventRepository } from "../repository/jesus-event.repository";
 import { JesusRepository } from "../repository/jesus.repository";
+import { distinctGospels, validateEventStudy } from "../utils/event-study";
 import {
   type ExtractedFacet,
   type ValidationIssue,
@@ -56,7 +57,20 @@ const PROVENANCE_BY_TYPE: Record<JesusEventExplanationType, number> = {
   compare: JESUS_PROVENANCE.INTERPRETATION,
   insights: JESUS_PROVENANCE.SYNTHESIS,
   application: JESUS_PROVENANCE.SYNTHESIS,
+  study: JESUS_PROVENANCE.SYNTHESIS,
 };
+
+/**
+ * Output ceiling per layer. A narrative is a few hundred words; an event study
+ * is a nine-step JSON document across up to four accounts, which at the
+ * narrative ceiling is cut mid-object and fails as unparseable — the failure
+ * extraction hit before its ceiling was raised.
+ */
+export function maxOutputTokensFor(type: JesusEventExplanationType): number {
+  return type === "study"
+    ? EXTRACTION_MAX_OUTPUT_TOKENS
+    : GENERATION_MAX_OUTPUT_TOKENS;
+}
 
 /** A passage with its verse text loaded. */
 interface PassageWithVerses {
@@ -312,7 +326,7 @@ export class JesusGenerationService {
       instructions: system.text,
       input,
       reasoningEffort: GENERATION_REASONING_EFFORT,
-      maxOutputTokens: GENERATION_MAX_OUTPUT_TOKENS,
+      maxOutputTokens: maxOutputTokensFor(type),
     });
 
     return this.acceptGeneratedContent(
@@ -351,6 +365,17 @@ export class JesusGenerationService {
         type,
         status: "skipped",
         issues: [{ rule: "missing-event", detail: eventSlug }],
+      };
+    }
+
+    // A study across the accounts needs accounts to be across. An event one
+    // Gospel tells already has its chapter study, narrowed to it.
+    if (type === "study" && distinctGospels(event.passages) < 2) {
+      return {
+        eventSlug,
+        type,
+        status: "skipped",
+        issues: [{ rule: "single-account", detail: "told by one Gospel" }],
       };
     }
 
@@ -587,13 +612,36 @@ export class JesusGenerationService {
       event.passages.map((p) => referenceKey(p.book_name, p.chapter)),
     );
 
-    const issues = validateNarrative({
-      content: response.outputText,
-      type,
-      bookNames,
-      chapterCounts,
-      allowedReferences: allowed,
-    });
+    let content = response.outputText.trim();
+    let issues: ValidationIssue[];
+    if (type === "study") {
+      // JSON, not prose: its own gates (shape, Gospel-reference scope,
+      // quotations grounded in the passages), and it is stored normalised.
+      const passages = await this.loadPassageText(
+        event.slug,
+        options.bibleVersion ?? "NASB1995",
+        languageCode,
+      );
+      const checked = validateEventStudy({
+        content,
+        eventTitle: event.title,
+        allowedReferences: allowed,
+        sourceText: passages
+          .flatMap((p) => p.verses.map((v) => v.text))
+          .join(" "),
+        chapterCounts,
+      });
+      issues = checked.issues;
+      if (checked.study) content = JSON.stringify(checked.study);
+    } else {
+      issues = validateNarrative({
+        content: response.outputText,
+        type,
+        bookNames,
+        chapterCounts,
+        allowedReferences: allowed,
+      });
+    }
 
     if (issues.length) {
       // Rejected, not downgraded. A record that fails a gate is re-run rather
@@ -604,7 +652,7 @@ export class JesusGenerationService {
     await this.events.saveExplanation({
       eventId: event.event_id,
       type,
-      content: response.outputText.trim(),
+      content,
       languageCode,
       provenance: PROVENANCE_BY_TYPE[type],
       promptId: system.id,
