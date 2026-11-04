@@ -626,7 +626,12 @@ God **so** loved the _world_ that he gave his [only Son](https://x.test).
   });
 
   it("clamps to the widget budget at a word boundary", () => {
-    const long = "word ".repeat(200).trim();
+    // Sized from the constant rather than hardcoded: the cap has been raised
+    // twice, and each time this fixture silently stopped exercising the clamp
+    // instead of failing to say so.
+    const long = "word "
+      .repeat(Math.ceil((VERSE_SUMMARY_MAX_CHARS * 1.5) / 5))
+      .trim();
     const summary = extractVerseSummary(
       `## John 3:16\n### Summary\n${long}`,
       3,
