@@ -292,6 +292,12 @@ jobs:
           workingDirectory: ./apps/website
           command: deploy --env ${{ env.CLOUDFLARE_ENV }}
 
+      - name: Notify IndexNow of the website's pages
+        if: env.CLOUDFLARE_ENV == 'production'
+        continue-on-error: true
+        working-directory: ./apps/website
+        run: bun scripts/indexnow.ts versemate.org out/sitemap.xml
+
   # Optional: Deploy preview for PRs
   website-cloudflare-deploy-preview:
     name: Website CloudFlare PR Preview
