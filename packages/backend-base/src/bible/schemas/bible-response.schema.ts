@@ -107,6 +107,18 @@ export const LanguagesSchema = t.Array(
   }),
 );
 
+export const ExplanationCoverageSchema = t.Object({
+  languages: t.Record(
+    t.String(),
+    t.Array(
+      t.Object({
+        bookId: t.Number(),
+        chapters: t.Array(t.Number()),
+      }),
+    ),
+  ),
+});
+
 // Bible versions response - available translations with license/attribution
 export const BibleVersionsSchema = t.Object({
   versions: t.Array(
