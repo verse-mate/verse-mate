@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+  spyOn,
+} from "bun:test";
 import { faker } from "@faker-js/faker";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 
@@ -38,6 +46,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  mock.restore();
   for (const id of created) {
     await cache.delete(cacheConstants.emailChangeMailsSent(id));
     await cache.delete(cacheConstants.emailChangeRequests(id));
