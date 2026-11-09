@@ -330,6 +330,7 @@ const plugin = new Elysia()
         "/overview",
         async ({ query, store: { jesusService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -338,6 +339,7 @@ const plugin = new Elysia()
         {
           query: t.Object({
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: {
             tags: ["Jesus"],
@@ -352,6 +354,7 @@ const plugin = new Elysia()
         "/entries",
         async ({ query, store: { jesusService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -369,6 +372,7 @@ const plugin = new Elysia()
             limit: t.Optional(t.Numeric()),
             offset: t.Optional(t.Numeric()),
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: {
             tags: ["Jesus"],
@@ -389,6 +393,7 @@ const plugin = new Elysia()
           set,
         }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -407,6 +412,7 @@ const plugin = new Elysia()
           params: t.Object({ slug: t.String() }),
           query: t.Object({
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: {
             tags: ["Jesus"],
@@ -424,6 +430,7 @@ const plugin = new Elysia()
         "/life",
         async ({ query, store: { jesusService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -432,6 +439,7 @@ const plugin = new Elysia()
         {
           query: t.Object({
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: {
             tags: ["Jesus"],
@@ -446,6 +454,7 @@ const plugin = new Elysia()
         "/themes",
         async ({ query, store: { jesusService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -454,6 +463,7 @@ const plugin = new Elysia()
         {
           query: t.Object({
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: { tags: ["Jesus"], summary: "Explore by topic" },
           response: ThemesResponseSchema,
@@ -463,6 +473,7 @@ const plugin = new Elysia()
         "/collections",
         async ({ query, store: { jesusService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -473,6 +484,7 @@ const plugin = new Elysia()
         {
           query: t.Object({
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: { tags: ["Jesus"], summary: "Popular studies" },
           response: CollectionsResponseSchema,
@@ -488,6 +500,7 @@ const plugin = new Elysia()
           set,
         }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -505,6 +518,7 @@ const plugin = new Elysia()
           params: t.Object({ slug: t.String() }),
           query: t.Object({
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: { tags: ["Jesus"], summary: "One study, with its entries" },
           response: {
@@ -523,6 +537,7 @@ const plugin = new Elysia()
         "/for-passage",
         async ({ query, store: { jesusEventService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -539,6 +554,7 @@ const plugin = new Elysia()
             chapter: t.Numeric(),
             verse: t.Optional(t.Numeric()),
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: {
             tags: ["Jesus"],
@@ -553,6 +569,7 @@ const plugin = new Elysia()
         "/events",
         async ({ query, store: { jesusEventService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -572,6 +589,7 @@ const plugin = new Elysia()
             limit: t.Optional(t.Numeric()),
             offset: t.Optional(t.Numeric()),
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           detail: {
             tags: ["Jesus"],
@@ -586,13 +604,17 @@ const plugin = new Elysia()
         "/events/overview",
         async ({ query, store: { jesusEventService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
           return await jesusEventService.getOverview(languageCode);
         },
         {
-          query: t.Object({ bible_version: t.Optional(t.String()) }),
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
+          }),
           detail: {
             tags: ["Jesus"],
             summary: "Hub skeleton (event graph)",
@@ -612,6 +634,7 @@ const plugin = new Elysia()
           set,
         }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -627,7 +650,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ type: t.String() }),
-          query: t.Object({ bible_version: t.Optional(t.String()) }),
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
+          }),
           detail: {
             tags: ["Jesus"],
             summary: "One category, grouped by topic",
@@ -644,13 +670,17 @@ const plugin = new Elysia()
         "/events/life",
         async ({ query, store: { jesusEventService, db }, currentUserId }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
           return await jesusEventService.getLife(languageCode);
         },
         {
-          query: t.Object({ bible_version: t.Optional(t.String()) }),
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
+          }),
           detail: {
             tags: ["Jesus"],
             summary: "Follow His Life (event graph)",
@@ -670,6 +700,7 @@ const plugin = new Elysia()
           set,
         }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -685,7 +716,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ slug: t.String() }),
-          query: t.Object({ bible_version: t.Optional(t.String()) }),
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
+          }),
           detail: { tags: ["Jesus"], summary: "One study, as events" },
           response: {
             200: EventCollectionResponseSchema,
@@ -703,6 +737,7 @@ const plugin = new Elysia()
           set,
         }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -719,7 +754,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ slug: t.String() }),
-          query: t.Object({ bible_version: t.Optional(t.String()) }),
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
+          }),
           detail: {
             tags: ["Jesus"],
             summary: "Four-Gospel synopsis",
@@ -742,6 +780,7 @@ const plugin = new Elysia()
           set,
         }) => {
           const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
             bibleVersion: query.bible_version,
             currentUserId,
           });
@@ -758,7 +797,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ slug: t.String() }),
-          query: t.Object({ bible_version: t.Optional(t.String()) }),
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
+          }),
           detail: {
             tags: ["Jesus"],
             summary: "One event in full",

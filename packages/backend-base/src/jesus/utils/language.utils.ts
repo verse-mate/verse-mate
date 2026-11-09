@@ -1,18 +1,17 @@
 import type { db } from "../../shared/shared.plugin";
 
 const DEFAULT_LANGUAGE = "en-US";
+const LANGUAGE_CODE = /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/;
 
-/**
- * Resolve which language to serve Jesus content in.
- *
- * Precedence — Bible version's language first, then a signed-in user's
- * explicit preference. Identical to the rule the topics plugin applies inline;
- * factored out here because every Jesus route needs it.
- */
 export async function resolveLanguage(
   database: db,
-  options: { bibleVersion?: string; currentUserId?: string | null },
+  options: {
+    lang?: string;
+    bibleVersion?: string;
+    currentUserId?: string | null;
+  },
 ): Promise<string> {
+  if (options.lang && LANGUAGE_CODE.test(options.lang)) return options.lang;
   let languageCode = DEFAULT_LANGUAGE;
   const connection = database.getOrCreateConnection();
 
