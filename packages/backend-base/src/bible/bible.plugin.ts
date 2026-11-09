@@ -164,8 +164,9 @@ const plugin = new Elysia()
       .get(
         "/explanations/coverage",
         async ({ set, store: { bibleService } }) => {
+          const coverage = await bibleService.getExplanationCoverage();
           set.headers["cache-control"] = "public, max-age=3600";
-          return await bibleService.getExplanationCoverage();
+          return coverage;
         },
         {
           response: {
