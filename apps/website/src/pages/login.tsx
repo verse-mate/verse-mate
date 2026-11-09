@@ -1,3 +1,4 @@
+import Head from "next/head";
 import { useEffect } from "react";
 import { navigateToLogin, getAppUrl } from "@/lib/navigation";
 
@@ -13,6 +14,9 @@ export default function Login() {
       id="main-content"
       className="flex min-h-screen items-center justify-center bg-white px-6"
     >
+      <Head>
+        <meta name="robots" content="noindex" />
+      </Head>
       <div className="text-center">
         <h1 className="mb-4 font-merriweather text-2xl font-bold text-brand-black">
           Redirecting to login&hellip;
