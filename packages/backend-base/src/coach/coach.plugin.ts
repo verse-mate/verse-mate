@@ -277,9 +277,9 @@ const CoachSummarySchema = t.Object({
   ]),
 });
 
-const TrendRowSchema = t.Record(
-  t.String(),
-  t.Union([t.Number(), t.String(), t.Null()]),
+const TrendRowSchema = t.Object(
+  { date: t.String(), dateLabel: t.String() },
+  { additionalProperties: t.Union([t.Number(), t.Null()]) },
 );
 
 const TrendsSchema = t.Object({
