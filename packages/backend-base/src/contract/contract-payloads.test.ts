@@ -191,36 +191,37 @@ function matchesFixture(
 }
 
 const restores: Array<{
-  clear: () => Promise<void>;
-  refill: () => Promise<void>;
+  clear: () => Promise<unknown>;
+  refill: () => Promise<unknown>;
+  drop: () => Promise<unknown>;
 }> = [];
 
 async function setAside(table: string, where: Record<string, unknown> = {}) {
-  const filter = (query: any) =>
-    Object.entries(where).reduce(
-      (q, [column, value]) =>
-        Array.isArray(value)
-          ? q.where(column, "in", value)
-          : q.where(column, "=", value),
-      query,
-    );
-  const kept = await filter(
-    db()
-      .selectFrom(table as never)
-      .selectAll(),
-  ).execute();
-  await filter(db().deleteFrom(table as never)).execute();
+  const copy = `contract_kept_${process.pid}_${restores.length}`;
+  const conditions = Object.entries(where).map(([column, value]) =>
+    Array.isArray(value)
+      ? sql`${sql.ref(column)} in (${sql.join(value)})`
+      : sql`${sql.ref(column)} = ${value}`,
+  );
+  const matching =
+    conditions.length > 0
+      ? sql`where ${sql.join(conditions, sql` and `)}`
+      : sql``;
+  await sql`drop table if exists ${sql.table(copy)}`.execute(db());
+  await sql`create table ${sql.table(copy)} (like ${sql.table(table)})`.execute(
+    db(),
+  );
+  await sql`insert into ${sql.table(copy)} select * from ${sql.table(table)} ${matching}`.execute(
+    db(),
+  );
+  await sql`delete from ${sql.table(table)} ${matching}`.execute(db());
   restores.push({
-    clear: async () => {
-      await filter(db().deleteFrom(table as never)).execute();
-    },
-    refill: async () => {
-      if (kept.length > 0)
-        await db()
-          .insertInto(table as never)
-          .values(kept as never)
-          .execute();
-    },
+    clear: () => sql`delete from ${sql.table(table)} ${matching}`.execute(db()),
+    refill: () =>
+      sql`insert into ${sql.table(table)} select * from ${sql.table(copy)}`.execute(
+        db(),
+      ),
+    drop: () => sql`drop table if exists ${sql.table(copy)}`.execute(db()),
   });
 }
 
@@ -736,27 +737,49 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  const failures: unknown[] = [];
+  const attempt = async (step: () => Promise<unknown>) => {
+    try {
+      await step();
+    } catch (error) {
+      failures.push(error);
+    }
+  };
   if (CAPTURE)
     Bun.spawnSync(["bunx", "biome", "format", "--write", PAYLOADS], {
       stdout: "inherit",
       stderr: "inherit",
     });
-  for (const { clear } of restores) await clear();
-  await db()
-    .deleteFrom("verse_highlights")
-    .where("user_id", "=", logins.reader?.userId as never)
-    .execute();
-  await clearCoach();
-  for (const user of Object.values(logins)) {
-    await redisClient.set(cacheConstants.accessToken(user.userId), [], "1s");
-    await redisClient.delete(`rate-limit:coach:${user.userId}`);
-    await redisClient.delete(`rate-limit:coach-learning:${user.userId}`);
+  try {
+    for (const { clear } of restores) await attempt(clear);
+    await attempt(() =>
+      db()
+        .deleteFrom("verse_highlights")
+        .where("user_id", "=", logins.reader?.userId as never)
+        .execute(),
+    );
+    await attempt(clearCoach);
+    for (const user of Object.values(logins))
+      await attempt(async () => {
+        await redisClient.set(
+          cacheConstants.accessToken(user.userId),
+          [],
+          "1s",
+        );
+        await redisClient.delete(`rate-limit:coach:${user.userId}`);
+        await redisClient.delete(`rate-limit:coach-learning:${user.userId}`);
+      });
+    await attempt(() =>
+      db()
+        .deleteFrom("user")
+        .where("email", "in", Object.values(EMAILS))
+        .execute(),
+    );
+  } finally {
+    for (const { refill } of [...restores].reverse()) await attempt(refill);
+    for (const { drop } of restores) await attempt(drop);
   }
-  await db()
-    .deleteFrom("user")
-    .where("email", "in", Object.values(EMAILS))
-    .execute();
-  for (const { refill } of [...restores].reverse()) await refill();
+  if (failures.length > 0) throw failures[0];
 });
 
 const token = (key: keyof typeof EMAILS) => logins[key].accessToken;

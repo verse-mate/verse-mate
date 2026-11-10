@@ -90,18 +90,17 @@ function learningServiceStatuses(): Map<string, Set<number>> {
     ts.forEachChild(node, walk);
   };
   walk(sf);
-  const total = new Map<string, Set<number>>();
-  const resolve = (name: string, seen = new Set<string>()): Set<number> => {
-    if (total.has(name)) return total.get(name) as Set<number>;
+  const resolve = (name: string, stack: Set<string>): Set<number> => {
     const out = new Set(own.get(name) ?? []);
-    seen.add(name);
+    stack.add(name);
     for (const next of calls.get(name) ?? [])
-      if (!seen.has(next)) for (const s of resolve(next, seen)) out.add(s);
-    total.set(name, out);
+      if (!stack.has(next)) for (const s of resolve(next, stack)) out.add(s);
+    stack.delete(name);
     return out;
   };
-  for (const name of own.keys()) resolve(name);
-  return total;
+  return new Map(
+    [...own.keys()].map((name) => [name, resolve(name, new Set())]),
+  );
 }
 
 function pluginRoutes(file: string) {
@@ -160,6 +159,22 @@ describe("every refusal a route can answer is declared on it", () => {
     const statuses = learningServiceStatuses();
     const found = pluginRoutes("coach/coach-learning.plugin.ts");
     expect(found.length).toBeGreaterThan(30);
+    const refusing = (method: string, path: string) =>
+      new Set(
+        found
+          .filter((r) => r.method === method && r.path === path)
+          .flatMap(({ methods }) =>
+            methods.flatMap((name) => [...(statuses.get(name) ?? [])]),
+          ),
+      );
+    expect(
+      found.filter(({ methods }) =>
+        methods.some((name) => (statuses.get(name)?.size ?? 0) > 0),
+      ).length,
+    ).toBeGreaterThanOrEqual(29);
+    expect([...refusing("GET", "/coach/learning/lessons/:id")].sort()).toEqual([
+      403, 404,
+    ]);
     const gaps = found.flatMap(({ method, path, methods }) =>
       missing(method, path, [
         401,
@@ -173,6 +188,14 @@ describe("every refusal a route can answer is declared on it", () => {
   it("the errors each coach handler throws itself", () => {
     const found = pluginRoutes("coach/coach.plugin.ts");
     expect(found.length).toBeGreaterThan(80);
+    expect(
+      found.filter(({ thrown }) => thrown.length > 0).length,
+    ).toBeGreaterThanOrEqual(79);
+    expect(
+      found
+        .find((r) => r.method === "GET" && r.path === "/coach/me")
+        ?.thrown.sort(),
+    ).toEqual([401, 403]);
     const gaps = found.flatMap(({ method, path, thrown }) =>
       missing(
         method,
