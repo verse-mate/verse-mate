@@ -546,11 +546,14 @@ describe("confirming an email change", () => {
     const next = address("next");
     await requestChange(user, next);
     const key = keyIn((await mailTo(next)).text);
-    spyOn(cache, "appendToJsonArray").mockImplementationOnce(() =>
-      Promise.reject(new Error("cache down")),
+    const failing = spyOn(cache, "appendToJsonArray").mockImplementationOnce(
+      () => Promise.reject(new Error("cache down")),
     );
-
-    expect((await confirm(key, user.email)).status).toBe(500);
+    try {
+      expect((await confirm(key, user.email)).status).toBe(500);
+    } finally {
+      failing.mockRestore();
+    }
 
     expect(await row(user.id)).toMatchObject({ email: user.email });
     expect(mails.filter((m) => m.to === user.email)).toHaveLength(0);
