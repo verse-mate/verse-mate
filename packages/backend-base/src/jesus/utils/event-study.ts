@@ -15,6 +15,8 @@
  * pass the gates below. A record that fails is rejected and re-run, never
  * stored with a caveat — the same rule as every other generated layer.
  */
+import { Value } from "@sinclair/typebox/value";
+import { InductiveStudySchema } from "../../shared/schemas/inductive-study.schema";
 import {
   type ValidationIssue,
   extractQuotations,
@@ -283,26 +285,33 @@ export function validateEventStudy(input: {
 
   if (issues.length > 0) return { study: null, issues };
 
-  return {
-    study: {
-      bookId: 0,
-      bookName: "",
-      chapter: 0,
-      title: input.eventTitle,
-      subtitle: "The Precept Method, Across the Gospels",
-      themeOneLine: isText(parsed.themeOneLine) ? parsed.themeOneLine : "",
-      steps: [...steps].sort((a, b) => Number(a.number) - Number(b.number)),
-      interpretation: {
-        intro: isText(interpretation.intro) ? interpretation.intro : undefined,
-        movements: movements.map((mv, i) => ({ ...mv, number: i + 1 })),
-      },
-      application: {
-        intro: isText(application.intro) ? application.intro : undefined,
-        questions,
-      },
+  const study: EventStudy = {
+    bookId: 0,
+    bookName: "",
+    chapter: 0,
+    title: input.eventTitle,
+    subtitle: "The Precept Method, Across the Gospels",
+    themeOneLine: isText(parsed.themeOneLine) ? parsed.themeOneLine : "",
+    steps: [...steps].sort((a, b) => Number(a.number) - Number(b.number)),
+    interpretation: {
+      intro: isText(interpretation.intro) ? interpretation.intro : undefined,
+      movements: movements.map((mv, i) => ({ ...mv, number: i + 1 })),
     },
-    issues: [],
+    application: {
+      intro: isText(application.intro) ? application.intro : undefined,
+      questions,
+    },
   };
+  const schemaIssues = [
+    ...new Set(
+      [...Value.Errors(InductiveStudySchema, study)].map(
+        (error) => `${error.path || "/"}: ${error.message}`,
+      ),
+    ),
+  ].map((detail) => ({ rule: "schema", detail }));
+  if (schemaIssues.length > 0) return { study: null, issues: schemaIssues };
+
+  return { study, issues: [] };
 }
 
 /** How many different Gospels tell an event — a study needs at least two. */
