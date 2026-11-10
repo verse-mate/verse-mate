@@ -18,7 +18,6 @@ export function coachContract() {
       route: `${r.method} ${r.path}`,
       response: JSON.parse(
         JSON.stringify((r.hooks as { response?: unknown }).response ?? {}),
-        (key, value) => (key === "additionalProperties" ? undefined : value),
       ) as Record<string, unknown>,
     }))
     .sort((a, b) => (a.route < b.route ? -1 : a.route > b.route ? 1 : 0));
