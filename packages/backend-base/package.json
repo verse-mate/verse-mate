@@ -20,6 +20,7 @@
   "dependencies": {
     "@elysiajs/cors": "1.4.0",
     "@elysiajs/jwt": "1.4.0",
+    "@elysiajs/openapi": "1.4.11",
     "@slack/web-api": "^7.13.0",
     "bullmq": "^5.7.0",
     "database": "workspace:*",

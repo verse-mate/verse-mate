@@ -102,6 +102,13 @@ const limitSSORedirect =
     }
   };
 
+const SSO_REDIRECT_QUERY = ["challenge", "returnTo"].map((name) => ({
+  name,
+  in: "query" as const,
+  required: false,
+  schema: { type: "string" as const },
+}));
+
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("auth plugin"))
@@ -604,6 +611,7 @@ const plugin = new Elysia()
             302: t.Any(),
             ...StandardErrorResponses,
           },
+          detail: { parameters: SSO_REDIRECT_QUERY },
         },
       )
       /**
@@ -792,6 +800,7 @@ const plugin = new Elysia()
             302: t.Any(),
             ...StandardErrorResponses,
           },
+          detail: { parameters: SSO_REDIRECT_QUERY },
         },
       )
       /**

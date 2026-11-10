@@ -1,4 +1,3 @@
-import { openapi } from "@elysiajs/openapi";
 import {
   adminPlugin,
   audioPlugin,
@@ -21,6 +20,7 @@ import {
 } from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
+import { openapiDocs } from "backend-base/src/contract/openapi-document";
 import bullmqRedisConnection from "backend-base/src/shared/bullmq-redis";
 import { verifyRedisOrExit } from "backend-base/src/shared/redis-startup-check";
 import { configuredRedisUrl } from "backend-base/src/shared/redis-url";
@@ -60,22 +60,7 @@ const app = new Elysia({
   .use(healthCheckPlugin)
   .use(versionPolicyPlugin)
   .use(corsPlugin)
-  .use(
-    openapi({
-      documentation: {
-        info: {
-          title: "VerseMate API",
-          version: "1.0.0",
-          description:
-            "Bible reading platform API with AI-driven translations and interactive Q&A",
-        },
-        servers: [
-          { url: "http://localhost:4000", description: "Development" },
-          { url: "https://api.versemate.com", description: "Production" },
-        ],
-      },
-    }),
-  );
+  .use(openapiDocs());
 
 // Export type before .listen() to preserve full type information for Eden Treaty
 export type App = typeof app;

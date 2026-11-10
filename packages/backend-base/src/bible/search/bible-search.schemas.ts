@@ -23,9 +23,12 @@ export const BibleSearchResponseSchema = t.Object({
       highlights: t.Array(t.Tuple([t.Number(), t.Number()])),
     }),
   ),
-  nextCursor: t.Nullable(t.String()),
-  totals: t.Nullable(t.Object({ exact: t.Number(), words: t.Number() })),
-  books: t.Nullable(
+  nextCursor: t.Union([t.String(), t.Null()]),
+  totals: t.Union([
+    t.Object({ exact: t.Number(), words: t.Number() }),
+    t.Null(),
+  ]),
+  books: t.Union([
     t.Array(
       t.Object({
         bookId: t.Number(),
@@ -34,5 +37,6 @@ export const BibleSearchResponseSchema = t.Object({
         count: t.Number(),
       }),
     ),
-  ),
+    t.Null(),
+  ]),
 });
