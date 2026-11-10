@@ -3,7 +3,7 @@
   "body": {
     "reports": [
       {
-        "id": "<id>",
+        "id": "<number>",
         "kind": "leader",
         "coachId": "fixture-avery-lane",
         "month": "2033-03",
@@ -363,7 +363,7 @@
         }
       },
       {
-        "id": "<id>",
+        "id": "<number>",
         "kind": "leader",
         "coachId": "fixture-jordan-pike",
         "month": "2033-03",
@@ -614,7 +614,7 @@
         }
       },
       {
-        "id": "<id>",
+        "id": "<number>",
         "kind": "program",
         "coachId": null,
         "month": "2033-03",
@@ -650,7 +650,7 @@
             "priorAvg": 66.4,
             "allTimeAvg": 69.7,
             "bestImproving": {
-              "id": "<id>",
+              "id": "fixture-avery-lane",
               "name": "Avery Lane",
               "delta": 10.5
             },
@@ -666,7 +666,7 @@
           "heatMap": {
             "rows": [
               {
-                "id": "<id>",
+                "id": "fixture-avery-lane",
                 "name": "Avery Lane",
                 "cells": [
                   {
@@ -732,7 +732,7 @@
                 ]
               },
               {
-                "id": "<id>",
+                "id": "fixture-jordan-pike",
                 "name": "Jordan Pike",
                 "cells": [
                   {
@@ -857,12 +857,12 @@
           },
           "snapshots": [
             {
-              "id": "<id>",
+              "id": "fixture-avery-lane",
               "name": "Avery Lane",
               "text": "Avery Lane: 76.9 (Strong), up 10.5 from February 2033. Strong on scripture, growing in delegation."
             },
             {
-              "id": "<id>",
+              "id": "fixture-jordan-pike",
               "name": "Jordan Pike",
               "text": "Jordan Pike: 58.7 (Developing). Strong on scripture, growing in delegation."
             }
@@ -874,13 +874,13 @@
           ],
           "leaderboard": [
             {
-              "id": "<id>",
+              "id": "fixture-avery-lane",
               "name": "Avery Lane",
               "status": "Strong",
               "composite": 76.9
             },
             {
-              "id": "<id>",
+              "id": "fixture-jordan-pike",
               "name": "Jordan Pike",
               "status": "Developing",
               "composite": 58.7

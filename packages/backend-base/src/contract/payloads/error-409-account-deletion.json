@@ -4,7 +4,7 @@
     "error": "CONFLICT",
     "message": "The email address of this account changed recently and can still be changed back from the previous address. The account can be deleted once that time has passed.",
     "details": {
-      "retryAfter": "<retryAfter>"
+      "retryAfter": "<number>"
     }
   }
 }

@@ -4,7 +4,7 @@
     "success": true,
     "data": [
       {
-        "auto_highlight_id": "<auto_highlight_id>",
+        "auto_highlight_id": "<number>",
         "theme_id": 1,
         "book_id": 1,
         "chapter_number": 1,

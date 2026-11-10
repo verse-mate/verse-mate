@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import addFormats from "ajv-formats";
+import Ajv2020 from "ajv/dist/2020";
 import {
   FIXTURE_ADMIN,
   FIXTURE_LEADERS,
@@ -12,7 +14,7 @@ import {
   clearCoachFixture,
   seedCoachFixture,
 } from "../coach/coach-fixture";
-import { clearLearning } from "../coach/coach-learning.fixture";
+import { LEARNING_TABLES } from "../coach/coach-learning.fixture";
 import { CoachMonthlyService } from "../coach/coach-monthly.service";
 import { isolateTable } from "../coach/coach-test-tables";
 import { DIMENSIONS } from "../coach/rubric";
@@ -21,6 +23,7 @@ import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
 import { createTestUser } from "../shared/test-helpers";
 import { contractApp } from "./contract-app";
+import { OPENAPI_SPEC_PATH, openapiDocs } from "./openapi-document";
 
 const PAYLOADS = join(import.meta.dir, "payloads");
 const CAPTURE = process.env.CONTRACT_CAPTURE === "1";
@@ -28,7 +31,7 @@ const STUDY = JSON.parse(
   readFileSync(join(import.meta.dir, "inputs", "study-james-1.json"), "utf8"),
 );
 
-const conn = Database.getOrCreateConnection();
+const db = () => Database.getOrCreateConnection();
 isolateTable("coach_admins");
 isolateTable("coach_monthly_reports");
 
@@ -37,21 +40,25 @@ const app = contractApp();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const TOKEN = /^eyJ[\w-]+\.[\w-]+\.[\w-]+$/;
-const VOLATILE_KEYS = new Set([
-  "auto_highlight_id",
-  "highlight_id",
-  "merged_highlight_ids",
-  "retryAfter",
-  "edit",
-]);
 
-function normalise(value: unknown, volatile: Set<string>): unknown {
-  if (Array.isArray(value)) return value.map((v) => normalise(v, volatile));
+const pathMatches = (pattern: string[], path: string[]) =>
+  pattern.length === path.length &&
+  pattern.every((part, i) => part === "*" || part === path[i]);
+
+function normalise(
+  value: unknown,
+  masks: string[][],
+  path: string[] = [],
+): unknown {
+  if (value !== null && masks.some((mask) => pathMatches(mask, path)))
+    return `<${Array.isArray(value) ? "array" : typeof value}>`;
+  if (Array.isArray(value))
+    return value.map((v, i) => normalise(v, masks, [...path, String(i)]));
   if (value && typeof value === "object")
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [
         k,
-        volatile.has(k) && v !== null ? `<${k}>` : normalise(v, volatile),
+        normalise(v, masks, [...path, k]),
       ]),
     );
   if (typeof value === "string") {
@@ -60,6 +67,71 @@ function normalise(value: unknown, volatile: Set<string>): unknown {
     if (TOKEN.test(value)) return "<token>";
   }
   return value;
+}
+
+type Json = Record<string, any>;
+let published: Json | null = null;
+const ajv = new Ajv2020({ strict: false, logger: false, allErrors: true });
+addFormats(ajv as unknown as Parameters<typeof addFormats>[0]);
+
+function closed(schema: unknown, inAllOf = false): unknown {
+  if (Array.isArray(schema)) return schema.map((s) => closed(s, inAllOf));
+  if (!schema || typeof schema !== "object") return schema;
+  const out: Json = {};
+  for (const [key, value] of Object.entries(schema))
+    out[key] =
+      key === "allOf"
+        ? (value as unknown[]).map((v) => closed(v, true))
+        : closed(value);
+  if (out.type === "object" && !("additionalProperties" in out) && !inAllOf)
+    out.additionalProperties = false;
+  return out;
+}
+
+async function documentSchema(method: string, url: string, status: number) {
+  published ??= await (
+    await contractApp()
+      .use(openapiDocs())
+      .handle(new Request(`http://localhost${OPENAPI_SPEC_PATH}`))
+  ).json();
+  const path = url.split("?")[0];
+  const template = Object.keys(published?.paths ?? {})
+    .filter((t) =>
+      new RegExp(`^${t.replace(/\{[^}]+\}/g, "[^/]+")}$`).test(path),
+    )
+    .sort(
+      (a, b) => (a.match(/\{/g)?.length ?? 0) - (b.match(/\{/g)?.length ?? 0),
+    )[0];
+  const response =
+    published?.paths[template]?.[method.toLowerCase()]?.responses?.[
+      String(status)
+    ];
+  if (!response)
+    throw new Error(`${method} ${template ?? path} does not declare ${status}`);
+  return { template, response: response as Json };
+}
+
+async function conforms(
+  method: string,
+  url: string,
+  status: number,
+  body: unknown,
+) {
+  if (CAPTURE) return;
+  const { template, response } = await documentSchema(method, url, status);
+  const schema = response.content?.["application/json"]?.schema;
+  if (!schema) {
+    if (body !== null)
+      throw new Error(
+        `${method} ${template} ${status} answered a body it does not declare`,
+      );
+    return;
+  }
+  const validate = ajv.compile(closed(schema) as object);
+  if (!validate(body))
+    throw new Error(
+      `${method} ${template} ${status} does not fit its schema: ${JSON.stringify(validate.errors?.slice(0, 5))}`,
+    );
 }
 
 async function call(
@@ -83,16 +155,25 @@ async function call(
   try {
     parsed = text ? JSON.parse(text) : null;
   } catch {}
+  await conforms(method, path, res.status, parsed);
   return { status: res.status, body: parsed as any };
+}
+
+async function ok(response: Promise<{ status: number; body: any }>) {
+  const answered = await response;
+  expect(answered.status).toBe(200);
+  return answered;
 }
 
 function matchesFixture(
   name: string,
   response: { status: number; body: unknown },
-  extraVolatile: string[] = [],
+  masks: string[] = [],
 ) {
-  const volatile = new Set([...VOLATILE_KEYS, ...extraVolatile]);
-  const actual = normalise(response, volatile);
+  const actual = normalise(
+    response,
+    masks.map((mask) => mask.split(".")),
+  );
   const path = join(PAYLOADS, `${name}.json`);
   if (CAPTURE) {
     mkdirSync(PAYLOADS, { recursive: true });
@@ -104,6 +185,40 @@ function matchesFixture(
       `no captured payload for ${name}: capture it with CONTRACT_CAPTURE=1`,
     );
   expect(actual).toEqual(JSON.parse(readFileSync(path, "utf8")));
+}
+
+const restores: Array<{
+  clear: () => Promise<void>;
+  refill: () => Promise<void>;
+}> = [];
+
+async function setAside(table: string, where: Record<string, unknown> = {}) {
+  const filter = (query: any) =>
+    Object.entries(where).reduce(
+      (q, [column, value]) =>
+        Array.isArray(value)
+          ? q.where(column, "in", value)
+          : q.where(column, "=", value),
+      query,
+    );
+  const kept = await filter(
+    db()
+      .selectFrom(table as never)
+      .selectAll(),
+  ).execute();
+  await filter(db().deleteFrom(table as never)).execute();
+  restores.push({
+    clear: async () => {
+      await filter(db().deleteFrom(table as never)).execute();
+    },
+    refill: async () => {
+      if (kept.length > 0)
+        await db()
+          .insertInto(table as never)
+          .values(kept as never)
+          .execute();
+    },
+  });
 }
 
 const EMAILS = {
@@ -124,9 +239,9 @@ async function login(
   options: { confirmed?: boolean; firstName: string; lastName: string },
 ) {
   const email = EMAILS[key];
-  await conn.deleteFrom("user").where("email", "=", email).execute();
+  await db().deleteFrom("user").where("email", "=", email).execute();
   const user = await createTestUser({ email });
-  await conn
+  await db()
     .updateTable("user")
     .set({
       firstName: options.firstName,
@@ -231,7 +346,7 @@ class MonthlyAi implements AiProvider {
 }
 
 async function seedBible() {
-  const theme = await conn
+  const theme = await db()
     .selectFrom("highlight_themes")
     .select("theme_id")
     .where("is_active", "=", true)
@@ -239,12 +354,8 @@ async function seedBible() {
     .orderBy("theme_id")
     .executeTakeFirstOrThrow();
   themeId = Number(theme.theme_id);
-  await conn
-    .deleteFrom("auto_highlights")
-    .where("book_id", "=", 1 as never)
-    .where("chapter_number", "=", 1)
-    .execute();
-  await conn
+  await setAside("auto_highlights", { book_id: 1, chapter_number: 1 });
+  await db()
     .insertInto("auto_highlights")
     .values({
       theme_id: themeId as never,
@@ -256,12 +367,18 @@ async function seedBible() {
       created_at: "2026-11-01T10:00:00.000Z",
     })
     .execute();
-  await conn
-    .deleteFrom("studies")
+  const studies = await db()
+    .selectFrom("studies")
+    .select("study_id")
     .where("book_id", "=", STUDY_BOOK as never)
     .where("chapter", "=", STUDY_CHAPTER)
     .execute();
-  await conn
+  if (studies.length > 0)
+    await setAside("study_translations", {
+      study_id: studies.map((study) => study.study_id),
+    });
+  await setAside("studies", { book_id: STUDY_BOOK, chapter: STUDY_CHAPTER });
+  await db()
     .insertInto("studies")
     .values({
       book_id: STUDY_BOOK as never,
@@ -272,14 +389,20 @@ async function seedBible() {
 }
 
 async function seedJesus() {
-  const event = await conn
+  const event = await db()
     .selectFrom("jesus_events")
     .select("event_id")
     .where("slug", "=", JESUS_SLUG)
     .executeTakeFirstOrThrow();
   jesusEventId = event.event_id as string;
-  await clearJesus();
-  await conn
+  for (const table of [
+    "jesus_event_reveals",
+    "jesus_event_reactions",
+    "jesus_event_people",
+    "jesus_event_explanations",
+  ])
+    await setAside(table, { event_id: jesusEventId });
+  await db()
     .insertInto("jesus_event_reveals")
     .values([
       {
@@ -304,7 +427,7 @@ async function seedJesus() {
       },
     ])
     .execute();
-  await conn
+  await db()
     .insertInto("jesus_event_reactions")
     .values({
       event_id: jesusEventId as never,
@@ -316,7 +439,7 @@ async function seedJesus() {
       sort_order: 1,
     })
     .execute();
-  await conn
+  await db()
     .insertInto("jesus_event_people")
     .values({
       event_id: jesusEventId as never,
@@ -324,7 +447,7 @@ async function seedJesus() {
       role: "healed",
     })
     .execute();
-  await conn
+  await db()
     .insertInto("jesus_event_explanations")
     .values([
       ...["overview", "compare", "insights", "application"].map((type) => ({
@@ -345,30 +468,16 @@ async function seedJesus() {
     .execute();
 }
 
-async function clearJesus() {
-  if (!jesusEventId) return;
-  for (const table of [
-    "jesus_event_reveals",
-    "jesus_event_reactions",
-    "jesus_event_people",
-    "jesus_event_explanations",
-  ] as const)
-    await conn
-      .deleteFrom(table)
-      .where("event_id", "=", jesusEventId as never)
-      .execute();
-}
-
 async function seedCoach() {
   await clearCoach();
   await seedCoachFixture(Database);
-  await conn
+  await db()
     .insertInto("coach_admins")
     .values({ email: FIXTURE_ADMIN })
     .onConflict((oc) => oc.doNothing())
     .execute();
   for (const id of [AMENDED, EDITED])
-    await conn
+    await db()
       .insertInto("coach_report_dimension_scores")
       .values(
         DIMENSIONS.map((d) => ({
@@ -381,7 +490,7 @@ async function seedCoach() {
         })),
       )
       .execute();
-  await conn
+  await db()
     .insertInto("coach_intake_sessions")
     .values([
       {
@@ -427,12 +536,12 @@ async function seedCoach() {
       },
     ] as never)
     .execute();
-  await conn
+  await db()
     .updateTable("coach_reports")
     .set({ source_session_id: sql`'ff-' || id` })
     .where("id", "in", [AMENDED, EDITED])
     .execute();
-  const existing = await conn
+  const existing = await db()
     .selectFrom("coach_classes")
     .select("id")
     .execute();
@@ -440,7 +549,7 @@ async function seedCoach() {
 }
 
 async function clearCoach() {
-  await conn
+  await db()
     .deleteFrom("coach_intake_sessions")
     .where("source_session_id", "in", [
       `ff-${AMENDED}`,
@@ -455,8 +564,8 @@ async function clearCoach() {
     "coach_report_edits",
     "coach_report_dimension_scores",
   ] as const)
-    await conn.deleteFrom(table).where("report_id", "in", reports).execute();
-  await conn
+    await db().deleteFrom(table).where("report_id", "in", reports).execute();
+  await db()
     .deleteFrom("coach_classes")
     .where(
       "coach_id",
@@ -485,8 +594,8 @@ beforeAll(async () => {
   await seedCoach();
   await login("leader", { firstName: "Avery", lastName: "Lane" });
   await login("admin", { firstName: "Ada", lastName: "Admin" });
-  await clearLearning();
-  const topic = await conn
+  for (const table of LEARNING_TABLES) await setAside(table);
+  const topic = await db()
     .selectFrom("topics")
     .select("topic_id")
     .where("name", "=", "Faith")
@@ -501,32 +610,22 @@ afterAll(async () => {
       stdout: "inherit",
       stderr: "inherit",
     });
-  await conn
+  for (const { clear } of restores) await clear();
+  await db()
     .deleteFrom("verse_highlights")
     .where("user_id", "=", logins.reader?.userId as never)
     .execute();
-  await conn
-    .deleteFrom("auto_highlights")
-    .where("book_id", "=", 1 as never)
-    .where("chapter_number", "=", 1)
-    .execute();
-  await conn
-    .deleteFrom("studies")
-    .where("book_id", "=", STUDY_BOOK as never)
-    .where("chapter", "=", STUDY_CHAPTER)
-    .execute();
-  await clearJesus();
-  await clearLearning();
   await clearCoach();
   for (const user of Object.values(logins)) {
     await redisClient.set(cacheConstants.accessToken(user.userId), [], "1s");
     await redisClient.delete(`rate-limit:coach:${user.userId}`);
     await redisClient.delete(`rate-limit:coach-learning:${user.userId}`);
   }
-  await conn
+  await db()
     .deleteFrom("user")
     .where("email", "in", Object.values(EMAILS))
     .execute();
+  for (const { refill } of [...restores].reverse()) await refill();
 });
 
 const token = (key: keyof typeof EMAILS) => logins[key].accessToken;
@@ -536,6 +635,7 @@ describe("bible routes keep their payloads", () => {
     matchesFixture(
       "bible-auto-highlights",
       await call(null, "GET", "/bible/auto-highlights/1/1"),
+      ["body.data.*.auto_highlight_id"],
     );
   });
 
@@ -579,8 +679,12 @@ describe("bible routes keep their payloads", () => {
         end_verse: end,
         color: "yellow",
       });
-    matchesFixture("bible-highlight-add", await add(1, 2));
-    matchesFixture("bible-highlight-add-overlap", await add(2, 3));
+    matchesFixture("bible-highlight-add", await add(1, 2), [
+      "body.highlight.highlight_id",
+    ]);
+    matchesFixture("bible-highlight-add-overlap", await add(2, 3), [
+      "body.overlaps.*.highlight_id",
+    ]);
   });
 });
 
@@ -636,12 +740,12 @@ describe("coach routes keep their payloads", () => {
         startTime: "06:30",
         timeZone: "America/Chicago",
       }),
-      ["id"],
+      ["body.class.id"],
     );
     matchesFixture(
       "coach-classes",
       await call(token("leader"), "GET", "/coach/classes"),
-      ["id"],
+      ["body.classes.*.id"],
     );
   });
 
@@ -673,7 +777,7 @@ describe("coach routes keep their payloads", () => {
           ),
         },
       },
-      ["id"],
+      ["body.classes.*.id"],
     );
   });
 
@@ -710,15 +814,16 @@ describe("coach routes keep their payloads", () => {
         "GET",
         `/coach/admin/reports/${EDITED}/revisions`,
       ),
+      ["body.revisions.*.edit"],
     );
   });
 
   it("the monthly reports an admin reviews", async () => {
-    await conn
+    await db()
       .deleteFrom("coach_monthly_narratives")
       .where("month", "=", FIXTURE_MONTH)
       .execute();
-    await conn
+    await db()
       .deleteFrom("coach_monthly_leader_summaries")
       .where("month", "=", FIXTURE_MONTH)
       .execute();
@@ -732,7 +837,7 @@ describe("coach routes keep their payloads", () => {
         "GET",
         `/coach/admin/monthly-reports?month=${FIXTURE_MONTH}`,
       ),
-      ["id"],
+      ["body.reports.*.id"],
     );
   });
 
@@ -767,36 +872,44 @@ describe("coach routes keep their payloads", () => {
 
   it("learners, a locked lesson and an approval refused for a changed address", async () => {
     const admin = token("admin");
-    const module = await call(admin, "POST", "/coach/admin/learning/modules", {
-      title: "Foundations",
-      description: "How a session runs",
-      passMark: 50,
-    });
+    const module = await ok(
+      call(admin, "POST", "/coach/admin/learning/modules", {
+        title: "Foundations",
+        description: "How a session runs",
+        passMark: 50,
+      }),
+    );
     const moduleId = module.body?.id;
     const lessons: number[] = [];
     for (const n of [1, 2]) {
-      const lesson = await call(
-        admin,
-        "POST",
-        `/coach/admin/learning/modules/${moduleId}/lessons`,
-        { title: `Lesson ${n}`, body: `Text of lesson ${n}`, passages: [] },
+      const lesson = await ok(
+        call(
+          admin,
+          "POST",
+          `/coach/admin/learning/modules/${moduleId}/lessons`,
+          { title: `Lesson ${n}`, body: `Text of lesson ${n}`, passages: [] },
+        ),
       );
       lessons.push(lesson.body?.id);
-      await call(
-        admin,
-        "POST",
-        `/coach/admin/learning/lessons/${lesson.body?.id}/publish`,
+      await ok(
+        call(
+          admin,
+          "POST",
+          `/coach/admin/learning/lessons/${lesson.body?.id}/publish`,
+        ),
       );
     }
-    await call(
-      admin,
-      "POST",
-      `/coach/admin/learning/modules/${moduleId}/questions`,
-      {
-        prompt: "Who opens the session?",
-        options: ["A member", "The leader"],
-        correct: 0,
-      },
+    await ok(
+      call(
+        admin,
+        "POST",
+        `/coach/admin/learning/modules/${moduleId}/questions`,
+        {
+          prompt: "Who opens the session?",
+          options: ["A member", "The leader"],
+          correct: 0,
+        },
+      ),
     );
     expect(
       (
@@ -809,18 +922,19 @@ describe("coach routes keep their payloads", () => {
     ).toBe(200);
 
     const learner = token("learner");
-    await call(learner, "POST", "/coach/learning/enrol");
+    await ok(call(learner, "POST", "/coach/learning/enrol"));
     for (const id of lessons)
-      await call(learner, "POST", `/coach/learning/lessons/${id}/done`);
-    const check = await call(
-      learner,
-      "GET",
-      `/coach/learning/modules/${moduleId}/check`,
+      await ok(call(learner, "POST", `/coach/learning/lessons/${id}/done`));
+    const check = await ok(
+      call(learner, "GET", `/coach/learning/modules/${moduleId}/check`),
     );
-    await call(learner, "POST", `/coach/learning/modules/${moduleId}/check`, {
-      version: check.body?.version,
-      answers: [{ questionId: check.body?.questions[0].id, option: 0 }],
-    });
+    const graded = await ok(
+      call(learner, "POST", `/coach/learning/modules/${moduleId}/check`, {
+        version: check.body?.version,
+        answers: [{ questionId: check.body?.questions[0].id, option: 0 }],
+      }),
+    );
+    expect(graded.body?.passed).toBe(true);
     expect(
       (await call(learner, "GET", "/coach/learning")).body?.completedAt,
     ).not.toBeNull();
@@ -835,11 +949,11 @@ describe("coach routes keep their payloads", () => {
     expect(request.status).toBe(200);
 
     const locked = token("locked");
-    await call(locked, "POST", "/coach/learning/enrol");
+    await ok(call(locked, "POST", "/coach/learning/enrol"));
     matchesFixture(
       "coach-learning-locked",
       await call(locked, "GET", `/coach/learning/lessons/${lessons[1]}`),
-      ["lessonId", "moduleId"],
+      ["body.details.next.lessonId", "body.details.next.moduleId"],
     );
     matchesFixture(
       "coach-learning-address-changed",
@@ -896,7 +1010,7 @@ describe("error bodies keep their fields", () => {
     const limited = await call(token("reader"), "GET", "/coach/me");
     await redisClient.delete(key);
     expect(typeof limited.body?.retryAfter).toBe("number");
-    matchesFixture("error-429", limited);
+    matchesFixture("error-429", limited, ["body.retryAfter"]);
   });
 
   it("409 on account deletion while an address change can be undone", async () => {
@@ -919,6 +1033,8 @@ describe("error bodies keep their fields", () => {
       cacheConstants.emailChangeRevert("contract-revert"),
     );
     expect(typeof refused.body?.details?.retryAfter).toBe("number");
-    matchesFixture("error-409-account-deletion", refused);
+    matchesFixture("error-409-account-deletion", refused, [
+      "body.details.retryAfter",
+    ]);
   });
 });

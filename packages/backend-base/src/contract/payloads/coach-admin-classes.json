@@ -3,7 +3,7 @@
   "body": {
     "classes": [
       {
-        "id": "<id>",
+        "id": "<string>",
         "name": "Tuesday Dawn",
         "classDate": "2033-04-05",
         "recurrence": "weekly",
@@ -12,7 +12,7 @@
         "timeZone": "America/Chicago",
         "notetaker": true,
         "leader": {
-          "id": "<id>",
+          "id": "fixture-avery-lane",
           "name": "Avery Lane",
           "email": "avery.lane@example.org"
         }

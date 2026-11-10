@@ -3,6 +3,6 @@
   "body": {
     "error": "TOO_MANY_REQUESTS",
     "message": "Too many coaching requests, please try again in a minute",
-    "retryAfter": "<retryAfter>"
+    "retryAfter": "<number>"
   }
 }

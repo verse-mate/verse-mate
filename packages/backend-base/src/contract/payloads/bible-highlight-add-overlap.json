@@ -5,7 +5,7 @@
     "error": "Highlight overlaps with existing highlights",
     "overlaps": [
       {
-        "highlight_id": "<highlight_id>",
+        "highlight_id": "<number>",
         "user_id": "<uuid>",
         "chapter_id": 1,
         "start_verse": 1,

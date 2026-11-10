@@ -4,7 +4,7 @@
     "revisions": [
       {
         "kind": "edit",
-        "edit": "<edit>",
+        "edit": "<number>",
         "changes": {
           "improvements": {
             "to": ["Ask one open question per passage"],

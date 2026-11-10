@@ -2,7 +2,7 @@
   "status": 200,
   "body": {
     "highlight": {
-      "highlight_id": "<highlight_id>",
+      "highlight_id": "<number>",
       "user_id": "<uuid>",
       "chapter_id": 1,
       "book_id": 1,

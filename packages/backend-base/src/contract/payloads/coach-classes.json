@@ -3,7 +3,7 @@
   "body": {
     "classes": [
       {
-        "id": "<id>",
+        "id": "<string>",
         "name": "Tuesday Dawn",
         "classDate": "2033-04-05",
         "recurrence": "weekly",

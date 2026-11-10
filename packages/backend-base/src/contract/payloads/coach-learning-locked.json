@@ -7,8 +7,8 @@
       "refusal": "locked",
       "next": {
         "kind": "lesson",
-        "lessonId": "<lessonId>",
-        "moduleId": "<moduleId>"
+        "lessonId": "<number>",
+        "moduleId": "<number>"
       }
     }
   }
