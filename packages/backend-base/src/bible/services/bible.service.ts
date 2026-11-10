@@ -43,6 +43,17 @@ const LANGUAGE_NAME_OVERRIDES: Record<
   "ro-RO": { name: "Romanian", native_name: "Română" },
 };
 
+const COVERAGE_MEMO_MS = 60 * 60 * 1000;
+
+let coverageMemo:
+  | {
+      value: {
+        languages: Record<string, { bookId: number; chapters: number[] }[]>;
+      };
+      expiresAt: number;
+    }
+  | undefined;
+
 export class BibleService {
   constructor(
     private readonly db: db,
@@ -1247,6 +1258,59 @@ export class BibleService {
       .execute();
 
     return languages;
+  }
+
+  async getExplanationCoverage() {
+    if (coverageMemo && coverageMemo.expiresAt > Date.now())
+      return coverageMemo.value;
+    const value = await this.readExplanationCoverage();
+    coverageMemo = { value, expiresAt: Date.now() + COVERAGE_MEMO_MS };
+    return value;
+  }
+
+  private async readExplanationCoverage() {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("explanations")
+      .innerJoin("chapters", "chapters.chapter_id", "explanations.chapter_id")
+      .leftJoin(
+        "explanation_languages",
+        "explanation_languages.language_code",
+        "explanations.language_code",
+      )
+      .select([
+        "explanations.language_code",
+        "chapters.book_id",
+        "chapters.chapter_number",
+      ])
+      .where("explanations.type", "=", "summary" as ExplanationTypeEnum)
+      .where("explanations.is_active", "=", true)
+      .where((eb) =>
+        eb.or([
+          eb("explanation_languages.is_enabled", "=", true),
+          eb("explanation_languages.is_enabled", "is", null),
+        ]),
+      )
+      .groupBy([
+        "explanations.language_code",
+        "chapters.book_id",
+        "chapters.chapter_number",
+      ])
+      .orderBy("explanations.language_code")
+      .orderBy("chapters.book_id")
+      .orderBy("chapters.chapter_number")
+      .execute();
+
+    const languages: Record<string, { bookId: number; chapters: number[] }[]> =
+      {};
+    for (const row of rows) {
+      const books = languages[row.language_code] ?? [];
+      languages[row.language_code] = books;
+      const last = books.at(-1);
+      if (last?.bookId === row.book_id) last.chapters.push(row.chapter_number);
+      else books.push({ bookId: row.book_id, chapters: [row.chapter_number] });
+    }
+    return { languages };
   }
 
   async getAvailableBibleVersionLanguages() {

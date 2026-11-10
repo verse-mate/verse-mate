@@ -26,6 +26,7 @@ import {
   BookmarksSchema,
   ChapterIdSchema,
   ChapterSchema,
+  ExplanationCoverageSchema,
   ExplanationSchema,
   HighlightAddSchema,
   HighlightDeleteSchema,
@@ -156,6 +157,20 @@ const plugin = new Elysia()
         {
           response: {
             200: LanguagesSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/explanations/coverage",
+        async ({ set, store: { bibleService } }) => {
+          const coverage = await bibleService.getExplanationCoverage();
+          set.headers["cache-control"] = "public, max-age=3600";
+          return coverage;
+        },
+        {
+          response: {
+            200: ExplanationCoverageSchema,
             ...StandardErrorResponses,
           },
         },

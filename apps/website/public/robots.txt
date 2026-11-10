@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://versemate.org/sitemap.xml

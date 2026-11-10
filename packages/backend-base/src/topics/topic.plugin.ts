@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
+import { resolveLanguage } from "../jesus/utils/language.utils";
 import shared from "../shared/shared.plugin";
 import { parseAndInjectVerses } from "../shared/verse-parser";
 import { TopicService } from "./services/topic.service";
@@ -104,38 +105,13 @@ const plugin = new Elysia()
       .get(
         "/search",
         async ({ query, store: { topicService, db }, currentUserId }) => {
-          const { category, bible_version } = query;
+          const { category } = query;
 
-          // Determine language: user preference overrides Bible version language
-          let languageCode = "en-US"; // Default fallback
-
-          if (bible_version) {
-            const version = await db
-              .getOrCreateConnection()
-              .selectFrom("bible_versions")
-              .where("version_key", "=", bible_version)
-              .select("language_code")
-              .executeTakeFirst();
-
-            if (version?.language_code) {
-              languageCode = version.language_code;
-            }
-          }
-
-          // If user is logged in, check for preferred language override
-          if (currentUserId) {
-            const user = await db
-              .getOrCreateConnection()
-              .selectFrom("user")
-              .where("id", "=", currentUserId)
-              .select("preferred_language")
-              .executeTakeFirst();
-
-            // Override language if user has a preference
-            if (user?.preferred_language) {
-              languageCode = user.preferred_language;
-            }
-          }
+          const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
+            bibleVersion: query.bible_version,
+            currentUserId,
+          });
 
           const topics = await topicService.getTopicsByCategory(
             category,
@@ -147,6 +123,7 @@ const plugin = new Elysia()
           query: t.Object({
             category: t.String(),
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           response: TopicSearchResponseSchema,
         },
@@ -218,36 +195,11 @@ const plugin = new Elysia()
           const { bible_version } = query;
           const { topicService, db } = store;
 
-          // Determine language: user preference overrides Bible version language
-          let languageCode = "en-US"; // Default fallback
-
-          if (bible_version) {
-            const version = await db
-              .getOrCreateConnection()
-              .selectFrom("bible_versions")
-              .where("version_key", "=", bible_version)
-              .select("language_code")
-              .executeTakeFirst();
-
-            if (version?.language_code) {
-              languageCode = version.language_code;
-            }
-          }
-
-          // If user is logged in, check for preferred language override
-          if (currentUserId) {
-            const user = await db
-              .getOrCreateConnection()
-              .selectFrom("user")
-              .where("id", "=", currentUserId)
-              .select("preferred_language")
-              .executeTakeFirst();
-
-            // Override language if user has a preference
-            if (user?.preferred_language) {
-              languageCode = user.preferred_language;
-            }
-          }
+          const languageCode = await resolveLanguage(db, {
+            lang: query.lang,
+            bibleVersion: query.bible_version,
+            currentUserId,
+          });
 
           const topic = await topicService.getTopic(id, languageCode);
           const references = await topicService.getTopicReferences(id);
@@ -312,6 +264,7 @@ const plugin = new Elysia()
           }),
           query: t.Object({
             bible_version: t.Optional(t.String()),
+            lang: t.Optional(t.String()),
           }),
           response: TopicDetailsResponseSchema,
         },

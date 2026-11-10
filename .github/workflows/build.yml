@@ -206,6 +206,10 @@ jobs:
         working-directory: ./apps/website
         run: bun run build
 
+      - name: Test website build scripts
+        working-directory: ./apps/website
+        run: bun test scripts
+
       - name: Run website linting
         working-directory: ./apps/website
         run: |
@@ -291,6 +295,18 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: ./apps/website
           command: deploy --env ${{ env.CLOUDFLARE_ENV }}
+
+      - name: Notify IndexNow of the website's pages
+        if: env.CLOUDFLARE_ENV == 'production'
+        continue-on-error: true
+        working-directory: ./apps/website
+        run: bun scripts/indexnow.ts versemate.org out/sitemap.xml
+
+      - name: Check the links in the website's structured data
+        if: env.CLOUDFLARE_ENV == 'production'
+        continue-on-error: true
+        working-directory: ./apps/website
+        run: bun scripts/check-structured-data.ts out/index.html
 
   # Optional: Deploy preview for PRs
   website-cloudflare-deploy-preview:

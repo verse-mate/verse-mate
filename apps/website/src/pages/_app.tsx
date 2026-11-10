@@ -3,6 +3,7 @@ import Head from "next/head";
 import { Inter, Merriweather } from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/coach.css";
+import { APP_STORE_ID, STRUCTURED_DATA } from "@/lib/structured-data";
 
 // Self-hosted via next/font — no render-blocking Google Fonts request, no
 // FOUT/layout shift. These set the same CSS vars the whole site already reads
@@ -22,26 +23,21 @@ const merriweather = Merriweather({
   fallback: ["Georgia", "serif"],
 });
 
-// Organization / nonprofit structured data — same on every page, lets search
-// engines render the knowledge panel and rich results.
-const ORG_JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "NGO",
-  name: "VerseMate",
-  url: "https://versemate.org",
-  logo: "https://versemate.org/versemate-logo.png",
-  description:
-    "VerseMate is a 501(c)(3) nonprofit making the Bible easier to understand—for everyone, everywhere.",
-};
+const OG_IMAGE = "https://versemate.org/og-card.png";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <div className={`${inter.variable} ${merriweather.variable}`}>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta property="og:image" content={OG_IMAGE} key="og:image" />
+        <meta property="og:image:width" content="1200" key="og:image:width" />
+        <meta property="og:image:height" content="630" key="og:image:height" />
+        <meta name="twitter:image" content={OG_IMAGE} key="twitter:image" />
+        <meta name="apple-itunes-app" content={`app-id=${APP_STORE_ID}`} />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
         />
       </Head>
       <a href="#main-content" className="skip-link">

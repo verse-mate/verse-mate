@@ -1,3 +1,5 @@
+import Seo from "@/components/Seo";
+
 export default function SpiritualSupportTeam() {
   return (
     <div
@@ -13,6 +15,10 @@ export default function SpiritualSupportTeam() {
         margin: "0 auto",
       }}
     >
+      <Seo
+        title="Spiritual Support Team | VerseMate"
+        description="Volunteer on the VerseMate Spiritual Support Team: pray for requests and help the community grow in faith."
+      />
       {/* Header */}
       <div
         style={{

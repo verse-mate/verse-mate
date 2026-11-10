@@ -1,3 +1,5 @@
+import Seo from "@/components/Seo";
+
 export default function TechnicalSupportTeam() {
   return (
     <div
@@ -13,6 +15,10 @@ export default function TechnicalSupportTeam() {
         margin: "0 auto",
       }}
     >
+      <Seo
+        title="Technical Support Team | VerseMate"
+        description="Volunteer on the VerseMate Technical Support Team and help people get the most out of the app."
+      />
       {/* Header */}
       <div
         style={{

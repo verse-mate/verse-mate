@@ -25,31 +25,6 @@ const nextConfig = {
   env: {
     API_URL: process.env.API_URL || "https://api.versemate.org",
   },
-  // Headers for .well-known files (Universal Links & App Links)
-  async headers() {
-    return [
-      {
-        source: "/.well-known/apple-app-site-association",
-        headers: [
-          { key: "Content-Type", value: "application/json" },
-          {
-            key: "Cache-Control",
-            value: "public, max-age=3600, must-revalidate",
-          },
-        ],
-      },
-      {
-        source: "/.well-known/assetlinks.json",
-        headers: [
-          { key: "Content-Type", value: "application/json" },
-          {
-            key: "Cache-Control",
-            value: "public, max-age=3600, must-revalidate",
-          },
-        ],
-      },
-    ];
-  },
   transpilePackages: ["@verse-mate/frontend-base"],
 };
 

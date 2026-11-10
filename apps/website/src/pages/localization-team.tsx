@@ -1,3 +1,5 @@
+import Seo from "@/components/Seo";
+
 export default function LocalizationTeam() {
   return (
     <div
@@ -13,6 +15,10 @@ export default function LocalizationTeam() {
         margin: "0 auto",
       }}
     >
+      <Seo
+        title="Localization Team | VerseMate"
+        description="Volunteer on the VerseMate Localization Team and help open God's Word to people in their own language."
+      />
       {/* Header */}
       <div
         style={{
