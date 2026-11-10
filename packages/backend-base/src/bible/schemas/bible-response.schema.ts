@@ -424,3 +424,62 @@ export const BookIntroductionSchema = t.Object({
   ]),
   hasViewed: t.Optional(t.Boolean()),
 });
+
+const DateTimeOrNull = t.Union([t.String({ format: "date-time" }), t.Null()]);
+
+export const AutoHighlightsSchema = t.Object({
+  success: t.Boolean(),
+  data: t.Array(
+    t.Object({
+      auto_highlight_id: t.Number(),
+      theme_id: t.Number(),
+      book_id: t.Number(),
+      chapter_number: t.Number(),
+      start_verse: t.Number(),
+      end_verse: t.Number(),
+      relevance_score: t.Number(),
+      created_at: DateTimeOrNull,
+      theme_name: t.String(),
+      theme_color: HighlightColorEnum,
+    }),
+  ),
+});
+
+export const HighlightThemesSchema = t.Object({
+  success: t.Boolean(),
+  data: t.Array(
+    t.Object({
+      theme_id: t.Number(),
+      name: t.String(),
+      color: HighlightColorEnum,
+      description: t.Union([t.String(), t.Null()]),
+      is_system: t.Union([t.Boolean(), t.Null()]),
+      priority: t.Union([t.Number(), t.Null()]),
+      is_active: t.Union([t.Boolean(), t.Null()]),
+      created_at: DateTimeOrNull,
+      updated_at: DateTimeOrNull,
+      default_relevance_threshold: t.Number(),
+    }),
+  ),
+});
+
+export const ThemePreferencesSchema = t.Object({
+  success: t.Boolean(),
+  data: t.Array(
+    t.Object({
+      theme_id: t.Number(),
+      theme_name: t.String(),
+      theme_color: HighlightColorEnum,
+      theme_description: t.Union([t.String(), t.Null()]),
+      is_enabled: t.Boolean(),
+      custom_color: t.Union([HighlightColorEnum, t.Null()]),
+      relevance_threshold: t.Number(),
+      admin_override: t.Boolean(),
+      default_relevance_threshold: t.Number(),
+    }),
+  ),
+});
+
+export const ThemePreferenceUpdateSchema = t.Object({
+  success: t.Boolean(),
+});
