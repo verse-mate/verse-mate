@@ -134,6 +134,7 @@ const plugin = new Elysia()
               response: {
                 200: UserIdResponseSchema,
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
               },
             },
           )
@@ -154,6 +155,7 @@ const plugin = new Elysia()
               response: {
                 200: BooleanResponse,
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
               },
             },
           )
@@ -193,6 +195,7 @@ const plugin = new Elysia()
               response: {
                 200: BooleanResponse,
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
               },
             },
           )
@@ -213,7 +216,6 @@ const plugin = new Elysia()
                 ...StandardErrorResponses,
                 ...GuardedUnauthorizedResponse,
                 ...NotFoundResponse,
-                ...ConflictResponse,
               },
             },
           )

@@ -352,6 +352,7 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ classes: t.Array(AdminCoachClassSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
           },
         },
       )
@@ -561,6 +562,9 @@ const plugin = new Elysia()
               expiresInSeconds: t.Number(),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1529,6 +1533,8 @@ const plugin = new Elysia()
           response: {
             200: IdentityAuditSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1555,6 +1561,8 @@ const plugin = new Elysia()
               ),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1578,6 +1586,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ granted: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1601,6 +1612,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ revoked: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1627,6 +1642,9 @@ const plugin = new Elysia()
               failed: t.Array(t.String()),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1746,6 +1764,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ produced: t.Number() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )

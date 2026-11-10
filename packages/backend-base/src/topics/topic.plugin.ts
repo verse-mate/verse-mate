@@ -3,6 +3,7 @@ import { authDerive } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import { isoDateOrNull } from "../common/iso-date";
+import { StandardErrorResponses } from "../common/response-schemas";
 import { resolveLanguage } from "../jesus/utils/language.utils";
 import shared from "../shared/shared.plugin";
 import { parseAndInjectVerses } from "../shared/verse-parser";
@@ -99,7 +100,7 @@ const plugin = new Elysia()
           return { categories };
         },
         {
-          response: CategoryResponseSchema,
+          response: { 200: CategoryResponseSchema, ...StandardErrorResponses },
         },
       )
       .resolve({ as: "scoped" }, authDerive)
@@ -126,7 +127,10 @@ const plugin = new Elysia()
             bible_version: t.Optional(t.String()),
             lang: t.Optional(t.String()),
           }),
-          response: TopicSearchResponseSchema,
+          response: {
+            200: TopicSearchResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -182,6 +186,7 @@ const plugin = new Elysia()
               "Lookup topic using URL-friendly category and slug (for deep linking)",
           },
           response: {
+            ...StandardErrorResponses,
             200: TopicBySlugResponseSchema,
             400: t.Object({ error: t.String() }),
             404: t.Object({ error: t.String() }),
@@ -273,7 +278,10 @@ const plugin = new Elysia()
             bible_version: t.Optional(t.String()),
             lang: t.Optional(t.String()),
           }),
-          response: TopicDetailsResponseSchema,
+          response: {
+            200: TopicDetailsResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -301,7 +309,10 @@ const plugin = new Elysia()
           query: t.Object({
             version: t.Optional(t.String()),
           }),
-          response: TopicReferencesResponseSchema,
+          response: {
+            200: TopicReferencesResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -330,7 +341,10 @@ const plugin = new Elysia()
             ),
             lang: t.Optional(t.String()),
           }),
-          response: TopicExplanationResponseSchema,
+          response: {
+            200: TopicExplanationResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -348,7 +362,10 @@ const plugin = new Elysia()
             content: t.String(),
             bibleVersion: t.String(),
           }),
-          response: ParseReferencesResponseSchema,
+          response: {
+            200: ParseReferencesResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       ),
   );

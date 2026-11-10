@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
+import { StandardErrorResponses } from "../common/response-schemas";
 import { InductiveStudySchema } from "../shared/schemas/inductive-study.schema";
 import shared from "../shared/shared.plugin";
 import { JESUS_CONFIDENCE_LEVELS, JESUS_FACET_MODES } from "./jesus.constants";
@@ -445,7 +446,7 @@ const plugin = new Elysia()
             description:
               "The full navigational skeleton — sections, kinds with counts, life periods, themes and featured studies. Clients render the hub from this payload instead of hardcoding the taxonomy.",
           },
-          response: OverviewResponseSchema,
+          response: { 200: OverviewResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -478,7 +479,7 @@ const plugin = new Elysia()
             description:
               "Paginated entry cards. All filters are AND-ed, so /jesus/entries?kind=question&theme=prayer is 'every question Jesus asked about prayer'.",
           },
-          response: EntryListResponseSchema,
+          response: { 200: EntryListResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -521,6 +522,7 @@ const plugin = new Elysia()
           response: {
             200: EntryDetailResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -545,7 +547,7 @@ const plugin = new Elysia()
             description:
               "The chronological walk through the ministry, grouped by period. Empty periods are included so the timeline reads as a complete arc.",
           },
-          response: LifeResponseSchema,
+          response: { 200: LifeResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -564,7 +566,7 @@ const plugin = new Elysia()
             lang: t.Optional(t.String()),
           }),
           detail: { tags: ["Jesus"], summary: "Explore by topic" },
-          response: ThemesResponseSchema,
+          response: { 200: ThemesResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -585,7 +587,10 @@ const plugin = new Elysia()
             lang: t.Optional(t.String()),
           }),
           detail: { tags: ["Jesus"], summary: "Popular studies" },
-          response: CollectionsResponseSchema,
+          response: {
+            200: CollectionsResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -622,6 +627,7 @@ const plugin = new Elysia()
           response: {
             200: CollectionDetailResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -660,7 +666,10 @@ const plugin = new Elysia()
             description:
               "The bridge from ordinary reading — given a verse, the Gospel event(s) that cover it, with their parallel accounts. Called on the reader's hot path, so it returns compact cards only.",
           },
-          response: ForPassageResponseSchema,
+          response: {
+            200: ForPassageResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -695,7 +704,7 @@ const plugin = new Elysia()
             description:
               "Every category is a view over the graph: ?type=questions is 'every question Jesus asked', ?section=actions is everything He did. Filters are AND-ed.",
           },
-          response: EventListResponseSchema,
+          response: { 200: EventListResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -719,7 +728,10 @@ const plugin = new Elysia()
             description:
               "Sections, facet types with counts, periods, themes and featured studies. Clients render the hub from this rather than hardcoding the taxonomy.",
           },
-          response: EventOverviewResponseSchema,
+          response: {
+            200: EventOverviewResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -761,6 +773,7 @@ const plugin = new Elysia()
           response: {
             200: EventBrowseResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -785,7 +798,7 @@ const plugin = new Elysia()
             description:
               "The chronological walk. Each event carries its own chronology confidence, since a harmonized sequence is a reconstruction rather than something scripture specifies.",
           },
-          response: EventLifeResponseSchema,
+          response: { 200: EventLifeResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -822,6 +835,7 @@ const plugin = new Elysia()
           response: {
             200: EventCollectionResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -865,6 +879,7 @@ const plugin = new Elysia()
           response: {
             200: CompareResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -908,6 +923,7 @@ const plugin = new Elysia()
           response: {
             200: EventDetailResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       ),

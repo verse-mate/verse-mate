@@ -416,6 +416,7 @@ const plugin = new Elysia()
             ...UnauthorizedResponse,
             ...ForbiddenResponse,
             ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -516,6 +517,7 @@ const plugin = new Elysia()
             ...UnauthorizedResponse,
             ...ForbiddenResponse,
             ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -533,6 +535,7 @@ const plugin = new Elysia()
             ...UnauthorizedResponse,
             ...ForbiddenResponse,
             ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -550,6 +553,7 @@ const plugin = new Elysia()
             ...UnauthorizedResponse,
             ...ForbiddenResponse,
             ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -614,7 +618,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: OrderBody,
-          response: { 200: Ok, ...StandardErrorResponses },
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .put(
@@ -774,6 +784,7 @@ const plugin = new Elysia()
             ...UnauthorizedResponse,
             ...ForbiddenResponse,
             ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )

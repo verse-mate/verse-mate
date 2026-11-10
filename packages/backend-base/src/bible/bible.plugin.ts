@@ -1280,7 +1280,7 @@ const plugin = new Elysia()
             theme_relevance: t.Optional(t.String()),
             min_relevance: t.Optional(t.String()),
           }),
-          response: { 200: AutoHighlightsSchema },
+          response: { 200: AutoHighlightsSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -1296,7 +1296,7 @@ const plugin = new Elysia()
             })),
           };
         },
-        { response: { 200: HighlightThemesSchema } },
+        { response: { 200: HighlightThemesSchema, ...StandardErrorResponses } },
       )
       .get(
         "/user/theme-preferences",
@@ -1309,7 +1309,13 @@ const plugin = new Elysia()
             await autoHighlightService.getUserThemePreferences(currentUserId);
           return { success: true, data: preferences };
         },
-        { response: { 200: ThemePreferencesSchema, ...UnauthorizedResponse } },
+        {
+          response: {
+            200: ThemePreferencesSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+          },
+        },
       )
       .patch(
         "/user/theme-preferences/:theme_id",
@@ -1344,6 +1350,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: ThemePreferenceUpdateSchema,
+            ...StandardErrorResponses,
             ...UnauthorizedResponse,
           },
         },

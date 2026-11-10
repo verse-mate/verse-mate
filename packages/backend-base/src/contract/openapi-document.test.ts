@@ -104,7 +104,7 @@ describe("the published document", () => {
   });
 
   it("gives every operation the web client calls a typed success response", () => {
-    const untyped = webClientOperations.filter((operation) => {
+    const untyped = Object.keys(webClientOperations).filter((operation) => {
       const [method, path] = operation.split(" ");
       const responses: Json =
         document.paths[path]?.[method.toLowerCase()]?.responses ?? {};
@@ -126,5 +126,28 @@ describe("the published document", () => {
       });
     });
     expect(untyped).toEqual([]);
+  });
+
+  it("declares, on every operation the web client calls, the errors it answers", () => {
+    const absent = Object.entries(webClientOperations).flatMap(
+      ([operation, statuses]) => {
+        const [method, path] = operation.split(" ");
+        const responses: Json =
+          document.paths[path]?.[method.toLowerCase()]?.responses ?? {};
+        return [...statuses, 400, 422, 429, 500]
+          .filter((status) => !(String(status) in responses))
+          .map((status) => `${operation} ${status}`);
+      },
+    );
+    expect(absent).toEqual([]);
+    const refusal =
+      document.paths["/coach/me"].get.responses["403"].content[
+        "application/json"
+      ].schema;
+    expect(refusal.required).toEqual(["error", "message"]);
+    expect(refusal.properties.details).toMatchObject({
+      type: "object",
+      additionalProperties: true,
+    });
   });
 });
