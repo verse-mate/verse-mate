@@ -15,7 +15,8 @@
     "coach:calibrate": "bun ./src/coach/coach-calibration.runner.ts",
     "coach:calibrate:claude": "bun ./src/coach/coach-calibration.claude-cli.ts",
     "coach:contract": "bun ./src/coach/coach-contract.ts",
-    "coach:end-parallel-run": "bun ./src/coach/coach-end-parallel-run.ts"
+    "coach:end-parallel-run": "bun ./src/coach/coach-end-parallel-run.ts",
+    "openapi:export": "bun ./src/contract/export-openapi.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "1.4.0",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@elysiajs/eden": "1.4.1",
     "@faker-js/faker": "^8.4.1",
+    "@seriousme/openapi-schema-validator": "2.11.0",
     "@types/bun": "^1.1.11",
     "@types/ms": "^0.7.34",
     "@types/semver": "^7.7.1"

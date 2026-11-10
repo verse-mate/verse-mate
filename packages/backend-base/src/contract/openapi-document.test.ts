@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import { Validator } from "@seriousme/openapi-schema-validator";
 import { OptionalKind, type TSchema } from "@sinclair/typebox";
 
 import { contractApp } from "./contract-app";
 import { OPENAPI_SPEC_PATH, openapiDocs } from "./openapi-document";
+import webClientOperations from "./web-client-operations.json";
 
 type Json = Record<string, any>;
 
@@ -91,5 +93,38 @@ describe("the published document", () => {
       )
       .map(([path]) => path);
     expect(offending).toEqual([]);
+  });
+
+  it("validates as OpenAPI 3.1", async () => {
+    const validator = new Validator();
+    const result = await validator.validate(document);
+    expect(result.errors ?? []).toEqual([]);
+    expect(result.valid).toBe(true);
+    expect(validator.version).toBe("3.1");
+  });
+
+  it("gives every operation the web client calls a typed success response", () => {
+    const untyped = webClientOperations.filter((operation) => {
+      const [method, path] = operation.split(" ");
+      const responses: Json =
+        document.paths[path]?.[method.toLowerCase()]?.responses ?? {};
+      const successes = Object.entries(responses).filter(([status]) =>
+        status.startsWith("2"),
+      );
+      if (successes.length === 0) return true;
+      return successes.some(([, response]) => {
+        const content = (response as Json).content as Json | undefined;
+        if (content === undefined) return false;
+        const schema = (content["application/json"] ?? content["text/plain"])
+          ?.schema as Json | undefined;
+        if (!schema || Object.keys(schema).length === 0) return true;
+        return [...walk(schema)].some(
+          ([path, node]) =>
+            !path.endsWith("/additionalProperties") &&
+            Object.keys(node).length === 0,
+        );
+      });
+    });
+    expect(untyped).toEqual([]);
   });
 });
