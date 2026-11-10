@@ -1397,7 +1397,6 @@ export const LikelyDuplicateSchema = t.Object({
 });
 
 const monthlyReportRow = {
-  id: t.Number(),
   month: t.String(),
   state: t.Union([
     t.Literal("held"),
@@ -1412,15 +1411,17 @@ const monthlyReportRow = {
 
 export const MonthlyReportRowSchema = t.Union([
   t.Object({
-    ...monthlyReportRow,
+    id: t.Number(),
     kind: t.Literal("leader"),
     coachId: t.String(),
+    ...monthlyReportRow,
     summary: LeaderMonthlySummarySchema,
   }),
   t.Object({
-    ...monthlyReportRow,
+    id: t.Number(),
     kind: t.Literal("program"),
     coachId: t.Null(),
+    ...monthlyReportRow,
     summary: ProgramReportSchema,
   }),
 ]);

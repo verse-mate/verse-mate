@@ -6726,6 +6726,13 @@
                       "id": {
                         "type": "number"
                       },
+                      "kind": {
+                        "const": "leader",
+                        "type": "string"
+                      },
+                      "coachId": {
+                        "type": "string"
+                      },
                       "month": {
                         "type": "string"
                       },
@@ -6768,13 +6775,6 @@
                         "items": {
                           "type": "string"
                         }
-                      },
-                      "kind": {
-                        "const": "leader",
-                        "type": "string"
-                      },
-                      "coachId": {
-                        "type": "string"
                       },
                       "summary": {
                         "type": "object",
@@ -7323,12 +7323,12 @@
                     },
                     "required": [
                       "id",
+                      "kind",
+                      "coachId",
                       "month",
                       "state",
                       "holdReason",
                       "skipped",
-                      "kind",
-                      "coachId",
                       "summary"
                     ]
                   },
@@ -7337,6 +7337,13 @@
                     "properties": {
                       "id": {
                         "type": "number"
+                      },
+                      "kind": {
+                        "const": "program",
+                        "type": "string"
+                      },
+                      "coachId": {
+                        "type": "null"
                       },
                       "month": {
                         "type": "string"
@@ -7380,13 +7387,6 @@
                         "items": {
                           "type": "string"
                         }
-                      },
-                      "kind": {
-                        "const": "program",
-                        "type": "string"
-                      },
-                      "coachId": {
-                        "type": "null"
                       },
                       "summary": {
                         "type": "object",
@@ -7699,12 +7699,12 @@
                     },
                     "required": [
                       "id",
+                      "kind",
+                      "coachId",
                       "month",
                       "state",
                       "holdReason",
                       "skipped",
-                      "kind",
-                      "coachId",
                       "summary"
                     ]
                   }
