@@ -1,9 +1,15 @@
 import type { AppProps } from "next/app";
 import Head from "next/head";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 import { Inter, Merriweather } from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/coach.css";
-import { APP_STORE_ID, STRUCTURED_DATA } from "@/lib/structured-data";
+import { capturePageview, startAnalytics } from "@/lib/analytics/posthog";
+import { smartBannerContent } from "@/lib/store-links";
+import { STRUCTURED_DATA } from "@/lib/structured-data";
+
+startAnalytics();
 
 // Self-hosted via next/font — no render-blocking Google Fonts request, no
 // FOUT/layout shift. These set the same CSS vars the whole site already reads
@@ -26,6 +32,11 @@ const merriweather = Merriweather({
 const OG_IMAGE = "https://versemate.org/og-card.png";
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  useEffect(() => {
+    router.events.on("routeChangeComplete", capturePageview);
+    return () => router.events.off("routeChangeComplete", capturePageview);
+  }, [router.events]);
   return (
     <div className={`${inter.variable} ${merriweather.variable}`}>
       <Head>
@@ -34,7 +45,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:image:width" content="1200" key="og:image:width" />
         <meta property="og:image:height" content="630" key="og:image:height" />
         <meta name="twitter:image" content={OG_IMAGE} key="twitter:image" />
-        <meta name="apple-itunes-app" content={`app-id=${APP_STORE_ID}`} />
+        <meta name="apple-itunes-app" content={smartBannerContent()} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}

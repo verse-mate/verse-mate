@@ -1,8 +1,14 @@
 import Image from "next/image";
+import { useRouter } from "next/router";
 import Section from "@/components/ui/Section";
 import Reveal from "@/components/ui/Reveal";
+import { useFirstTouchChannel } from "@/hooks/useFirstTouchChannel";
+import { trackStoreLink } from "@/lib/analytics/posthog";
+import { appStoreLink, pageSlug, playStoreLink } from "@/lib/store-links";
 
 export default function DownloadApp() {
+  const page = pageSlug(useRouter().pathname);
+  const channel = useFirstTouchChannel();
   return (
     <Section
       className="bg-brand-light-cream"
@@ -42,7 +48,8 @@ export default function DownloadApp() {
 
             <div className="mt-2 flex flex-row items-center gap-4">
               <a
-                href="https://apps.apple.com/us/app/verse-mate/id6756897180"
+                href={appStoreLink({ page, channel })}
+                onClick={() => trackStoreLink("app_store", page)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-lg bg-black no-underline transition-transform duration-200 hover:-translate-y-0.5"
@@ -56,7 +63,8 @@ export default function DownloadApp() {
                 />
               </a>
               <a
-                href="https://play.google.com/store/apps/details?id=org.versemate.app"
+                href={playStoreLink({ page, channel })}
+                onClick={() => trackStoreLink("play_store", page)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-lg bg-black no-underline transition-transform duration-200 hover:-translate-y-0.5"
