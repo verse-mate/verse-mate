@@ -36,7 +36,7 @@ function fakePosthog() {
 }
 
 describe("classifyFirstTouch", () => {
-  for (const c of cases as Case[]) {
+  for (const c of cases as unknown as Case[]) {
     it(c.name, () => {
       const touch = classifyFirstTouch({ url: c.url, referrer: c.referrer });
       for (const [key, value] of Object.entries(c.expect)) {
