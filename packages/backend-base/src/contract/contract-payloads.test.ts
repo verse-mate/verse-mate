@@ -231,6 +231,7 @@ const EMAILS = {
   learner: "contract-learner@example.test",
   locked: "contract-locked@example.test",
   leader: FIXTURE_LEADERS[0].email,
+  keeper: "contract-keeper@example.test",
   admin: FIXTURE_ADMIN,
 };
 
@@ -270,6 +271,8 @@ const AMENDED = FIXTURE_REPORTS[2].report.id;
 const EDITED = FIXTURE_REPORTS[1].report.id;
 const LEADER = FIXTURE_LEADERS[0].slug;
 const NA_LEADER = "contract-na-leader";
+const KEEPER = "contract-keeper";
+const EXTRA_KEY_EVENT = "event-baptism";
 const IRREGULAR_CHAPTER = 2;
 
 const IRREGULAR_STUDY = {
@@ -462,6 +465,29 @@ async function seedJesus() {
     "jesus_event_explanations",
   ])
     await setAside(table, { event_id: jesusEventId });
+  const extra = await db()
+    .selectFrom("jesus_events")
+    .select("event_id")
+    .where("slug", "=", EXTRA_KEY_EVENT)
+    .executeTakeFirstOrThrow();
+  await setAside("jesus_event_explanations", { event_id: extra.event_id });
+  await db()
+    .insertInto("jesus_event_explanations")
+    .values({
+      event_id: extra.event_id as never,
+      type: "study",
+      content: JSON.stringify({
+        ...STUDY,
+        reviewedBy: "a second reader",
+        steps: STUDY.steps.map((step: Record<string, unknown>, i: number) =>
+          i === 0 ? { ...step, source: "Mark 1:9-11" } : step,
+        ),
+        interpretation: { ...STUDY.interpretation, emphasis: "the voice" },
+      }),
+      language_code: "en-US",
+      provenance: 3,
+    })
+    .execute();
   await db()
     .insertInto("jesus_event_reveals")
     .values([
@@ -622,6 +648,21 @@ async function seedCoach() {
       .values(reportToRow(NA_LEADER, report as never) as never)
       .execute();
   }
+  await db()
+    .insertInto("coach_leaders")
+    .values({ slug: KEEPER, email: EMAILS.keeper, name: "Kit Keeper" })
+    .execute();
+  const kept = reportToRow(
+    KEEPER,
+    fixtureReport(`${KEEPER}-2032-10-05`, "2032-10-05", 77.2) as never,
+  );
+  await db()
+    .insertInto("coach_reports")
+    .values({
+      ...kept,
+      summary: JSON.stringify({ ...kept.summary, venue: "Fellowship hall" }),
+    } as never)
+    .execute();
   const existing = await db()
     .selectFrom("coach_classes")
     .select("id")
@@ -656,11 +697,11 @@ async function clearCoach() {
     .execute();
   await db()
     .deleteFrom("coach_reports")
-    .where("coach_id", "=", NA_LEADER)
+    .where("coach_id", "in", [NA_LEADER, KEEPER])
     .execute();
   await db()
     .deleteFrom("coach_leaders")
-    .where("slug", "=", NA_LEADER)
+    .where("slug", "in", [NA_LEADER, KEEPER])
     .execute();
   await clearCoachFixture(Database);
 }
@@ -683,6 +724,7 @@ beforeAll(async () => {
   await seedCoach();
   await login("leader", { firstName: "Avery", lastName: "Lane" });
   await login("admin", { firstName: "Ada", lastName: "Admin" });
+  await login("keeper", { firstName: "Kit", lastName: "Keeper" });
   for (const table of LEARNING_TABLES) await setAside(table);
   const topic = await db()
     .selectFrom("topics")
@@ -789,6 +831,13 @@ describe("bible routes keep their payloads", () => {
 });
 
 describe("jesus routes keep their payloads", () => {
+  it("an event study with keys the schema does not name", async () => {
+    matchesFixture(
+      "jesus-event-study-extra-keys",
+      await call(null, "GET", `/jesus/events/${EXTRA_KEY_EVENT}`),
+    );
+  });
+
   const version = "bible_version=NASB1995";
   const cases: Array<[string, string]> = [
     ["jesus-events-overview", "/jesus/events/overview"],
@@ -846,6 +895,21 @@ describe("coach routes keep their payloads", () => {
       "coach-classes",
       await call(token("leader"), "GET", "/coach/classes"),
       ["body.classes.*.id"],
+    );
+  });
+
+  it("a stored summary key the schema does not name", async () => {
+    matchesFixture(
+      "coach-reports-summary-extra-key",
+      await call(token("keeper"), "GET", "/coach/reports/summary"),
+    );
+    matchesFixture(
+      "coach-admin-reports-summary-extra-key",
+      await call(
+        token("admin"),
+        "GET",
+        `/coach/admin/coaches/${KEEPER}/reports/summary`,
+      ),
     );
   });
 

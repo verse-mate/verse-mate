@@ -1,0 +1,29 @@
+{
+  "status": 200,
+  "body": {
+    "items": [
+      {
+        "id": "contract-keeper-2032-10-05",
+        "date": "2032-10-05",
+        "score": 77.2,
+        "topic": "Philippians 2",
+        "venue": "Fellowship hall",
+        "docUrl": "",
+        "pdfUrl": "https://example.org/reports/fixture.pdf",
+        "status": "Strong",
+        "session": "Philippians, Lesson 05",
+        "duration": "1h 05m",
+        "attendees": 12,
+        "dateLabel": "October 5, 2032",
+        "newcomers": 1,
+        "statusEmoji": "🟢",
+        "held": false,
+        "hasRetainedRecording": false,
+        "attachedRecordingUrl": null
+      }
+    ],
+    "total": 1,
+    "streakWeeks": 1,
+    "quarterSessions": 1
+  }
+}

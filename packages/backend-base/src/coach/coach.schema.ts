@@ -184,24 +184,29 @@ export const ReportSchema = t.Object({
   notes: t.Optional(t.Array(NoteSchema)),
 });
 
-export const ReportSummaryItemSchema = t.Object({
-  id: t.String(),
-  date: t.String(),
-  dateLabel: t.Optional(t.String()),
-  session: t.Optional(t.String()),
-  topic: t.Optional(t.String()),
-  duration: t.Optional(t.String()),
-  attendees: t.Optional(t.Union([t.Number(), t.Null()])),
-  newcomers: t.Optional(t.Number()),
-  score: t.Optional(t.Number()),
-  status: t.Optional(t.String()),
-  statusEmoji: t.Optional(t.String()),
-  pdfUrl: t.Optional(t.String()),
-  docUrl: t.Optional(t.String()),
-  held: t.Optional(t.Boolean()),
-  hasRetainedRecording: t.Optional(t.Boolean()),
-  attachedRecordingUrl: t.Optional(t.Union([t.String(), t.Null()])),
-});
+const keeps = { additionalProperties: true } as const;
+
+export const ReportSummaryItemSchema = t.Object(
+  {
+    id: t.String(),
+    date: t.String(),
+    dateLabel: t.Optional(t.String()),
+    session: t.Optional(t.String()),
+    topic: t.Optional(t.String()),
+    duration: t.Optional(t.String()),
+    attendees: t.Optional(t.Union([t.Number(), t.Null()])),
+    newcomers: t.Optional(t.Number()),
+    score: t.Optional(t.Number()),
+    status: t.Optional(t.String()),
+    statusEmoji: t.Optional(t.String()),
+    pdfUrl: t.Optional(t.String()),
+    docUrl: t.Optional(t.String()),
+    held: t.Optional(t.Boolean()),
+    hasRetainedRecording: t.Optional(t.Boolean()),
+    attachedRecordingUrl: t.Optional(t.Union([t.String(), t.Null()])),
+  },
+  keeps,
+);
 
 export type ReportSummaryItem = Static<typeof ReportSummaryItemSchema>;
 
@@ -589,8 +594,6 @@ export const RevisionSendSchema = t.Object({
   skipped: t.Optional(t.Array(t.String())),
 });
 
-const keeps = { additionalProperties: true } as const;
-
 const StoredProseSchema = t.Array(
   t.Object(
     {
@@ -622,102 +625,111 @@ const ScoreAndRationaleSchema = t.Object({
 });
 
 const RevisionPreviousSchema = t.Partial(
-  t.Object({
-    summary: t.Object(
-      {
-        dateLabel: t.Optional(t.String()),
-        session: t.Optional(t.String()),
-        topic: t.Optional(t.String()),
-        duration: t.Optional(t.String()),
-        attendees: t.Optional(t.Union([t.Number(), t.Null()])),
-        newcomers: t.Optional(t.Number()),
-        score: t.Optional(t.Number()),
-        status: t.Optional(t.String()),
-        statusEmoji: t.Optional(t.String()),
-        pdfUrl: t.Optional(t.String()),
-        docUrl: t.Optional(t.String()),
-      },
-      keeps,
-    ),
-    metrics: t.Object(
-      {
-        base: t.Optional(t.Number()),
-        newcomerBonus: t.Optional(t.Number()),
-        sizeBonus: t.Optional(t.Number()),
-        clusters: t.Optional(
-          t.Array(t.Object(ClusterSchema.properties, keeps)),
-        ),
-        dimensions: t.Optional(
-          t.Array(t.Object(DimensionSchema.properties, keeps)),
-        ),
-      },
-      keeps,
-    ),
-    body: t.Object(
-      {
-        bigIdeas: t.Optional(t.Array(t.String())),
-        feedback: t.Optional(
-          t.Object(
-            {
-              headline: t.Optional(t.String()),
-              overview: t.Optional(t.Array(t.String())),
-              strengths: t.Optional(t.Array(t.String())),
-              improvements: t.Optional(t.Array(t.String())),
-              recommendations: t.Optional(t.Array(t.String())),
-              strengthsProse: t.Optional(StoredProseSchema),
-              improvementsProse: t.Optional(StoredProseSchema),
-              recommendationsProse: t.Optional(StoredProseSchema),
-            },
-            keeps,
+  t.Object(
+    {
+      summary: t.Object(
+        {
+          dateLabel: t.Optional(t.String()),
+          session: t.Optional(t.String()),
+          topic: t.Optional(t.String()),
+          duration: t.Optional(t.String()),
+          attendees: t.Optional(t.Union([t.Number(), t.Null()])),
+          newcomers: t.Optional(t.Number()),
+          score: t.Optional(t.Number()),
+          status: t.Optional(t.String()),
+          statusEmoji: t.Optional(t.String()),
+          pdfUrl: t.Optional(t.String()),
+          docUrl: t.Optional(t.String()),
+        },
+        keeps,
+      ),
+      metrics: t.Object(
+        {
+          base: t.Optional(t.Number()),
+          newcomerBonus: t.Optional(t.Number()),
+          sizeBonus: t.Optional(t.Number()),
+          clusters: t.Optional(
+            t.Array(t.Object(ClusterSchema.properties, keeps)),
           ),
-        ),
-        sections: t.Optional(
-          t.Array(t.Object(SectionSchema.properties, keeps)),
-        ),
-      },
-      keeps,
-    ),
-    firstLesson: t.Boolean(),
-    dimensions: t.Array(
-      t.Object({
-        n: t.Number(),
-        score: t.Union([t.Number(), t.Null()]),
-        rationale: t.String(),
-        provenance: t.String(),
-      }),
-    ),
-  }),
+          dimensions: t.Optional(
+            t.Array(t.Object(DimensionSchema.properties, keeps)),
+          ),
+        },
+        keeps,
+      ),
+      body: t.Object(
+        {
+          bigIdeas: t.Optional(t.Array(t.String())),
+          feedback: t.Optional(
+            t.Object(
+              {
+                headline: t.Optional(t.String()),
+                overview: t.Optional(t.Array(t.String())),
+                strengths: t.Optional(t.Array(t.String())),
+                improvements: t.Optional(t.Array(t.String())),
+                recommendations: t.Optional(t.Array(t.String())),
+                strengthsProse: t.Optional(StoredProseSchema),
+                improvementsProse: t.Optional(StoredProseSchema),
+                recommendationsProse: t.Optional(StoredProseSchema),
+              },
+              keeps,
+            ),
+          ),
+          sections: t.Optional(
+            t.Array(t.Object(SectionSchema.properties, keeps)),
+          ),
+        },
+        keeps,
+      ),
+      firstLesson: t.Boolean(),
+      dimensions: t.Array(
+        t.Object({
+          n: t.Number(),
+          score: t.Union([t.Number(), t.Null()]),
+          rationale: t.String(),
+          provenance: t.String(),
+        }),
+      ),
+    },
+    keeps,
+  ),
 );
 
-const RevisionChangesSchema = t.Object({
-  dimensions: t.Optional(
-    t.Array(
+const RevisionChangesSchema = t.Object(
+  {
+    dimensions: t.Optional(
+      t.Array(
+        t.Object({
+          n: t.Number(),
+          from: ScoreAndRationaleSchema,
+          to: ScoreAndRationaleSchema,
+        }),
+      ),
+    ),
+    firstLesson: t.Optional(t.Object({ from: t.Boolean(), to: t.Boolean() })),
+    body: t.Optional(
       t.Object({
-        n: t.Number(),
-        from: ScoreAndRationaleSchema,
-        to: ScoreAndRationaleSchema,
+        headline: t.Optional(FieldChangeSchema),
+        overview: t.Optional(FieldChangeSchema),
+        strengths: t.Optional(FieldChangeSchema),
+        improvements: t.Optional(FieldChangeSchema),
+        recommendations: t.Optional(FieldChangeSchema),
+        strengthsProse: t.Optional(FieldChangeSchema),
+        improvementsProse: t.Optional(FieldChangeSchema),
+        recommendationsProse: t.Optional(FieldChangeSchema),
       }),
     ),
-  ),
-  firstLesson: t.Optional(t.Object({ from: t.Boolean(), to: t.Boolean() })),
-  body: t.Optional(
-    t.Object({
-      headline: t.Optional(FieldChangeSchema),
-      overview: t.Optional(FieldChangeSchema),
-      strengths: t.Optional(FieldChangeSchema),
-      improvements: t.Optional(FieldChangeSchema),
-      recommendations: t.Optional(FieldChangeSchema),
-      strengthsProse: t.Optional(FieldChangeSchema),
-      improvementsProse: t.Optional(FieldChangeSchema),
-      recommendationsProse: t.Optional(FieldChangeSchema),
-    }),
-  ),
-});
+  },
+  keeps,
+);
 
-const EditChangesSchema = t.Object({
-  improvements: t.Optional(FieldChangeSchema),
-  improvementsProse: t.Optional(FieldChangeSchema),
-});
+const EditChangesSchema = t.Object(
+  {
+    improvements: t.Optional(FieldChangeSchema),
+    improvementsProse: t.Optional(FieldChangeSchema),
+  },
+  keeps,
+);
 
 export type RevisionPrevious = Static<typeof RevisionPreviousSchema>;
 export type RevisionChanges = Static<typeof RevisionChangesSchema>;

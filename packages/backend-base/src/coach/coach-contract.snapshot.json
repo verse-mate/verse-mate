@@ -771,6 +771,86 @@
           },
           "required": ["error", "message"]
         },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "404": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "409": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -1561,6 +1641,26 @@
           },
           "required": ["error", "message"]
         },
+        "409": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -1979,6 +2079,46 @@
           "required": ["admins"]
         },
         "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
           "type": "object",
           "properties": {
             "error": {
@@ -4743,6 +4883,46 @@
           "required": ["entries", "atRisk"]
         },
         "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
           "type": "object",
           "properties": {
             "error": {
@@ -13479,6 +13659,26 @@
           },
           "required": ["error", "message"]
         },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -14860,6 +15060,66 @@
           },
           "required": ["error", "message"]
         },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "404": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -15968,6 +16228,66 @@
           },
           "required": ["error", "message"]
         },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "409": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -16811,6 +17131,66 @@
           "required": ["sent", "skipped", "failed"]
         },
         "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "409": {
           "type": "object",
           "properties": {
             "error": {
@@ -17753,6 +18133,26 @@
           },
           "required": ["error", "message"]
         },
+        "409": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -18349,6 +18749,26 @@
           },
           "required": ["error", "message"]
         },
+        "409": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -18638,6 +19058,26 @@
           "required": ["error", "message"]
         },
         "404": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "409": {
           "type": "object",
           "properties": {
             "error": {
@@ -19277,6 +19717,46 @@
           "required": ["produced"]
         },
         "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
           "type": "object",
           "properties": {
             "error": {
@@ -23370,6 +23850,26 @@
           },
           "required": ["error", "message"]
         },
+        "409": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
         "422": {
           "type": "object",
           "properties": {
@@ -25386,6 +25886,66 @@
           "required": ["ok"]
         },
         "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "404": {
           "type": "object",
           "properties": {
             "error": {

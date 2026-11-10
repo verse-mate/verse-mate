@@ -16,123 +16,153 @@ const stepBase = {
   summary: t.String(),
 };
 
-const StepProse = t.Object({
-  ...stepBase,
-  kind: t.Literal("prose"),
-  body: t.String(),
-});
+const StepProse = t.Object(
+  {
+    ...stepBase,
+    kind: t.Literal("prose"),
+    body: t.String(),
+  },
+  open,
+);
 
-const StepQA = t.Object({
-  ...stepBase,
-  kind: t.Literal("qa"),
-  items: t.Array(
-    t.Object(
-      { tag: t.Optional(t.String()), q: t.String(), a: t.String() },
-      open,
+const StepQA = t.Object(
+  {
+    ...stepBase,
+    kind: t.Literal("qa"),
+    items: t.Array(
+      t.Object(
+        { tag: t.Optional(t.String()), q: t.String(), a: t.String() },
+        open,
+      ),
     ),
-  ),
-});
+  },
+  open,
+);
 
-const StepKeywords = t.Object({
-  ...stepBase,
-  kind: t.Literal("keywords"),
-  inventory: t.Array(
-    t.Object(
-      {
-        word: t.String(),
-        greek: t.Optional(t.String()),
-        count: t.Number(),
-        verses: t.String(),
-        definition: t.Optional(t.String()),
-      },
-      open,
-    ),
-  ),
-});
-
-const StepLists = t.Object({
-  ...stepBase,
-  kind: t.Literal("lists"),
-  lists: t.Array(
-    t.Object(
-      {
-        title: t.String(),
-        columns: t.Array(t.String()),
-        rows: t.Array(t.Object({ ref: t.String(), truth: t.String() }, open)),
-      },
-      open,
-    ),
-  ),
-});
-
-const StepContrasts = t.Object({
-  ...stepBase,
-  kind: t.Literal("contrasts"),
-  items: t.Array(
-    t.Object(
-      { verses: t.String(), type: t.String(), pairing: t.String() },
-      open,
-    ),
-  ),
-});
-
-const StepBullets = t.Object({
-  ...stepBase,
-  kind: t.Literal("bullets"),
-  intro: t.Optional(t.String()),
-  items: t.Array(
-    t.Object({ tag: t.Optional(t.String()), text: t.String() }, open),
-  ),
-  note: t.Optional(t.String()),
-});
-
-const StepSegments = t.Object({
-  ...stepBase,
-  kind: t.Literal("segments"),
-  themeHeadline: t.String(),
-  segments: t.Array(t.Object({ title: t.String(), body: t.String() }, open)),
-});
-
-export const InductiveStudySchema = t.Object({
-  bookId: t.Number(),
-  bookName: t.String(),
-  chapter: t.Number(),
-  title: t.String(),
-  subtitle: t.String(),
-  themeOneLine: t.String(),
-  steps: t.Array(
-    t.Union([
-      StepProse,
-      StepQA,
-      StepKeywords,
-      StepLists,
-      StepContrasts,
-      StepBullets,
-      StepSegments,
-    ]),
-  ),
-  interpretation: t.Object({
-    intro: t.Optional(t.String()),
-    movements: t.Array(
+const StepKeywords = t.Object(
+  {
+    ...stepBase,
+    kind: t.Literal("keywords"),
+    inventory: t.Array(
       t.Object(
         {
-          number: t.Number(),
-          title: t.String(),
-          range: t.String(),
-          excerpt: t.Optional(t.String()),
-          body: t.String(),
+          word: t.String(),
+          greek: t.Optional(t.String()),
+          count: t.Number(),
+          verses: t.String(),
+          definition: t.Optional(t.String()),
         },
         open,
       ),
     ),
-  }),
-  application: t.Object({
-    intro: t.Optional(t.String()),
-    questions: t.Array(
-      t.Object({ range: t.String(), question: t.String() }, open),
+  },
+  open,
+);
+
+const StepLists = t.Object(
+  {
+    ...stepBase,
+    kind: t.Literal("lists"),
+    lists: t.Array(
+      t.Object(
+        {
+          title: t.String(),
+          columns: t.Array(t.String()),
+          rows: t.Array(t.Object({ ref: t.String(), truth: t.String() }, open)),
+        },
+        open,
+      ),
     ),
-  }),
-});
+  },
+  open,
+);
+
+const StepContrasts = t.Object(
+  {
+    ...stepBase,
+    kind: t.Literal("contrasts"),
+    items: t.Array(
+      t.Object(
+        { verses: t.String(), type: t.String(), pairing: t.String() },
+        open,
+      ),
+    ),
+  },
+  open,
+);
+
+const StepBullets = t.Object(
+  {
+    ...stepBase,
+    kind: t.Literal("bullets"),
+    intro: t.Optional(t.String()),
+    items: t.Array(
+      t.Object({ tag: t.Optional(t.String()), text: t.String() }, open),
+    ),
+    note: t.Optional(t.String()),
+  },
+  open,
+);
+
+const StepSegments = t.Object(
+  {
+    ...stepBase,
+    kind: t.Literal("segments"),
+    themeHeadline: t.String(),
+    segments: t.Array(t.Object({ title: t.String(), body: t.String() }, open)),
+  },
+  open,
+);
+
+export const InductiveStudySchema = t.Object(
+  {
+    bookId: t.Number(),
+    bookName: t.String(),
+    chapter: t.Number(),
+    title: t.String(),
+    subtitle: t.String(),
+    themeOneLine: t.String(),
+    steps: t.Array(
+      t.Union([
+        StepProse,
+        StepQA,
+        StepKeywords,
+        StepLists,
+        StepContrasts,
+        StepBullets,
+        StepSegments,
+      ]),
+    ),
+    interpretation: t.Object(
+      {
+        intro: t.Optional(t.String()),
+        movements: t.Array(
+          t.Object(
+            {
+              number: t.Number(),
+              title: t.String(),
+              range: t.String(),
+              excerpt: t.Optional(t.String()),
+              body: t.String(),
+            },
+            open,
+          ),
+        ),
+      },
+      open,
+    ),
+    application: t.Object(
+      {
+        intro: t.Optional(t.String()),
+        questions: t.Array(
+          t.Object({ range: t.String(), question: t.String() }, open),
+        ),
+      },
+      open,
+    ),
+  },
+  open,
+);
 
 export type InductiveStudy = Static<typeof InductiveStudySchema>;
 
