@@ -1,3 +1,4 @@
+import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type { db } from "../../shared/shared.plugin";
 
 export interface AutoHighlight {
@@ -9,28 +10,28 @@ export interface AutoHighlight {
   end_verse: number;
   relevance_score: number;
   created_at: Date | null;
-  theme_name?: string;
-  theme_color?: string;
+  theme_name: string;
+  theme_color: HighlightColorEnum;
 }
 
 export interface HighlightTheme {
   theme_id: number;
   name: string;
-  color: string;
+  color: HighlightColorEnum;
   description: string | null;
-  is_system: boolean;
-  priority: number;
-  is_active: boolean;
+  is_system: boolean | null;
+  priority: number | null;
+  is_active: boolean | null;
   default_relevance_threshold: number;
-  created_at: Date;
-  updated_at: Date;
+  created_at: Date | null;
+  updated_at: Date | null;
 }
 
 export interface UserThemePreference {
   user_id: string;
   theme_id: number;
   is_enabled: boolean;
-  custom_color: string | null;
+  custom_color: HighlightColorEnum | null;
   relevance_threshold: number;
   admin_override: boolean;
   updated_at: Date;

@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "body": {
+    "highlight": {
+      "highlight_id": "<number>",
+      "user_id": "<uuid>",
+      "chapter_id": 1,
+      "book_id": 1,
+      "chapter_number": 1,
+      "start_verse": 1,
+      "end_verse": 2,
+      "color": "yellow",
+      "start_char": null,
+      "end_char": null,
+      "selected_text": null,
+      "created_at": "<date-time>",
+      "updated_at": "<date-time>"
+    },
+    "success": true
+  }
+}

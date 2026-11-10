@@ -1,7 +1,10 @@
 import { Elysia, t } from "elysia";
 import { createErrorHandler } from "../common/error-handler";
 import { NotFoundError } from "../common/errors";
-import { StandardErrorResponses } from "../common/response-schemas";
+import {
+  NotFoundResponse,
+  StandardErrorResponses,
+} from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { LemmaService } from "./services/lemma.service";
 
@@ -97,8 +100,8 @@ const plugin = new Elysia()
         }),
         response: {
           200: LemmaCardSchema,
-          404: StandardErrorResponses[400],
           ...StandardErrorResponses,
+          ...NotFoundResponse,
         },
         detail: {
           tags: ["Lemma"],

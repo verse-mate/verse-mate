@@ -1,0 +1,22 @@
+{
+  "status": 200,
+  "body": {
+    "classes": [
+      {
+        "id": "<string>",
+        "name": "Tuesday Dawn",
+        "classDate": "2033-04-05",
+        "recurrence": "weekly",
+        "zoomLink": "https://zoom.example.test/j/123",
+        "startTime": "06:30",
+        "timeZone": "America/Chicago",
+        "notetaker": true,
+        "leader": {
+          "id": "fixture-avery-lane",
+          "name": "Avery Lane",
+          "email": "avery.lane@example.org"
+        }
+      }
+    ]
+  }
+}

@@ -10,6 +10,8 @@ import {
 } from "../common/errors";
 import {
   BooleanResponse,
+  GuardedUnauthorizedResponse,
+  NotFoundResponse,
   StandardErrorResponses,
 } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
@@ -67,6 +69,8 @@ const plugin = new Elysia()
             response: {
               200: UserSchema,
               ...StandardErrorResponses,
+              ...GuardedUnauthorizedResponse,
+              ...NotFoundResponse,
             },
           },
         )
@@ -218,6 +222,7 @@ const plugin = new Elysia()
             response: {
               200: RecentlyViewedBooksSchema,
               ...StandardErrorResponses,
+              ...GuardedUnauthorizedResponse,
             },
           },
         );

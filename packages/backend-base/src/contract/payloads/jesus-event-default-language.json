@@ -1,0 +1,877 @@
+{
+  "status": 200,
+  "body": {
+    "event": {
+      "slug": "event-bartimaeus",
+      "title": "Blind Bartimaeus",
+      "summary": "Shouted down by the crowd, he shouts louder. Jesus stops the procession and asks what he wants.",
+      "period_slug": "journey-to-jerusalem",
+      "period_name": "The Road to Jerusalem",
+      "sequence": 35,
+      "chronology_confidence": "probable",
+      "parallel_confidence": "probable",
+      "gospels": ["Matthew", "Mark", "Luke"],
+      "passages": [
+        {
+          "book_id": 40,
+          "book_name": "Matthew",
+          "chapter": 20,
+          "verse_start": 29,
+          "verse_end": 34,
+          "is_primary": true,
+          "display": "Matthew 20:29-34"
+        },
+        {
+          "book_id": 41,
+          "book_name": "Mark",
+          "chapter": 10,
+          "verse_start": 46,
+          "verse_end": 52,
+          "is_primary": false,
+          "display": "Mark 10:46-52"
+        },
+        {
+          "book_id": 42,
+          "book_name": "Luke",
+          "chapter": 18,
+          "verse_start": 35,
+          "verse_end": 43,
+          "is_primary": false,
+          "display": "Luke 18:35-43"
+        }
+      ],
+      "facet_counts": {
+        "words": 0,
+        "actions": 2,
+        "by_type": {
+          "HEALING": 1,
+          "COMPASSION": 1
+        }
+      },
+      "matched_facets": [],
+      "themes": [
+        {
+          "slug": "faith",
+          "name": "Faith"
+        },
+        {
+          "slug": "love",
+          "name": "Love"
+        }
+      ],
+      "location": null,
+      "approximate_date": null,
+      "people": [
+        {
+          "person": "Bartimaeus",
+          "role": "healed"
+        }
+      ]
+    },
+    "words": [],
+    "actions": [
+      {
+        "slug": "healing-blind-bartimaeus",
+        "mode": "ACTION",
+        "type": "HEALING",
+        "type_slug": "healings",
+        "type_label": "Healing",
+        "speaker": null,
+        "actor": "JESUS",
+        "title": "Blind Bartimaeus",
+        "text": null,
+        "summary": "Shouted down by the crowd, he shouts louder. Jesus stops the procession and asks what he wants.",
+        "provenance": 2,
+        "reference": "Matthew 20:29-34",
+        "book_id": 40,
+        "chapter": 20,
+        "verse_start": 29,
+        "verse_end": 34
+      },
+      {
+        "slug": "stopping-for-bartimaeus",
+        "mode": "ACTION",
+        "type": "COMPASSION",
+        "type_slug": "compassion",
+        "type_label": "Act of compassion",
+        "speaker": null,
+        "actor": "JESUS",
+        "title": "Stopping for a beggar shouting",
+        "text": null,
+        "summary": "The crowd tells him to be quiet. Jesus hears the one voice being shouted down, stops on the road out of Jericho, and has him called over.",
+        "provenance": 2,
+        "reference": "Mark 10:49",
+        "book_id": 41,
+        "chapter": 10,
+        "verse_start": 49,
+        "verse_end": 49
+      }
+    ],
+    "passages": [],
+    "reveals": {
+      "says_about_himself": [
+        {
+          "content": "He answers the cry for mercy as the Son of David.",
+          "source_ref": "Mark 10:52",
+          "provenance": 1
+        }
+      ],
+      "demonstrates": [
+        {
+          "content": "Authority over blindness.",
+          "source_ref": null,
+          "provenance": 2
+        }
+      ],
+      "others_say": [],
+      "narrator_says": []
+    },
+    "reactions": [
+      {
+        "who": "The crowd",
+        "what": "Told him to be quiet",
+        "source_ref": "Mark 10:48",
+        "provenance": 1
+      }
+    ],
+    "explanation": {
+      "overview": "The overview of the healing at Jericho.",
+      "compare": "The compare of the healing at Jericho.",
+      "insights": "The insights of the healing at Jericho.",
+      "application": "The application of the healing at Jericho."
+    },
+    "study": {
+      "bookId": 59,
+      "bookName": "James",
+      "chapter": 1,
+      "title": "James 1",
+      "subtitle": "The Precept Method, Verse by Verse",
+      "themeOneLine": "Consider it joy in trials; be doers of the word.",
+      "steps": [
+        {
+          "number": 1,
+          "kind": "bullets",
+          "title": "Begin with prayer",
+          "summary": "Apart from the Holy Spirit's illumination this is just a method.",
+          "intro": "Before reading James 1, ask the Holy Spirit to surface the trial in your life that needs to be reframed and the part of your heart that is currently double-minded. Pray with three focuses:",
+          "items": [
+            {
+              "tag": "POSTURE",
+              "text": "A teachable heart willing to receive the *current* trial as something that produces endurance, not as an interruption to be escaped (1:2-4)."
+            },
+            {
+              "tag": "EYES",
+              "text": "Awareness of where you are double-minded — wanting God's wisdom but unwilling to obey what He gives (1:5-8). Ask honestly which path your circumstances are on: trial → endurance → crown, or temptation → lust → death (1:13-15)."
+            },
+            {
+              "tag": "WILL",
+              "text": "Willingness to be a doer of the word in this chapter, not a hearer who walks away forgetting what kind of person he was (1:22-25)."
+            }
+          ],
+          "note": "James 1 is the thesis chapter — every seed it plants is developed in chapters 2-5. Read it slowly; the chapter's closing imperative (be a doer of the word, not merely a hearer, 1:22) is the obedience point of the whole letter."
+        },
+        {
+          "number": 2,
+          "kind": "qa",
+          "title": "Ask the 5 W's and an H",
+          "summary": "Setting the table — author, audience, occasion.",
+          "items": [
+            {
+              "tag": "WHO",
+              "q": "Who wrote it?",
+              "a": "James, the half-brother of Jesus (Matthew 13:55; Galatians 1:19), leader of the Jerusalem church (Acts 15:13; 21:18). He calls himself \"a bond-servant of God and of the Lord Jesus Christ\" (1:1)."
+            },
+            {
+              "tag": "TO WHOM",
+              "q": "To whom is it written?",
+              "a": "\"The twelve tribes who are dispersed abroad\" (1:1) — Jewish believers scattered after the persecution in Acts 8:1 / 11:19."
+            },
+            {
+              "tag": "WHEN",
+              "q": "When was it written?",
+              "a": "Likely AD 44–49, one of the earliest New Testament books, written before the Jerusalem Council of Acts 15."
+            },
+            {
+              "tag": "WHERE",
+              "q": "Where was the audience?",
+              "a": "Across the Roman world — διασπορά (*diaspora*, 1:1)."
+            },
+            {
+              "tag": "WHY",
+              "q": "Why was it written?",
+              "a": "Pastoral exhortation in the wisdom-literature tradition. Steep dependence on Proverbs and the Sermon on the Mount. James writes to scattered believers under social and economic pressure to live out genuine faith under trial."
+            },
+            {
+              "tag": "HOW",
+              "q": "How does it teach (genre)?",
+              "a": "Epistle with strong wisdom and proverbial flavor — interpret accordingly. Genuine faith proves itself by works under trial."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "kind": "keywords",
+          "title": "Mark key words and phrases",
+          "summary": "Repeated words carry the author's purpose. Counting them shows what James is fixing in your mind.",
+          "inventory": [
+            {
+              "word": "brethren / beloved brethren",
+              "greek": "adelphoi",
+              "count": 3,
+              "verses": "1:2, 16, 19",
+              "definition": "Kindred, fellow believers; the family vocabulary of the new covenant community."
+            },
+            {
+              "word": "trial / testing / tempt",
+              "greek": "peirasmos / dokimion / peirazo",
+              "count": 6,
+              "verses": "1:2, 3, 12, 13 (×3), 14",
+              "definition": "Peirasmos = test, ordeal. Dokimion = the assayer's proving (as of metal). Peirazo = to test or to tempt. Same root, two trajectories: external trial that tests faith for good vs. internal temptation that entices toward sin (1:13-14)."
+            },
+            {
+              "word": "faith",
+              "greek": "pistis",
+              "count": 2,
+              "verses": "1:3, 6",
+              "definition": "Settled trust, firm reliance, conviction. Not mere intellectual assent but the active confidence of the heart in God."
+            },
+            {
+              "word": "endurance / perseverance",
+              "greek": "hupomone",
+              "count": 3,
+              "verses": "1:3, 4, 12",
+              "definition": "Literally staying-under. Active steadfastness while bearing weight; not passive resignation but the courageous remaining-faithful through hardship."
+            },
+            {
+              "word": "ask",
+              "greek": "aiteo",
+              "count": 2,
+              "verses": "1:5, 6",
+              "definition": "To request — typically the request of an inferior to a superior. James uses it of the believer asking God for wisdom, with the expectation that God hears."
+            },
+            {
+              "word": "wisdom",
+              "greek": "sophia",
+              "count": 1,
+              "verses": "1:5",
+              "definition": "Practical, applied skill in living rightly under God; the right use of knowledge in the moment of decision. Distinct from mere learning."
+            },
+            {
+              "word": "doubting / double-minded",
+              "greek": "diakrinomenos / dipsuchos",
+              "count": 2,
+              "verses": "1:6, 8",
+              "definition": "Diakrinomenos = judging back-and-forth, divided. Dipsuchos = literally two-souled — apparently coined by James (only here and 4:8 in NT). The heart that wants both God's path and the world's."
+            },
+            {
+              "word": "word / word of truth / word implanted",
+              "greek": "logos / emphutos logos",
+              "count": 4,
+              "verses": "1:18, 21, 22, 23",
+              "definition": "The spoken or written message of God; the gospel as authoritative communication. Emphutos = engrafted, planted within (1:21) — echoing Jeremiah 31:33's internalized law."
+            },
+            {
+              "word": "doer / do",
+              "greek": "poietes / poieo",
+              "count": 4,
+              "verses": "1:22, 23, 25 (×2)",
+              "definition": "Poietes = one who acts, performer, executor. Poieo = to do, to make. James contrasts the doer with the merely-hearing-only listener (1:22-25)."
+            },
+            {
+              "word": "religion / religious",
+              "greek": "threskeia / threskos",
+              "count": 3,
+              "verses": "1:26 (×2), 27",
+              "definition": "Outward expression of religious worship — ritual practice, observance. Neither inherently good nor bad in James; he distinguishes worthless from pure-and-undefiled (1:26-27)."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "kind": "lists",
+          "title": "Make lists",
+          "summary": "\"What I learn about ___\" — extract truths from each marked word.",
+          "lists": [
+            {
+              "title": "What James 1 teaches about God",
+              "columns": ["Verse", "Truth"],
+              "rows": [
+                {
+                  "ref": "1:5",
+                  "truth": "Gives wisdom to all generously and without reproach."
+                },
+                {
+                  "ref": "1:12",
+                  "truth": "Has promised the crown of life to those who love Him."
+                },
+                {
+                  "ref": "1:13",
+                  "truth": "Cannot be tempted by evil; tempts no one."
+                },
+                {
+                  "ref": "1:17",
+                  "truth": "Every good and perfect gift comes from Him; He is the Father of lights."
+                },
+                {
+                  "ref": "1:17",
+                  "truth": "No variation or shifting shadow with Him — immutable."
+                },
+                {
+                  "ref": "1:18",
+                  "truth": "Brought us forth by the word of truth, by His own will."
+                },
+                {
+                  "ref": "1:20",
+                  "truth": "The anger of man does not achieve His righteousness."
+                },
+                {
+                  "ref": "1:27",
+                  "truth": "Defines pure and undefiled religion."
+                }
+              ]
+            },
+            {
+              "title": "What James 1 teaches about the believer under trial",
+              "columns": ["Verse", "Truth"],
+              "rows": [
+                {
+                  "ref": "1:2",
+                  "truth": "Encounters various trials — they are an event, not a surprise."
+                },
+                {
+                  "ref": "1:3-4",
+                  "truth": "Testing produces endurance; endurance produces maturity."
+                },
+                {
+                  "ref": "1:5",
+                  "truth": "May lack wisdom — the prescribed response is to ask God."
+                },
+                {
+                  "ref": "1:6-8",
+                  "truth": "Must ask in faith; the doubter is unstable, double-minded."
+                },
+                {
+                  "ref": "1:12",
+                  "truth": "Will be approved and crowned if they persevere under trial."
+                },
+                {
+                  "ref": "1:14-15",
+                  "truth": "Is tempted from within (own lust), not from God."
+                },
+                {
+                  "ref": "1:21-22",
+                  "truth": "Receives the implanted word and proves it by doing."
+                },
+                {
+                  "ref": "1:26-27",
+                  "truth": "Lives religion through bridled tongue, mercy, and purity."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "kind": "contrasts",
+          "title": "Watch for contrasts and comparisons",
+          "summary": "Highly descriptive language James uses to make a point memorable.",
+          "items": [
+            {
+              "verses": "1:2",
+              "type": "Contrast",
+              "pairing": "Trials encountered → \"consider it all joy\" — paradox vs. natural reaction."
+            },
+            {
+              "verses": "1:6-8",
+              "type": "Comparison",
+              "pairing": "The doubter is like the surf of the sea, driven and tossed by the wind."
+            },
+            {
+              "verses": "1:9-11",
+              "type": "Contrast",
+              "pairing": "Humble brother glories in high position; rich man glories in humiliation."
+            },
+            {
+              "verses": "1:10-11",
+              "type": "Comparison",
+              "pairing": "Rich man is like flowering grass — withered by the scorching sun."
+            },
+            {
+              "verses": "1:13-14",
+              "type": "Contrast",
+              "pairing": "God tempts no one ↔ each one tempted by his own lust."
+            },
+            {
+              "verses": "1:19-20",
+              "type": "Contrast",
+              "pairing": "Quick to hear ↔ slow to speak / slow to anger."
+            },
+            {
+              "verses": "1:22-24",
+              "type": "Comparison",
+              "pairing": "Hearer-only is like a man who looks in a mirror and forgets."
+            },
+            {
+              "verses": "1:22-25",
+              "type": "Contrast",
+              "pairing": "Forgetful hearer ↔ effectual doer."
+            },
+            {
+              "verses": "1:26-27",
+              "type": "Contrast",
+              "pairing": "Worthless religion ↔ pure and undefiled religion."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "kind": "bullets",
+          "title": "Note expressions of time",
+          "summary": "The relationship of events in time often sheds light on meaning.",
+          "items": [
+            {
+              "tag": "1:2",
+              "text": "\"*when* you encounter various trials\" — trials are situational events, not moods."
+            },
+            {
+              "tag": "1:12",
+              "text": "\"*once* he has been approved\" — endurance precedes the crown of life."
+            },
+            {
+              "tag": "1:15",
+              "text": "\"*then when* lust has conceived\" — sin is a timed gestation, not an instant."
+            },
+            {
+              "tag": "1:18",
+              "text": "\"*in the exercise of His will* He brought us forth\" — new birth is God-timed."
+            }
+          ],
+          "note": "The temporal flow in 1:14-15 is especially careful — James pictures sin as a gestation: lust → conceives → sin → accomplished → death. The sequence is what makes the warning concrete."
+        },
+        {
+          "number": 7,
+          "kind": "bullets",
+          "title": "Mark geographic locations",
+          "summary": "Where events take place anchors the historical setting.",
+          "items": [
+            {
+              "tag": "1:1",
+              "text": "**dispersed abroad** / διασπορά — the only geographical anchor in the chapter, and it sets the entire pastoral situation."
+            }
+          ],
+          "note": "James writes to scattered, displaced Jewish believers across the Roman world. The trials they \"encounter\" in verse 2 are the trials of displacement, social marginalization, and economic pressure that come with diaspora life."
+        },
+        {
+          "number": 8,
+          "kind": "bullets",
+          "title": "Mark terms of conclusion",
+          "summary": "\"Therefore,\" \"thus,\" \"for this reason\" flag a summary or inference.",
+          "items": [
+            {
+              "tag": "1:13",
+              "text": "**\"Let no one say…\"** — closes the wisdom subsection and pivots to the temptation discussion."
+            },
+            {
+              "tag": "1:21",
+              "text": "**\"Therefore, putting aside all filthiness…\"** — pivots to the doer-command the chapter has been building toward."
+            },
+            {
+              "tag": "1:22",
+              "text": "**\"But prove yourselves doers of the word\"** — the imperative the whole chapter has been moving toward."
+            }
+          ],
+          "note": "These hinges show the chapter's rhetorical shape: trials (2-12) → temptation's true source (13-18) → receive the word, do the word (19-27)."
+        },
+        {
+          "number": 9,
+          "kind": "segments",
+          "title": "Identify the chapter theme",
+          "summary": "Center on the main person/event/teaching; express briefly using the text's own words.",
+          "themeHeadline": "Consider it joy in trials; be doers of the word.",
+          "segments": [
+            {
+              "title": "Why James 1 is the thesis chapter",
+              "body": "James 1 is not an introduction — it is the **thesis** of the entire letter. Every major theme developed in chapters 2-5 is seeded here: faith proven through works (1:22-25 → ch. 2), wisdom from above (1:5 → ch. 3), warring desire (1:14 → ch. 4), endurance until the coming of the Lord (1:3-4 → ch. 5). Reading the letter as a whole reveals the structure: chapters 2-5 unfold what chapter 1 plants. The chapter's genre is wisdom literature — proverbial, condensed, dense. Read slowly; James does not waste words."
+            },
+            {
+              "title": "Path A — Trial → Endurance → Crown of life",
+              "body": "External pressure (*peirasmos*, 1:2) tests faith (*dokimion*, 1:3) and produces endurance (*hupomone*, 1:4) — *staying-under*, not passive resignation. Endurance, allowed to do its perfect work, completes (matures) the believer (1:4). The same Greek word *peirasmos* reappears at 1:12, but now with a promised outcome: *the crown of life* (1:12). The trajectory is redemptive — the test that started in verse 2 ends in approval (*dokimos*, the same metallurgical root as v.3). Romans 5:3-5 and 1 Peter 1:6-7 give the same chain: three apostles, one canonical pattern."
+            },
+            {
+              "title": "Path B — Temptation → Lust → Sin → Death",
+              "body": "James pivots at 1:13 with the same Greek root (*peirazō*) but the opposite trajectory. The source is no longer external pressure refining faith — it is internal desire (*epithumia*, 1:14) enticing toward sin. James pictures the descent as a **gestation**: lust conceives (1:15), gives birth to sin, and sin matures into death. Sin is never abrupt; it is conceived, carried, and delivered. The pastoral application is precise — name the stage your temptation is in (desire / conception / birth / death) and break the chain there. The same circumstance can land on Path A or Path B depending on how the heart receives it."
+            },
+            {
+              "title": "The bridge — wisdom, the word, obedience",
+              "body": "What shifts a circumstance from Path B to Path A? Three things, all gifted, all received, all from above (1:17): **wisdom asked of God** (1:5) — practical know-how for the trial in front of you. **The word implanted** (1:21) — the engrafted message that takes root and saves the soul. **Obedience that proves the difference** (1:22-25) — being a doer, not merely a hearer. The mirror illustration (1:23-24) sharpens the point: the hearer-only walks away forgetting what kind of person he was. The doer remembers — and is blessed in what he does."
+            },
+            {
+              "title": "The Father is the unshifting source",
+              "body": "1:17 is the chapter's theological anchor. *Every good thing given and every perfect gift is from above, coming down from the Father of lights, with whom there is no variation or shifting shadow.* The astronomical metaphor is sharp — stars rise and set, the sun shifts shadows; God doesn't. The same God who tempts no one (1:13) cannot be variable in His character toward you in *this* trial. Wisdom is asked of Him (1:5) precisely because He is unshifting — the request is met with a giver who *gives generously and without reproach*."
+            },
+            {
+              "title": "The closing portrait — pure and undefiled religion",
+              "body": "The chapter ends not in abstraction but in **portrait** (1:26-27). Religion that fails to bridle the tongue is *worthless* (*mataios* — futile, empty). Religion that is *pure and undefiled* is concrete: visit orphans and widows in their distress, and keep oneself unstained by the world. Three vectors — **bridled speech** (which chapter 3 will develop), **active mercy** (which chapter 2 will demand), and **separation from the world-system** (which chapter 4 will press). The chapter's exhortation lands here: doing the word is what religion looks like in real life."
+            }
+          ]
+        }
+      ],
+      "interpretation": {
+        "intro": "Interpretation asks what the text *means* — moving from observation (what does it say?) to discerning the author's intent in his original context. The movements below trace the chapter's argument verse by verse. Where the original Greek changes the shade of an English word, a brief note follows the interpretation as supplement.",
+        "movements": [
+          {
+            "number": 1,
+            "title": "Trials test and mature faith",
+            "range": "1:2-4",
+            "excerpt": "Consider it all joy when you encounter various trials, knowing that the testing of your faith produces endurance.",
+            "body": "James opens the letter with a counterintuitive command. The natural response to trials is to find the exit. James commands the opposite: **consider** — *reckon*, *count* — your trials joy. The verb is not emotional (\"feel happy\"); it is volitional (\"frame it this way\"). And the framing is not abstract optimism. The reason is given in the next verse: the trial is *doing something*. It is testing your faith, and the testing produces endurance.\n\nThe order matters. Faith proves itself under load — like metal heated in a furnace. The fire does not destroy gold; it proves the gold genuine and burns off impurities. The believer's posture, therefore, is **not to short-circuit the trial** but to let endurance \"have its perfect result\" (1:4). Premature relief stops the maturity God is producing. James's word for endurance is *staying-under* — not passive resignation, but active steadfastness, *remaining faithful while bearing weight*.\n\nThe same chain appears in two other apostles: Romans 5:3-5 (tribulation → perseverance → proven character → hope) and 1 Peter 1:6-7 (trials → tested faith more precious than gold). Three independent witnesses, one canonical pattern. The pattern is not idiosyncratic to James; it is the apostolic understanding of how God uses suffering in the believer's life.\n\n> **Greek note.** *Peirasmos* (trials, v.2) and *peirazomenos* (tempted, v.13) share a root — James does intentional wordplay between external trials and internal temptation. *Dokimion* (testing, v.3) is the assayer's word for proving genuineness. *Hupomonē* (endurance) is *staying-under*."
+          },
+          {
+            "number": 2,
+            "title": "Wisdom by faith, not double-mindedness",
+            "range": "1:5-8",
+            "excerpt": "But if any of you lacks wisdom, let him ask of God, who gives to all generously.",
+            "body": "In the middle of trial, what the believer most often lacks is **wisdom** — practical know-how for the situation in front of them. Not intellectual content, not theological framework, but *what to do next*. James points to a Giver: ask God. The promise has three remarkable qualities: *to all*, *generously*, and *without reproach* — God does not lecture you for needing what you need.\n\nBut the request must be made *in faith*, **without doubting**. James is not asking for a perfect prayer; he is excluding a divided one. The doubter pictured here is not the honest questioner — it is the heart that wants both God's wisdom and the world's path, asking God to bless its self-chosen route. James calls this person *double-minded* (literally *two-souled*) and *unstable in all his ways* — the wave-tossed surf is the image (1:6).\n\nThis is not a blank-check prayer promise. The context anchors it: wisdom *for the trial in front of you*, asked by a heart that intends to act on whatever God gives. James will return to the same diagnosis in chapter 4 (4:8 is the only other NT use of *double-minded*) and treat it with ten imperatives of repentance. Wisdom-prayer and a divided heart cannot coexist.\n\n> **Greek note.** *Dipsuchos* (double-minded, v.8) — apparently coined by James; only here and James 4:8 in the entire NT. *Diakrinomenos* (doubting, v.6) — to *judge back-and-forth*, to be divided."
+          },
+          {
+            "number": 3,
+            "title": "Reversal — humble exalted, rich humbled",
+            "range": "1:9-11",
+            "excerpt": "The brother of humble circumstances is to glory in his high position; the rich man, in his humiliation.",
+            "body": "James now applies the same wisdom-from-above to economic position. He pastors scattered, often impoverished Jewish believers — many of whom were tempted to envy the resourced rich who remained settled and powerful in the diaspora cities. Chapter 2 will name those rich as the ones dragging believers into court (2:6); chapter 5 will pronounce woe on them (5:1-6). Here in chapter 1, James reframes: **economic position is the inverse of kingdom position**.\n\nThe humble brother is to \"glory in his high position\" — not the position the world sees, but his position *in Christ*. The rich man is to \"glory in his humiliation\" — not because wealth is evil, but because he must learn that his wealth is **grass**. James echoes Isaiah 40:6-8 directly: *all flesh is grass, and all its loveliness is like the flower of the field*. The scorching wind comes; the flower withers; the rich man \"in the midst of his pursuits will fade away\" (1:11).\n\nThe pastoral implication is sharp in both directions. To the poor: your position in Christ is your true position; do not measure yourself by what the world measures. To the rich: your wealth is a temporary covering — do not let it persuade you that you are not grass. Both classes need the same wisdom from above. Both find their true station only when they look at themselves with God's measuring rod."
+          },
+          {
+            "number": 4,
+            "title": "Origin of temptation; origin of new life",
+            "range": "1:12-18",
+            "excerpt": "Let no one say when he is tempted, \"I am being tempted by God\"; for God cannot be tempted by evil, and He Himself does not tempt anyone.",
+            "body": "Verse 12 marks a hinge. James returns to the trial-vocabulary of verse 2 (\"blessed is a man who perseveres under trial\") but uses the same Greek root with a different trajectory: starting at verse 13, the same word *peirazō* shifts from external **trial** to internal **temptation**. Same circumstance, different direction in the heart. The pivot is the chapter's central pastoral move.\n\nWhen you are tempted toward sin, James insists, do not blame God. God *cannot* be tempted by evil, and He tempts no one. The source is internal — *your own lust*. Then James pictures sin as a gestation: lust conceives, gives birth to sin, and sin matures into death. Sin is never abrupt; it is conceived, carried, and delivered. The pastoral application is precise: **name the stage** your temptation is in (desire / conception / birth / death) and **break the chain** at that stage. Desire alone is not yet sin; conception is the moment of consent; birth is the act; death is the harvest.\n\nThen James pivots into the chapter's brightest theological claim (1:17): every good gift is from above, from the *Father of lights*, with whom there is **no variation or shifting shadow**. The astronomical image is sharp — stars rise and set, the sun shifts shadows; God does not. The same God who tempts no one cannot be variable in His character toward you in *this* trial. He is unshifting. And He gave the most decisive gift of all (1:18) — *He brought us forth by the word of truth*. Reformed scholars read this as **regeneration** (Moo, *The Letter of James*, Pillar NT Commentary, 2000); the contextual evidence — \"first fruits among His creatures,\" redemptive language, and the immediate follow-up at 1:21 about \"the word implanted, which is able to save your souls\" — strongly favors that reading.\n\n> **Greek note.** *Epithumia* (lust, desire) → *hamartia* (sin) → *thanatos* (death). *Patēr tōn phōtōn* (Father of lights, 1:17) evokes Genesis 1:14-18 — God as creator of sun, moon, stars; *parallagē ē tropēs aposkiasma* = variation or shifting shadow."
+          },
+          {
+            "number": 5,
+            "title": "Receive the word, do the word, prove the religion",
+            "range": "1:19-27",
+            "excerpt": "Prove yourselves doers of the word, and not merely hearers who delude themselves.",
+            "body": "The chapter's closing section issues the imperative the whole chapter has been building toward. James begins with a triad: *quick to hear, slow to speak, slow to anger* (1:19). Each is the opposite of the natural reaction to a trial — the agitated heart wants to speak first, hear last, and let anger drive. Then 1:21 commands the believer to **receive the word implanted** — the engrafted, taking-root message that *is able to save your souls*. The word is not academic information; it is a living thing planted within, the new-covenant law internalized in the heart (Jeremiah 31:33).\n\nBut hearing alone is *self-deception* (1:22). James drives this home with the chapter's most memorable image: the hearer-only is like a man who looks at himself in a mirror, walks away, and immediately forgets what kind of person he was (1:23-24). The doer is the one who *looks intently at the perfect law of liberty, abides by it,* and is blessed in what he does (1:25). The mirror illustration is the warning at the heart of the inductive method itself: a marked-up page has done nothing if the marker walks away unchanged. Observation and Interpretation exist for Application.\n\nThe chapter ends with the test of true religion (1:26-27). External religious activity that fails to **bridle the tongue** is *worthless* — the chapter's sharpest English word, but actually softer than the Greek (*mataios* — futile, empty, vain). True religion, by contrast, is **concrete**: visit orphans and widows in their distress, and keep oneself unstained from the world. Three vectors that the rest of the letter develops: bridled speech (chapter 3), active mercy (chapter 2), separation from the world-system (chapter 4). The chapter that began with trials ends with the picture of a life that has done something with what it has heard.\n\n> **Greek note.** *Emphuton logon* (the word implanted, v.21) — engrafted, planted within. *Thrēskeia* (religion, vv.26-27) — outward cultic observance. *Mataios* (worthless) — futile, empty. *Amiantos* (undefiled, v.27) — Levitical purity language pulled into ethics. *Aspilon* (unstained) — the same word used of Christ as the spotless lamb in 1 Peter 1:19."
+          }
+        ]
+      },
+      "application": {
+        "intro": "Application is where Observation and Interpretation become obedience. Each question is paired with a movement of the chapter — read it slowly, answer it honestly, and let it land on a specific situation in your week. Don't generalize; name the relationship, the moment, the next step.",
+        "questions": [
+          {
+            "range": "1:2-4",
+            "question": "What current trial am I refusing to \"consider joy\"? Where am I trying to escape it instead of letting endurance do its perfect work?"
+          },
+          {
+            "range": "1:5-8",
+            "question": "In what specific situation this week do I lack wisdom — and have I actually asked God for it, or only complained about it? Where am I being double-minded — wanting God's wisdom but not wanting to obey it?"
+          },
+          {
+            "range": "1:9-11",
+            "question": "If I'm of \"humble circumstances,\" do I see my position in Christ as my high position? If I have wealth, where is it making me forget I'm grass?"
+          },
+          {
+            "range": "1:13-15",
+            "question": "What temptation am I currently blaming on circumstances or others, when James says it originates in my own lust? At which stage is my current temptation — desire, conception, birth, or death? Where do I need to break the chain?"
+          },
+          {
+            "range": "1:17-18",
+            "question": "What \"good gift\" from God am I currently treating as variable, conditional, or absent — when James says the Giver is unshifting?"
+          },
+          {
+            "range": "1:19-20",
+            "question": "Of the three commands — quick to hear, slow to speak, slow to anger — which is most violated in my life this week? In what specific relationship?"
+          },
+          {
+            "range": "1:22-25",
+            "question": "Name one thing I've heard from Scripture in the last 30 days and not done. What is the next concrete obedience?"
+          },
+          {
+            "range": "1:26-27",
+            "question": "Where is my tongue revealing that my religion is worthless? Who are the practical \"orphans and widows\" in my orbit, and what does visiting them look like in my schedule this week?"
+          }
+        ]
+      }
+    },
+    "related": [
+      {
+        "slug": "event-temptation",
+        "title": "The temptation in the wilderness",
+        "summary": "Forty days, three offers, three answers — every one of them a quotation from Deuteronomy.",
+        "period_slug": "preparation",
+        "period_name": "Baptism & Temptation",
+        "sequence": 2,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 4,
+            "verse_start": 1,
+            "verse_end": 11,
+            "is_primary": true,
+            "display": "Matthew 4:1-11"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 1,
+            "verse_start": 12,
+            "verse_end": 13,
+            "is_primary": false,
+            "display": "Mark 1:12-13"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 4,
+            "verse_start": 1,
+            "verse_end": 13,
+            "is_primary": false,
+            "display": "Luke 4:1-13"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "ENCOUNTER": 1,
+            "CONFRONTATION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "nathanael-under-the-fig-tree",
+        "title": "Nathanael under the fig tree",
+        "summary": "\"Can anything good come out of Nazareth?\" He answers the scepticism by describing where the man had been sitting.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 2,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 1,
+            "verse_start": 43,
+            "verse_end": 51,
+            "is_primary": true,
+            "display": "John 1:43-51"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      },
+      {
+        "slug": "event-cana-wine",
+        "title": "Water into wine at Cana",
+        "summary": "At a wedding running out of wine, He turns six stone jars of water into the best wine of the feast — the first of His signs.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 3,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 2,
+            "verse_start": 1,
+            "verse_end": 11,
+            "is_primary": true,
+            "display": "John 2:1-11"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "nicodemus",
+        "title": "Nicodemus, by night",
+        "summary": "A member of the ruling council comes in the dark with a compliment and leaves with a riddle about birth.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 5,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John", "John", "John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 3,
+            "verse_start": 1,
+            "verse_end": 21,
+            "is_primary": true,
+            "display": "John 3:1-21"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 7,
+            "verse_start": 50,
+            "verse_end": 52,
+            "is_primary": false,
+            "display": "John 7:50-52"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 19,
+            "verse_start": 38,
+            "verse_end": 42,
+            "is_primary": false,
+            "display": "John 19:38-42"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          }
+        ]
+      },
+      {
+        "slug": "healing-the-officials-son",
+        "title": "Healing the official's son",
+        "summary": "A royal official begs Him to come to Capernaum. Jesus heals from a day's journey away, and the father believes before he sees.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 10,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 4,
+            "verse_start": 46,
+            "verse_end": 54,
+            "is_primary": true,
+            "display": "John 4:46-54"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "miraculous-catch-of-fish",
+        "title": "The miraculous catch of fish",
+        "summary": "After a fruitless night, Peter lets down the nets on His word and the catch nearly sinks two boats. Peter falls at His knees.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 9,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 5,
+            "verse_start": 1,
+            "verse_end": 11,
+            "is_primary": true,
+            "display": "Luke 5:1-11"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -9,20 +9,20 @@ import { AdminAudioService } from "./services/admin-audio.service";
  */
 
 const AdminAudioRowSchema = t.Object({
-  audio_id: t.Nullable(t.String()),
+  audio_id: t.Union([t.String(), t.Null()]),
   explanation_id: t.Number(),
   chapter_id: t.Number(),
   book_id: t.Number(),
   chapter_number: t.Number(),
   explanation_type: t.String(),
   language_code: t.String(),
-  voice: t.Nullable(t.String()),
-  duration_seconds: t.Nullable(t.Number()),
-  generated_at: t.Nullable(t.String()),
-  tts_provider: t.Nullable(t.String()),
-  tts_model: t.Nullable(t.String()),
-  content_hash: t.Nullable(t.String()),
-  storage_key: t.Nullable(t.String()),
+  voice: t.Union([t.String(), t.Null()]),
+  duration_seconds: t.Union([t.Number(), t.Null()]),
+  generated_at: t.Union([t.String(), t.Null()]),
+  tts_provider: t.Union([t.String(), t.Null()]),
+  tts_model: t.Union([t.String(), t.Null()]),
+  content_hash: t.Union([t.String(), t.Null()]),
+  storage_key: t.Union([t.String(), t.Null()]),
   status: t.Union([
     t.Literal("current"),
     t.Literal("stale"),

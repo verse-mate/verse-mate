@@ -1,0 +1,11 @@
+{
+  "status": 409,
+  "body": {
+    "error": "CONFLICT",
+    "message": "The requester's address changed to contract-learner@example.test since you opened this request, so no leader was added. Review it again.",
+    "details": {
+      "refusal": "address-changed",
+      "email": "contract-learner@example.test"
+    }
+  }
+}

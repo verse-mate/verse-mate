@@ -1,0 +1,2131 @@
+{
+  "status": 200,
+  "body": {
+    "type": {
+      "type": "QUESTION",
+      "mode": "WORD",
+      "slug": "questions",
+      "label": "Questions",
+      "singular": "Question",
+      "plural": "questions",
+      "section": "words",
+      "blurb": "The questions He asked, and why",
+      "intro": "Jesus asked far more questions than He answered. Gathered by topic below: what each line of questioning is probing, and where He asks it.",
+      "event_count": 27,
+      "facet_count": 27
+    },
+    "topics": [
+      {
+        "slug": "kingdom",
+        "name": "Kingdom",
+        "description": "The reign of God breaking into the world — what it is like, who enters it, and how it grows.",
+        "sort_order": 1,
+        "event_count": 5,
+        "facet_count": 5,
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "points": [
+          {
+            "slug": "which-of-you-by-being-anxious",
+            "title": "Which of you by being anxious can add an hour to his life?",
+            "text": "And which of you by being anxious can add a single hour to his span of life?",
+            "summary": "Part of a sustained argument that worry is not only painful but useless.",
+            "reference": "Matthew 6:25-34",
+            "provenance": 2
+          },
+          {
+            "slug": "who-is-my-mother-and-my-brothers",
+            "title": "Who is my mother, and who are my brothers?",
+            "text": "Who is my mother, and who are my brothers?",
+            "summary": "Told His family is outside asking for Him, He redraws the family line around obedience.",
+            "reference": "Matthew 12:46-50",
+            "provenance": 2
+          },
+          {
+            "slug": "who-do-you-say-that-i-am",
+            "title": "Who do you say that I am?",
+            "text": "But who do you say that I am?",
+            "summary": "The hinge of the gospels. He asks what the crowds think first, then makes it personal.",
+            "reference": "Matthew 16:13-20",
+            "provenance": 2
+          },
+          {
+            "slug": "what-is-written-in-the-law",
+            "title": "What is written in the Law? How do you read it?",
+            "text": "What is written in the Law? How do you read it?",
+            "summary": "A lawyer tests Him with a question. He answers with two questions and lets the man convict himself.",
+            "reference": "Luke 10:25-28",
+            "provenance": 2
+          },
+          {
+            "slug": "whose-likeness-and-inscription",
+            "title": "Whose likeness and inscription is this?",
+            "text": "Whose likeness and inscription is this?",
+            "summary": "Handed a trap about taxes, He asks for a coin and turns the question back on them.",
+            "reference": "Matthew 22:15-22",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "event-do-not-be-anxious",
+            "title": "Which of you by being anxious can add an hour to his life?",
+            "summary": "Part of a sustained argument that worry is not only painful but useless.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 39,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 6,
+                "verse_start": 25,
+                "verse_end": 34,
+                "is_primary": true,
+                "display": "Matthew 6:25-34"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 12,
+                "verse_start": 22,
+                "verse_end": 31,
+                "is_primary": false,
+                "display": "Luke 12:22-31"
+              }
+            ],
+            "facet_counts": {
+              "words": 3,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1,
+                "COMMAND": 2
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "which-of-you-by-being-anxious",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Which of you by being anxious can add an hour to his life?",
+                "text": "And which of you by being anxious can add a single hour to his span of life?",
+                "summary": "Part of a sustained argument that worry is not only painful but useless.",
+                "provenance": 2,
+                "reference": "Matthew 6:25-34",
+                "book_id": 40,
+                "chapter": 6,
+                "verse_start": 25,
+                "verse_end": 34
+              }
+            ],
+            "themes": [
+              {
+                "slug": "kingdom",
+                "name": "Kingdom"
+              },
+              {
+                "slug": "faith",
+                "name": "Faith"
+              },
+              {
+                "slug": "money",
+                "name": "Money"
+              }
+            ]
+          },
+          {
+            "slug": "event-true-family",
+            "title": "Who is my mother, and who are my brothers?",
+            "summary": "Told His family is outside asking for Him, He redraws the family line around obedience.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 59,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 12,
+                "verse_start": 46,
+                "verse_end": 50,
+                "is_primary": true,
+                "display": "Matthew 12:46-50"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 3,
+                "verse_start": 31,
+                "verse_end": 35,
+                "is_primary": false,
+                "display": "Mark 3:31-35"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 8,
+                "verse_start": 19,
+                "verse_end": 21,
+                "is_primary": false,
+                "display": "Luke 8:19-21"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "who-is-my-mother-and-my-brothers",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Who is my mother, and who are my brothers?",
+                "text": "Who is my mother, and who are my brothers?",
+                "summary": "Told His family is outside asking for Him, He redraws the family line around obedience.",
+                "provenance": 2,
+                "reference": "Matthew 12:46-50",
+                "book_id": 40,
+                "chapter": 12,
+                "verse_start": 46,
+                "verse_end": 50
+              }
+            ],
+            "themes": [
+              {
+                "slug": "kingdom",
+                "name": "Kingdom"
+              },
+              {
+                "slug": "discipleship",
+                "name": "Discipleship"
+              }
+            ]
+          },
+          {
+            "slug": "event-peters-confession",
+            "title": "Peter's confession at Caesarea Philippi",
+            "summary": "Far north of Galilee, at the foot of a cliff full of pagan shrines, Peter says: You are the Christ.",
+            "period_slug": "turning-point",
+            "period_name": "The Turning Point",
+            "sequence": 1,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 16,
+                "verse_start": 13,
+                "verse_end": 20,
+                "is_primary": true,
+                "display": "Matthew 16:13-20"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 8,
+                "verse_start": 27,
+                "verse_end": 30,
+                "is_primary": false,
+                "display": "Mark 8:27-30"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 9,
+                "verse_start": 18,
+                "verse_end": 21,
+                "is_primary": false,
+                "display": "Luke 9:18-21"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 1,
+              "by_type": {
+                "ENCOUNTER": 1,
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "who-do-you-say-that-i-am",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Who do you say that I am?",
+                "text": "But who do you say that I am?",
+                "summary": "The hinge of the gospels. He asks what the crowds think first, then makes it personal.",
+                "provenance": 2,
+                "reference": "Matthew 16:13-20",
+                "book_id": 40,
+                "chapter": 16,
+                "verse_start": 13,
+                "verse_end": 20
+              }
+            ],
+            "themes": [
+              {
+                "slug": "kingdom",
+                "name": "Kingdom"
+              },
+              {
+                "slug": "faith",
+                "name": "Faith"
+              },
+              {
+                "slug": "discipleship",
+                "name": "Discipleship"
+              }
+            ]
+          },
+          {
+            "slug": "what-is-written-in-the-law",
+            "title": "What is written in the Law? How do you read it?",
+            "summary": "A lawyer tests Him with a question. He answers with two questions and lets the man convict himself.",
+            "period_slug": "journey-to-jerusalem",
+            "period_name": "The Road to Jerusalem",
+            "sequence": 2,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Luke"],
+            "passages": [
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 10,
+                "verse_start": 25,
+                "verse_end": 28,
+                "is_primary": true,
+                "display": "Luke 10:25-28"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "what-is-written-in-the-law",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "What is written in the Law? How do you read it?",
+                "text": "What is written in the Law? How do you read it?",
+                "summary": "A lawyer tests Him with a question. He answers with two questions and lets the man convict himself.",
+                "provenance": 2,
+                "reference": "Luke 10:25-28",
+                "book_id": 42,
+                "chapter": 10,
+                "verse_start": 25,
+                "verse_end": 28
+              }
+            ],
+            "themes": [
+              {
+                "slug": "kingdom",
+                "name": "Kingdom"
+              },
+              {
+                "slug": "love",
+                "name": "Love"
+              }
+            ]
+          },
+          {
+            "slug": "event-taxes-to-caesar",
+            "title": "The question about paying taxes",
+            "summary": "Pharisees and Herodians — natural enemies — cooperate to trap Him, and He escapes with a coin.",
+            "period_slug": "passion-week",
+            "period_name": "Passion Week",
+            "sequence": 9,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 22,
+                "verse_start": 15,
+                "verse_end": 22,
+                "is_primary": true,
+                "display": "Matthew 22:15-22"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 12,
+                "verse_start": 13,
+                "verse_end": 17,
+                "is_primary": false,
+                "display": "Mark 12:13-17"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 20,
+                "verse_start": 20,
+                "verse_end": 26,
+                "is_primary": false,
+                "display": "Luke 20:20-26"
+              }
+            ],
+            "facet_counts": {
+              "words": 2,
+              "actions": 1,
+              "by_type": {
+                "CONFRONTATION": 1,
+                "QUESTION": 1,
+                "COMMAND": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "whose-likeness-and-inscription",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Whose likeness and inscription is this?",
+                "text": "Whose likeness and inscription is this?",
+                "summary": "Handed a trap about taxes, He asks for a coin and turns the question back on them.",
+                "provenance": 2,
+                "reference": "Matthew 22:15-22",
+                "book_id": 40,
+                "chapter": 22,
+                "verse_start": 15,
+                "verse_end": 22
+              }
+            ],
+            "themes": [
+              {
+                "slug": "kingdom",
+                "name": "Kingdom"
+              },
+              {
+                "slug": "money",
+                "name": "Money"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      },
+      {
+        "slug": "faith",
+        "name": "Faith",
+        "description": "Trust that acts. Where Jesus found it, where He marvelled at its absence, and what He said it could do.",
+        "sort_order": 2,
+        "event_count": 10,
+        "facet_count": 10,
+        "gospels": ["Matthew", "Mark", "Luke", "John"],
+        "points": [
+          {
+            "slug": "do-you-want-to-be-healed",
+            "title": "Do you want to be healed?",
+            "text": "Do you want to be healed?",
+            "summary": "Asked of a man who had been lying by the pool for thirty-eight years.",
+            "reference": "John 5:1-9",
+            "provenance": 2
+          },
+          {
+            "slug": "why-are-you-afraid",
+            "title": "Why are you afraid, O you of little faith?",
+            "text": "Why are you afraid, O you of little faith?",
+            "summary": "Asked in a boat, after the wind had already stopped.",
+            "reference": "Matthew 8:26",
+            "provenance": 2
+          },
+          {
+            "slug": "where-is-your-faith",
+            "title": "Where is your faith?",
+            "text": "Where is your faith?",
+            "summary": "Not \"do you have faith\" but where it went when the water started coming in.",
+            "reference": "Luke 8:22-25",
+            "provenance": 2
+          },
+          {
+            "slug": "who-touched-my-garments",
+            "title": "Who touched my garments?",
+            "text": "Who touched my garments?",
+            "summary": "In a crushing crowd He stops for one person He already knew He had healed.",
+            "reference": "Mark 5:30-34",
+            "provenance": 2
+          },
+          {
+            "slug": "do-you-believe-that-i-am-able",
+            "title": "Do you believe that I am able to do this?",
+            "text": "Do you believe that I am able to do this?",
+            "summary": "Asked of two blind men before He touches their eyes — the healing follows the answer.",
+            "reference": "Matthew 9:27-31",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "do-you-want-to-be-healed",
+            "title": "Do you want to be healed?",
+            "summary": "Asked of a man who had been lying by the pool for thirty-eight years.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 18,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["John"],
+            "passages": [
+              {
+                "book_id": 43,
+                "book_name": "John",
+                "chapter": 5,
+                "verse_start": 1,
+                "verse_end": 9,
+                "is_primary": true,
+                "display": "John 5:1-9"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "do-you-want-to-be-healed",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Do you want to be healed?",
+                "text": "Do you want to be healed?",
+                "summary": "Asked of a man who had been lying by the pool for thirty-eight years.",
+                "provenance": 2,
+                "reference": "John 5:1-9",
+                "book_id": 43,
+                "chapter": 5,
+                "verse_start": 1,
+                "verse_end": 9
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              }
+            ]
+          },
+          {
+            "slug": "event-storm-stilled",
+            "title": "Calming the storm",
+            "summary": "Asleep in the stern through a squall. He rebukes the wind, then asks them why they were afraid.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 69,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 8,
+                "verse_start": 23,
+                "verse_end": 27,
+                "is_primary": true,
+                "display": "Matthew 8:23-27"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 4,
+                "verse_start": 35,
+                "verse_end": 41,
+                "is_primary": false,
+                "display": "Mark 4:35-41"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 8,
+                "verse_start": 22,
+                "verse_end": 25,
+                "is_primary": false,
+                "display": "Luke 8:22-25"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 1,
+              "by_type": {
+                "MIRACLE": 1,
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "why-are-you-afraid",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Why are you afraid, O you of little faith?",
+                "text": "Why are you afraid, O you of little faith?",
+                "summary": "Asked in a boat, after the wind had already stopped.",
+                "provenance": 2,
+                "reference": "Matthew 8:26",
+                "book_id": 40,
+                "chapter": 8,
+                "verse_start": 26,
+                "verse_end": 26
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              }
+            ]
+          },
+          {
+            "slug": "where-is-your-faith",
+            "title": "Where is your faith?",
+            "summary": "Not \"do you have faith\" but where it went when the water started coming in.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 71,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Luke"],
+            "passages": [
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 8,
+                "verse_start": 22,
+                "verse_end": 25,
+                "is_primary": true,
+                "display": "Luke 8:22-25"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "where-is-your-faith",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Where is your faith?",
+                "text": "Where is your faith?",
+                "summary": "Not \"do you have faith\" but where it went when the water started coming in.",
+                "provenance": 2,
+                "reference": "Luke 8:22-25",
+                "book_id": 42,
+                "chapter": 8,
+                "verse_start": 22,
+                "verse_end": 25
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              }
+            ]
+          },
+          {
+            "slug": "event-bleeding-woman",
+            "title": "The woman who touched His garment",
+            "summary": "Twelve years of bleeding, and no doctor could help. She touches the fringe of His cloak in a crowd and He stops everything to find her.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 74,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 9,
+                "verse_start": 20,
+                "verse_end": 22,
+                "is_primary": true,
+                "display": "Matthew 9:20-22"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 5,
+                "verse_start": 25,
+                "verse_end": 34,
+                "is_primary": false,
+                "display": "Mark 5:25-34"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 8,
+                "verse_start": 43,
+                "verse_end": 48,
+                "is_primary": false,
+                "display": "Luke 8:43-48"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 2,
+              "by_type": {
+                "HEALING": 1,
+                "COMPASSION": 1,
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "who-touched-my-garments",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Who touched my garments?",
+                "text": "Who touched my garments?",
+                "summary": "In a crushing crowd He stops for one person He already knew He had healed.",
+                "provenance": 2,
+                "reference": "Mark 5:30-34",
+                "book_id": 41,
+                "chapter": 5,
+                "verse_start": 30,
+                "verse_end": 34
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              },
+              {
+                "slug": "love",
+                "name": "Love"
+              }
+            ]
+          },
+          {
+            "slug": "do-you-believe-that-i-am-able",
+            "title": "Do you believe that I am able to do this?",
+            "summary": "Asked of two blind men before He touches their eyes — the healing follows the answer.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 80,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Matthew"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 9,
+                "verse_start": 27,
+                "verse_end": 31,
+                "is_primary": true,
+                "display": "Matthew 9:27-31"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "do-you-believe-that-i-am-able",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Do you believe that I am able to do this?",
+                "text": "Do you believe that I am able to do this?",
+                "summary": "Asked of two blind men before He touches their eyes — the healing follows the answer.",
+                "provenance": 2,
+                "reference": "Matthew 9:27-31",
+                "book_id": 40,
+                "chapter": 9,
+                "verse_start": 27,
+                "verse_end": 31
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              }
+            ]
+          },
+          {
+            "slug": "how-many-loaves-do-you-have",
+            "title": "How many loaves do you have?",
+            "summary": "Before He multiplies anything He asks them to inventory what little they actually hold.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 89,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Mark", "Mark"],
+            "passages": [
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 6,
+                "verse_start": 38,
+                "verse_end": 38,
+                "is_primary": true,
+                "display": "Mark 6:38"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 8,
+                "verse_start": 5,
+                "verse_end": 5,
+                "is_primary": false,
+                "display": "Mark 8:5"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "how-many-loaves-do-you-have",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "How many loaves do you have?",
+                "text": "How many loaves do you have? Go and see.",
+                "summary": "Before He multiplies anything He asks them to inventory what little they actually hold.",
+                "provenance": 2,
+                "reference": "Mark 6:38",
+                "book_id": 41,
+                "chapter": 6,
+                "verse_start": 38,
+                "verse_end": 38
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              }
+            ]
+          },
+          {
+            "slug": "do-you-not-yet-understand",
+            "title": "Do you not yet understand?",
+            "summary": "Seven rapid-fire questions to disciples worried about bread, days after two mass feedings.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 100,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Mark"],
+            "passages": [
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 8,
+                "verse_start": 14,
+                "verse_end": 21,
+                "is_primary": true,
+                "display": "Mark 8:14-21"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "do-you-not-yet-understand",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Do you not yet understand?",
+                "text": "Do you not yet perceive or understand? Are your hearts hardened?",
+                "summary": "Seven rapid-fire questions to disciples worried about bread, days after two mass feedings.",
+                "provenance": 2,
+                "reference": "Mark 8:14-21",
+                "book_id": 41,
+                "chapter": 8,
+                "verse_start": 14,
+                "verse_end": 21
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              },
+              {
+                "slug": "warnings",
+                "name": "Warnings"
+              }
+            ]
+          },
+          {
+            "slug": "where-are-the-nine",
+            "title": "Were not ten cleansed? Where are the nine?",
+            "summary": "Ten lepers healed, one returned. The question is about gratitude, and it is left open.",
+            "period_slug": "journey-to-jerusalem",
+            "period_name": "The Road to Jerusalem",
+            "sequence": 22,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Luke"],
+            "passages": [
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 17,
+                "verse_start": 11,
+                "verse_end": 19,
+                "is_primary": true,
+                "display": "Luke 17:11-19"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "where-are-the-nine",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Were not ten cleansed? Where are the nine?",
+                "text": "Were not ten cleansed? Where are the nine?",
+                "summary": "Ten lepers healed, one returned. The question is about gratitude, and it is left open.",
+                "provenance": 2,
+                "reference": "Luke 17:11-19",
+                "book_id": 42,
+                "chapter": 17,
+                "verse_start": 11,
+                "verse_end": 19
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              },
+              {
+                "slug": "salvation",
+                "name": "Salvation"
+              }
+            ]
+          },
+          {
+            "slug": "what-do-you-want-me-to-do-for-you",
+            "title": "What do you want me to do for you?",
+            "summary": "Asked of a blind beggar — and, in the same week, of two disciples angling for thrones.",
+            "period_slug": "journey-to-jerusalem",
+            "period_name": "The Road to Jerusalem",
+            "sequence": 34,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 10,
+                "verse_start": 36,
+                "verse_end": 51,
+                "is_primary": true,
+                "display": "Mark 10:36-51"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 18,
+                "verse_start": 41,
+                "verse_end": 41,
+                "is_primary": false,
+                "display": "Luke 18:41"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "what-do-you-want-me-to-do-for-you",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "What do you want me to do for you?",
+                "text": "What do you want me to do for you?",
+                "summary": "Asked of a blind beggar — and, in the same week, of two disciples angling for thrones.",
+                "provenance": 2,
+                "reference": "Mark 10:51",
+                "book_id": 41,
+                "chapter": 10,
+                "verse_start": 51,
+                "verse_end": 51
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              },
+              {
+                "slug": "prayer",
+                "name": "Prayer"
+              }
+            ]
+          },
+          {
+            "slug": "do-you-believe-in-the-son-of-man",
+            "title": "Do you believe in the Son of Man?",
+            "summary": "He goes looking for the man born blind after the synagogue throws him out.",
+            "period_slug": "journey-to-jerusalem",
+            "period_name": "The Road to Jerusalem",
+            "sequence": 47,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["John"],
+            "passages": [
+              {
+                "book_id": 43,
+                "book_name": "John",
+                "chapter": 9,
+                "verse_start": 35,
+                "verse_end": 38,
+                "is_primary": true,
+                "display": "John 9:35-38"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "do-you-believe-in-the-son-of-man",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Do you believe in the Son of Man?",
+                "text": "Do you believe in the Son of Man?",
+                "summary": "He goes looking for the man born blind after the synagogue throws him out.",
+                "provenance": 2,
+                "reference": "John 9:35-38",
+                "book_id": 43,
+                "chapter": 9,
+                "verse_start": 35,
+                "verse_end": 38
+              }
+            ],
+            "themes": [
+              {
+                "slug": "faith",
+                "name": "Faith"
+              },
+              {
+                "slug": "salvation",
+                "name": "Salvation"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      },
+      {
+        "slug": "salvation",
+        "name": "Salvation",
+        "description": "Being found, forgiven, and given life — why He came and what He came to accomplish.",
+        "sort_order": 3,
+        "event_count": 5,
+        "facet_count": 5,
+        "gospels": ["Matthew", "Mark", "Luke", "John", "Psalms"],
+        "points": [
+          {
+            "slug": "why-do-you-call-me-good",
+            "title": "Why do you call me good?",
+            "text": "Why do you call me good? No one is good except God alone.",
+            "summary": "A rich man opens with flattery. Jesus refuses it and goes straight to the man's real problem.",
+            "reference": "Mark 10:17-22",
+            "provenance": 2
+          },
+          {
+            "slug": "could-you-not-watch-one-hour",
+            "title": "Could you not watch with me one hour?",
+            "text": "So, could you not watch with me one hour?",
+            "summary": "Asked in Gethsemane, of friends who kept falling asleep while He sweated.",
+            "reference": "Matthew 26:36-46",
+            "provenance": 2
+          },
+          {
+            "slug": "whom-are-you-seeking",
+            "title": "Whom are you seeking?",
+            "text": "Whom do you seek?",
+            "summary": "Asked of an armed detachment in a garden. He walks toward them, not away.",
+            "reference": "John 18:1-9",
+            "provenance": 2
+          },
+          {
+            "slug": "my-god-why-have-you-forsaken-me",
+            "title": "My God, my God, why have you forsaken me?",
+            "text": "My God, my God, why have you forsaken me?",
+            "summary": "The hardest question in the gospels, and He is the one asking it — quoting Psalm 22 from the cross.",
+            "reference": "Matthew 27:45-50",
+            "provenance": 2
+          },
+          {
+            "slug": "woman-why-are-you-weeping",
+            "title": "Woman, why are you weeping?",
+            "text": "Woman, why are you weeping? Whom are you seeking?",
+            "summary": "The risen Christ's first recorded words, asked of someone who thought He was the gardener.",
+            "reference": "John 20:11-18",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "event-rich-young-ruler",
+            "title": "The rich young ruler",
+            "summary": "The only person in the gospels who is invited to follow Him and refuses. Mark notes that Jesus loved him.",
+            "period_slug": "journey-to-jerusalem",
+            "period_name": "The Road to Jerusalem",
+            "sequence": 29,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 19,
+                "verse_start": 16,
+                "verse_end": 30,
+                "is_primary": true,
+                "display": "Matthew 19:16-30"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 10,
+                "verse_start": 17,
+                "verse_end": 31,
+                "is_primary": false,
+                "display": "Mark 10:17-31"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 18,
+                "verse_start": 18,
+                "verse_end": 30,
+                "is_primary": false,
+                "display": "Luke 18:18-30"
+              }
+            ],
+            "facet_counts": {
+              "words": 2,
+              "actions": 1,
+              "by_type": {
+                "ENCOUNTER": 1,
+                "QUESTION": 1,
+                "COMMAND": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "why-do-you-call-me-good",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Why do you call me good?",
+                "text": "Why do you call me good? No one is good except God alone.",
+                "summary": "A rich man opens with flattery. Jesus refuses it and goes straight to the man's real problem.",
+                "provenance": 2,
+                "reference": "Mark 10:17-22",
+                "book_id": 41,
+                "chapter": 10,
+                "verse_start": 17,
+                "verse_end": 22
+              }
+            ],
+            "themes": [
+              {
+                "slug": "salvation",
+                "name": "Salvation"
+              },
+              {
+                "slug": "money",
+                "name": "Money"
+              },
+              {
+                "slug": "discipleship",
+                "name": "Discipleship"
+              }
+            ]
+          },
+          {
+            "slug": "event-gethsemane",
+            "title": "Gethsemane",
+            "summary": "\"Not as I will, but as you will.\" He asks three times for the cup to pass, and goes anyway.",
+            "period_slug": "cross",
+            "period_name": "The Cross",
+            "sequence": 1,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 26,
+                "verse_start": 36,
+                "verse_end": 46,
+                "is_primary": true,
+                "display": "Matthew 26:36-46"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 14,
+                "verse_start": 32,
+                "verse_end": 42,
+                "is_primary": false,
+                "display": "Mark 14:32-42"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 22,
+                "verse_start": 39,
+                "verse_end": 46,
+                "is_primary": false,
+                "display": "Luke 22:39-46"
+              }
+            ],
+            "facet_counts": {
+              "words": 2,
+              "actions": 1,
+              "by_type": {
+                "ENCOUNTER": 1,
+                "QUESTION": 1,
+                "COMMAND": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "could-you-not-watch-one-hour",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Could you not watch with me one hour?",
+                "text": "So, could you not watch with me one hour?",
+                "summary": "Asked in Gethsemane, of friends who kept falling asleep while He sweated.",
+                "provenance": 2,
+                "reference": "Matthew 26:36-46",
+                "book_id": 40,
+                "chapter": 26,
+                "verse_start": 36,
+                "verse_end": 46
+              }
+            ],
+            "themes": [
+              {
+                "slug": "salvation",
+                "name": "Salvation"
+              },
+              {
+                "slug": "prayer",
+                "name": "Prayer"
+              },
+              {
+                "slug": "discipleship",
+                "name": "Discipleship"
+              },
+              {
+                "slug": "warnings",
+                "name": "Warnings"
+              }
+            ]
+          },
+          {
+            "slug": "whom-are-you-seeking",
+            "title": "Whom are you seeking?",
+            "summary": "Asked of an armed detachment in a garden. He walks toward them, not away.",
+            "period_slug": "cross",
+            "period_name": "The Cross",
+            "sequence": 4,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["John"],
+            "passages": [
+              {
+                "book_id": 43,
+                "book_name": "John",
+                "chapter": 18,
+                "verse_start": 1,
+                "verse_end": 9,
+                "is_primary": true,
+                "display": "John 18:1-9"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "whom-are-you-seeking",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Whom are you seeking?",
+                "text": "Whom do you seek?",
+                "summary": "Asked of an armed detachment in a garden. He walks toward them, not away.",
+                "provenance": 2,
+                "reference": "John 18:1-9",
+                "book_id": 43,
+                "chapter": 18,
+                "verse_start": 1,
+                "verse_end": 9
+              }
+            ],
+            "themes": [
+              {
+                "slug": "salvation",
+                "name": "Salvation"
+              }
+            ]
+          },
+          {
+            "slug": "event-cry-of-dereliction",
+            "title": "My God, my God, why have you forsaken me?",
+            "summary": "The hardest question in the gospels, and He is the one asking it — quoting Psalm 22 from the cross.",
+            "period_slug": "cross",
+            "period_name": "The Cross",
+            "sequence": 14,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Psalms", "Matthew", "Mark"],
+            "passages": [
+              {
+                "book_id": 19,
+                "book_name": "Psalms",
+                "chapter": 22,
+                "verse_start": 1,
+                "verse_end": 1,
+                "is_primary": true,
+                "display": "Psalms 22:1"
+              },
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 27,
+                "verse_start": 45,
+                "verse_end": 50,
+                "is_primary": false,
+                "display": "Matthew 27:45-50"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 15,
+                "verse_start": 33,
+                "verse_end": 37,
+                "is_primary": false,
+                "display": "Mark 15:33-37"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "my-god-why-have-you-forsaken-me",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "My God, my God, why have you forsaken me?",
+                "text": "My God, my God, why have you forsaken me?",
+                "summary": "The hardest question in the gospels, and He is the one asking it — quoting Psalm 22 from the cross.",
+                "provenance": 2,
+                "reference": "Matthew 27:45-50",
+                "book_id": 40,
+                "chapter": 27,
+                "verse_start": 45,
+                "verse_end": 50
+              }
+            ],
+            "themes": [
+              {
+                "slug": "salvation",
+                "name": "Salvation"
+              },
+              {
+                "slug": "prophecy",
+                "name": "Prophecy"
+              }
+            ]
+          },
+          {
+            "slug": "woman-why-are-you-weeping",
+            "title": "Woman, why are you weeping?",
+            "summary": "The risen Christ's first recorded words, asked of someone who thought He was the gardener.",
+            "period_slug": "resurrection",
+            "period_name": "Resurrection & Ascension",
+            "sequence": 2,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["John"],
+            "passages": [
+              {
+                "book_id": 43,
+                "book_name": "John",
+                "chapter": 20,
+                "verse_start": 11,
+                "verse_end": 18,
+                "is_primary": true,
+                "display": "John 20:11-18"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "woman-why-are-you-weeping",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Woman, why are you weeping?",
+                "text": "Woman, why are you weeping? Whom are you seeking?",
+                "summary": "The risen Christ's first recorded words, asked of someone who thought He was the gardener.",
+                "provenance": 2,
+                "reference": "John 20:11-18",
+                "book_id": 43,
+                "chapter": 20,
+                "verse_start": 11,
+                "verse_end": 18
+              }
+            ],
+            "themes": [
+              {
+                "slug": "salvation",
+                "name": "Salvation"
+              },
+              {
+                "slug": "love",
+                "name": "Love"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      },
+      {
+        "slug": "money",
+        "name": "Money",
+        "description": "Possessions, generosity, and the two masters no one can serve at once.",
+        "sort_order": 5,
+        "event_count": 1,
+        "facet_count": 1,
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "points": [
+          {
+            "slug": "what-does-it-profit-to-gain-the-world",
+            "title": "What does it profit a man to gain the whole world?",
+            "text": "For what does it profit a man to gain the whole world and forfeit his soul?",
+            "summary": "A cost-benefit question about the only asset that cannot be replaced.",
+            "reference": "Matthew 16:26",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "event-gain-the-world",
+            "title": "What does it profit a man to gain the whole world?",
+            "summary": "A cost-benefit question about the only asset that cannot be replaced.",
+            "period_slug": "turning-point",
+            "period_name": "The Turning Point",
+            "sequence": 6,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Matthew", "Mark", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 16,
+                "verse_start": 26,
+                "verse_end": 26,
+                "is_primary": true,
+                "display": "Matthew 16:26"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 8,
+                "verse_start": 36,
+                "verse_end": 37,
+                "is_primary": false,
+                "display": "Mark 8:36-37"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 9,
+                "verse_start": 25,
+                "verse_end": 25,
+                "is_primary": false,
+                "display": "Luke 9:25"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "what-does-it-profit-to-gain-the-world",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "What does it profit a man to gain the whole world?",
+                "text": "For what does it profit a man to gain the whole world and forfeit his soul?",
+                "summary": "A cost-benefit question about the only asset that cannot be replaced.",
+                "provenance": 2,
+                "reference": "Matthew 16:26",
+                "book_id": 40,
+                "chapter": 16,
+                "verse_start": 26,
+                "verse_end": 26
+              }
+            ],
+            "themes": [
+              {
+                "slug": "money",
+                "name": "Money"
+              },
+              {
+                "slug": "discipleship",
+                "name": "Discipleship"
+              },
+              {
+                "slug": "warnings",
+                "name": "Warnings"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      },
+      {
+        "slug": "judgment",
+        "name": "Judgment",
+        "description": "The reckoning He promised — separation, accountability, and the return of the Son of Man.",
+        "sort_order": 6,
+        "event_count": 2,
+        "facet_count": 2,
+        "gospels": ["Matthew", "Luke", "John"],
+        "points": [
+          {
+            "slug": "why-do-you-see-the-speck",
+            "title": "Why do you see the speck in your brother's eye?",
+            "text": "Why do you see the speck that is in your brother's eye, but do not notice the log that is in your own eye?",
+            "summary": "The question is not whether the speck is there. It is what is in your own eye while you look.",
+            "reference": "Matthew 7:1-5",
+            "provenance": 2
+          },
+          {
+            "slug": "why-do-you-seek-to-kill-me",
+            "title": "Why do you seek to kill me?",
+            "text": "Why do you seek to kill me?",
+            "summary": "Asked openly in the temple courts, to a crowd that denied they were doing any such thing.",
+            "reference": "John 7:14-24",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "event-speck-and-log",
+            "title": "Why do you see the speck in your brother's eye?",
+            "summary": "The question is not whether the speck is there. It is what is in your own eye while you look.",
+            "period_slug": "galilean-ministry",
+            "period_name": "The Galilean Ministry",
+            "sequence": 42,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "probable",
+            "gospels": ["Matthew", "Luke"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 7,
+                "verse_start": 1,
+                "verse_end": 5,
+                "is_primary": true,
+                "display": "Matthew 7:1-5"
+              },
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 6,
+                "verse_start": 37,
+                "verse_end": 42,
+                "is_primary": false,
+                "display": "Luke 6:37-42"
+              }
+            ],
+            "facet_counts": {
+              "words": 2,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1,
+                "COMMAND": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "why-do-you-see-the-speck",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Why do you see the speck in your brother's eye?",
+                "text": "Why do you see the speck that is in your brother's eye, but do not notice the log that is in your own eye?",
+                "summary": "The question is not whether the speck is there. It is what is in your own eye while you look.",
+                "provenance": 2,
+                "reference": "Matthew 7:1-5",
+                "book_id": 40,
+                "chapter": 7,
+                "verse_start": 1,
+                "verse_end": 5
+              }
+            ],
+            "themes": [
+              {
+                "slug": "judgment",
+                "name": "Judgment"
+              },
+              {
+                "slug": "love",
+                "name": "Love"
+              }
+            ]
+          },
+          {
+            "slug": "why-do-you-seek-to-kill-me",
+            "title": "Why do you seek to kill me?",
+            "summary": "Asked openly in the temple courts, to a crowd that denied they were doing any such thing.",
+            "period_slug": "journey-to-jerusalem",
+            "period_name": "The Road to Jerusalem",
+            "sequence": 40,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["John"],
+            "passages": [
+              {
+                "book_id": 43,
+                "book_name": "John",
+                "chapter": 7,
+                "verse_start": 14,
+                "verse_end": 24,
+                "is_primary": true,
+                "display": "John 7:14-24"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "why-do-you-seek-to-kill-me",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Why do you seek to kill me?",
+                "text": "Why do you seek to kill me?",
+                "summary": "Asked openly in the temple courts, to a crowd that denied they were doing any such thing.",
+                "provenance": 2,
+                "reference": "John 7:14-24",
+                "book_id": 43,
+                "chapter": 7,
+                "verse_start": 14,
+                "verse_end": 24
+              }
+            ],
+            "themes": [
+              {
+                "slug": "judgment",
+                "name": "Judgment"
+              },
+              {
+                "slug": "warnings",
+                "name": "Warnings"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      },
+      {
+        "slug": "love",
+        "name": "Love",
+        "description": "Love for God, neighbour, stranger and enemy — the command He called greatest and the mark He gave His followers.",
+        "sort_order": 7,
+        "event_count": 2,
+        "facet_count": 2,
+        "gospels": ["Luke", "John"],
+        "points": [
+          {
+            "slug": "which-proved-to-be-a-neighbour",
+            "title": "Which of these three proved to be a neighbour?",
+            "text": "Which of these three, do you think, proved to be a neighbor to the man who fell among the robbers?",
+            "summary": "The lawyer asked who his neighbour was. Jesus makes him answer who acted like one.",
+            "reference": "Luke 10:25-37",
+            "provenance": 2
+          },
+          {
+            "slug": "do-you-love-me",
+            "title": "Do you love me?",
+            "text": "Simon, son of John, do you love me?",
+            "summary": "Asked three times on a beach, once for each denial, and answered with a commission each time.",
+            "reference": "John 21:15-19",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "which-proved-to-be-a-neighbour",
+            "title": "Which of these three proved to be a neighbour?",
+            "summary": "The lawyer asked who his neighbour was. Jesus makes him answer who acted like one.",
+            "period_slug": "journey-to-jerusalem",
+            "period_name": "The Road to Jerusalem",
+            "sequence": 4,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Luke"],
+            "passages": [
+              {
+                "book_id": 42,
+                "book_name": "Luke",
+                "chapter": 10,
+                "verse_start": 25,
+                "verse_end": 37,
+                "is_primary": true,
+                "display": "Luke 10:25-37"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "which-proved-to-be-a-neighbour",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Which of these three proved to be a neighbour?",
+                "text": "Which of these three, do you think, proved to be a neighbor to the man who fell among the robbers?",
+                "summary": "The lawyer asked who his neighbour was. Jesus makes him answer who acted like one.",
+                "provenance": 2,
+                "reference": "Luke 10:25-37",
+                "book_id": 42,
+                "chapter": 10,
+                "verse_start": 25,
+                "verse_end": 37
+              }
+            ],
+            "themes": [
+              {
+                "slug": "love",
+                "name": "Love"
+              }
+            ]
+          },
+          {
+            "slug": "do-you-love-me",
+            "title": "Do you love me?",
+            "summary": "Asked three times on a beach, once for each denial, and answered with a commission each time.",
+            "period_slug": "resurrection",
+            "period_name": "Resurrection & Ascension",
+            "sequence": 8,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["John"],
+            "passages": [
+              {
+                "book_id": 43,
+                "book_name": "John",
+                "chapter": 21,
+                "verse_start": 15,
+                "verse_end": 19,
+                "is_primary": true,
+                "display": "John 21:15-19"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "do-you-love-me",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Do you love me?",
+                "text": "Simon, son of John, do you love me?",
+                "summary": "Asked three times on a beach, once for each denial, and answered with a commission each time.",
+                "provenance": 2,
+                "reference": "John 21:15-19",
+                "book_id": 43,
+                "chapter": 21,
+                "verse_start": 15,
+                "verse_end": 19
+              }
+            ],
+            "themes": [
+              {
+                "slug": "love",
+                "name": "Love"
+              },
+              {
+                "slug": "discipleship",
+                "name": "Discipleship"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      },
+      {
+        "slug": "discipleship",
+        "name": "Discipleship",
+        "description": "What it costs to follow Him, and what He promised those who do.",
+        "sort_order": 8,
+        "event_count": 1,
+        "facet_count": 1,
+        "gospels": ["John"],
+        "points": [
+          {
+            "slug": "what-are-you-seeking",
+            "title": "What are you seeking?",
+            "text": "What are you seeking?",
+            "summary": "The first words He speaks in John's gospel.",
+            "reference": "John 1:35-39",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "what-are-you-seeking",
+            "title": "What are you seeking?",
+            "summary": "The first words He speaks in John's gospel.",
+            "period_slug": "early-ministry",
+            "period_name": "Early Ministry",
+            "sequence": 1,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["John"],
+            "passages": [
+              {
+                "book_id": 43,
+                "book_name": "John",
+                "chapter": 1,
+                "verse_start": 35,
+                "verse_end": 39,
+                "is_primary": true,
+                "display": "John 1:35-39"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "what-are-you-seeking",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "What are you seeking?",
+                "text": "What are you seeking?",
+                "summary": "The first words He speaks in John's gospel.",
+                "provenance": 2,
+                "reference": "John 1:35-39",
+                "book_id": 43,
+                "chapter": 1,
+                "verse_start": 35,
+                "verse_end": 39
+              }
+            ],
+            "themes": [
+              {
+                "slug": "discipleship",
+                "name": "Discipleship"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      },
+      {
+        "slug": "prophecy",
+        "name": "Prophecy",
+        "description": "What He foretold — about Himself, Jerusalem, His followers, and the end of the age.",
+        "sort_order": 9,
+        "event_count": 1,
+        "facet_count": 1,
+        "gospels": ["Matthew", "Mark"],
+        "points": [
+          {
+            "slug": "have-you-never-read",
+            "title": "Have you never read…?",
+            "text": "Have you never read in the Scriptures?",
+            "summary": "His standard reply to religious experts — not a new argument, but a passage they had somehow missed.",
+            "reference": "Matthew 21:42",
+            "provenance": 2
+          }
+        ],
+        "events": [
+          {
+            "slug": "have-you-never-read",
+            "title": "Have you never read…?",
+            "summary": "His standard reply to religious experts — not a new argument, but a passage they had somehow missed.",
+            "period_slug": null,
+            "period_name": null,
+            "sequence": null,
+            "chronology_confidence": "probable",
+            "parallel_confidence": "high",
+            "gospels": ["Matthew", "Mark", "Mark"],
+            "passages": [
+              {
+                "book_id": 40,
+                "book_name": "Matthew",
+                "chapter": 21,
+                "verse_start": 42,
+                "verse_end": 42,
+                "is_primary": true,
+                "display": "Matthew 21:42"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 2,
+                "verse_start": 25,
+                "verse_end": 25,
+                "is_primary": false,
+                "display": "Mark 2:25"
+              },
+              {
+                "book_id": 41,
+                "book_name": "Mark",
+                "chapter": 12,
+                "verse_start": 10,
+                "verse_end": 10,
+                "is_primary": false,
+                "display": "Mark 12:10"
+              }
+            ],
+            "facet_counts": {
+              "words": 1,
+              "actions": 0,
+              "by_type": {
+                "QUESTION": 1
+              }
+            },
+            "matched_facets": [
+              {
+                "slug": "have-you-never-read",
+                "mode": "WORD",
+                "type": "QUESTION",
+                "type_slug": "questions",
+                "type_label": "Question",
+                "speaker": "JESUS",
+                "actor": null,
+                "title": "Have you never read…?",
+                "text": "Have you never read in the Scriptures?",
+                "summary": "His standard reply to religious experts — not a new argument, but a passage they had somehow missed.",
+                "provenance": 2,
+                "reference": "Matthew 21:42",
+                "book_id": 40,
+                "chapter": 21,
+                "verse_start": 42,
+                "verse_end": 42
+              }
+            ],
+            "themes": [
+              {
+                "slug": "prophecy",
+                "name": "Prophecy"
+              },
+              {
+                "slug": "warnings",
+                "name": "Warnings"
+              }
+            ]
+          }
+        ],
+        "brief": null,
+        "brief_provenance": null
+      }
+    ],
+    "total_events": 27,
+    "truncated": false
+  }
+}

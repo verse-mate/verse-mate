@@ -1,0 +1,74 @@
+{
+  "status": 200,
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "theme_id": 1,
+        "theme_name": "Key Verses",
+        "theme_color": "yellow",
+        "theme_description": "Foundational truths and essential doctrine",
+        "is_enabled": true,
+        "custom_color": null,
+        "relevance_threshold": 2,
+        "admin_override": false,
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 2,
+        "theme_name": "Promises from God",
+        "theme_color": "blue",
+        "theme_description": "Divine promises and covenants",
+        "is_enabled": false,
+        "custom_color": null,
+        "relevance_threshold": 3,
+        "admin_override": false,
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 3,
+        "theme_name": "Commands",
+        "theme_color": "green",
+        "theme_description": "Direct commands and instructions",
+        "is_enabled": false,
+        "custom_color": null,
+        "relevance_threshold": 3,
+        "admin_override": false,
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 4,
+        "theme_name": "Warnings",
+        "theme_color": "orange",
+        "theme_description": "Warnings, prophecies, and cautionary passages",
+        "is_enabled": false,
+        "custom_color": null,
+        "relevance_threshold": 3,
+        "admin_override": false,
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 5,
+        "theme_name": "Comfort",
+        "theme_color": "pink",
+        "theme_description": "Comfort, encouragement, and salvation passages",
+        "is_enabled": false,
+        "custom_color": null,
+        "relevance_threshold": 3,
+        "admin_override": false,
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 6,
+        "theme_name": "God's Nature",
+        "theme_color": "purple",
+        "theme_description": "Characteristics of God and repeating divine themes",
+        "is_enabled": false,
+        "custom_color": null,
+        "relevance_threshold": 3,
+        "admin_override": false,
+        "default_relevance_threshold": 3
+      }
+    ]
+  }
+}

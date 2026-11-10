@@ -1,4 +1,5 @@
 import { t } from "elysia";
+import { DateTime, DateTimeOrNull } from "../../common/response-schemas";
 import {
   BookTypeCompact,
   ExplanationTypeEnum,
@@ -7,6 +8,7 @@ import {
   MessageType,
   TestamentEnum,
 } from "../../shared/schemas/common-types.schema";
+import { StoredStudySchema } from "../../shared/schemas/inductive-study.schema";
 
 /**
  * Book response schemas
@@ -165,19 +167,13 @@ export const ChapterIdSchema = t.Object({
   chapter_id: t.Union([t.Number(), t.Null()]),
 });
 
-// Inductive-study response. `content` is the full InductiveStudy object
-// (steps + interpretation + application) — an opaque JSON document mirrored
-// from the @versemate/studies shape, so it's typed as Unknown rather than
-// re-declaring the deeply nested discriminated union here. `language_code`
-// is the language actually served after English fallback. `null` when no
-// study exists for the chapter.
 export const StudySchema = t.Object({
   study: t.Union([
     t.Object({
       book_id: t.Number(),
       chapter: t.Number(),
       language_code: t.String(),
-      content: t.Unknown(),
+      content: StoredStudySchema,
     }),
     t.Null(),
   ]),
@@ -366,8 +362,8 @@ const HighlightResponseType = t.Object({
   start_char: t.Union([t.Number(), t.Null()]),
   end_char: t.Union([t.Number(), t.Null()]),
   selected_text: t.Union([t.String(), t.Null()]),
-  created_at: t.String(), // ISO date string (Date serialized)
-  updated_at: t.String(), // ISO date string (Date serialized)
+  created_at: DateTime,
+  updated_at: DateTime,
 });
 
 export const HighlightsSchema = t.Object({
@@ -387,7 +383,15 @@ export const HighlightAddSchema = t.Union([
   t.Object({
     success: t.Literal(false),
     error: t.String(),
-    overlaps: t.Optional(t.Array(t.Any())),
+    overlaps: t.Optional(
+      t.Array(
+        t.Object({
+          ...HighlightResponseType.properties,
+          created_at: DateTimeOrNull,
+          updated_at: DateTimeOrNull,
+        }),
+      ),
+    ),
   }),
 ]);
 
@@ -423,4 +427,61 @@ export const BookIntroductionSchema = t.Object({
     t.Null(),
   ]),
   hasViewed: t.Optional(t.Boolean()),
+});
+
+export const AutoHighlightsSchema = t.Object({
+  success: t.Boolean(),
+  data: t.Array(
+    t.Object({
+      auto_highlight_id: t.Number(),
+      theme_id: t.Number(),
+      book_id: t.Number(),
+      chapter_number: t.Number(),
+      start_verse: t.Number(),
+      end_verse: t.Number(),
+      relevance_score: t.Number(),
+      created_at: DateTimeOrNull,
+      theme_name: t.String(),
+      theme_color: HighlightColorEnum,
+    }),
+  ),
+});
+
+export const HighlightThemesSchema = t.Object({
+  success: t.Boolean(),
+  data: t.Array(
+    t.Object({
+      theme_id: t.Number(),
+      name: t.String(),
+      color: HighlightColorEnum,
+      description: t.Union([t.String(), t.Null()]),
+      is_system: t.Union([t.Boolean(), t.Null()]),
+      priority: t.Union([t.Number(), t.Null()]),
+      is_active: t.Union([t.Boolean(), t.Null()]),
+      created_at: DateTimeOrNull,
+      updated_at: DateTimeOrNull,
+      default_relevance_threshold: t.Number(),
+    }),
+  ),
+});
+
+export const ThemePreferencesSchema = t.Object({
+  success: t.Boolean(),
+  data: t.Array(
+    t.Object({
+      theme_id: t.Number(),
+      theme_name: t.String(),
+      theme_color: HighlightColorEnum,
+      theme_description: t.Union([t.String(), t.Null()]),
+      is_enabled: t.Boolean(),
+      custom_color: t.Union([HighlightColorEnum, t.Null()]),
+      relevance_threshold: t.Number(),
+      admin_override: t.Boolean(),
+      default_relevance_threshold: t.Number(),
+    }),
+  ),
+});
+
+export const ThemePreferenceUpdateSchema = t.Object({
+  success: t.Boolean(),
 });

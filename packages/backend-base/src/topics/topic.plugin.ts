@@ -2,6 +2,11 @@ import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
+import { isoDateOrNull } from "../common/iso-date";
+import {
+  DateTimeOrNull,
+  StandardErrorResponses,
+} from "../common/response-schemas";
 import { resolveLanguage } from "../jesus/utils/language.utils";
 import shared from "../shared/shared.plugin";
 import { parseAndInjectVerses } from "../shared/verse-parser";
@@ -43,8 +48,8 @@ const TopicSchema = t.Object({
   category: t.String(),
   sort_order: t.Union([t.Number(), t.Null()]),
   is_active: t.Union([t.Boolean(), t.Null()]),
-  created_at: t.Union([t.Date(), t.Null()]),
-  updated_at: t.Union([t.Date(), t.Null()]),
+  created_at: DateTimeOrNull,
+  updated_at: DateTimeOrNull,
   is_translated: t.Optional(t.Boolean()),
 });
 
@@ -98,7 +103,7 @@ const plugin = new Elysia()
           return { categories };
         },
         {
-          response: CategoryResponseSchema,
+          response: { 200: CategoryResponseSchema, ...StandardErrorResponses },
         },
       )
       .resolve({ as: "scoped" }, authDerive)
@@ -125,7 +130,10 @@ const plugin = new Elysia()
             bible_version: t.Optional(t.String()),
             lang: t.Optional(t.String()),
           }),
-          response: TopicSearchResponseSchema,
+          response: {
+            200: TopicSearchResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -181,6 +189,7 @@ const plugin = new Elysia()
               "Lookup topic using URL-friendly category and slug (for deep linking)",
           },
           response: {
+            ...StandardErrorResponses,
             200: TopicBySlugResponseSchema,
             400: t.Object({ error: t.String() }),
             404: t.Object({ error: t.String() }),
@@ -253,7 +262,13 @@ const plugin = new Elysia()
           };
 
           return {
-            topic: topic || null,
+            topic: topic
+              ? {
+                  ...topic,
+                  created_at: isoDateOrNull(topic.created_at),
+                  updated_at: isoDateOrNull(topic.updated_at),
+                }
+              : null,
             references: references || null,
             explanation,
           };
@@ -266,7 +281,10 @@ const plugin = new Elysia()
             bible_version: t.Optional(t.String()),
             lang: t.Optional(t.String()),
           }),
-          response: TopicDetailsResponseSchema,
+          response: {
+            200: TopicDetailsResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -294,7 +312,10 @@ const plugin = new Elysia()
           query: t.Object({
             version: t.Optional(t.String()),
           }),
-          response: TopicReferencesResponseSchema,
+          response: {
+            200: TopicReferencesResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -323,7 +344,10 @@ const plugin = new Elysia()
             ),
             lang: t.Optional(t.String()),
           }),
-          response: TopicExplanationResponseSchema,
+          response: {
+            200: TopicExplanationResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -341,7 +365,10 @@ const plugin = new Elysia()
             content: t.String(),
             bibleVersion: t.String(),
           }),
-          response: ParseReferencesResponseSchema,
+          response: {
+            200: ParseReferencesResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       ),
   );

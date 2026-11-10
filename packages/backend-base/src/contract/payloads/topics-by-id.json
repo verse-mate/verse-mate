@@ -1,0 +1,22 @@
+{
+  "status": 200,
+  "body": {
+    "topic": {
+      "topic_id": "<uuid>",
+      "name": "Faith",
+      "description": "Trust and confidence in God",
+      "category": "THEME",
+      "sort_order": 1,
+      "is_active": true,
+      "created_at": "<date-time>",
+      "updated_at": "<date-time>",
+      "is_translated": false
+    },
+    "references": null,
+    "explanation": {
+      "summary": "No summary explanation available.",
+      "byline": "No byline explanation available.",
+      "detailed": "No detailed explanation available."
+    }
+  }
+}

@@ -64,6 +64,12 @@ import {
 } from "./coach-session-state";
 import { rowToReport, rowToSummary } from "./coach-store.transform";
 import { CoachUploadService, type UploadStorage } from "./coach-upload.service";
+import type {
+  EditChanges,
+  ReportSummaryItem,
+  RevisionChanges,
+  RevisionPrevious,
+} from "./coach.schema";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
 import {
   type AddedLeaderRow,
@@ -863,8 +869,8 @@ export class CoachService {
       ...rows.map((r) => ({
         kind: "revision" as const,
         revision: r.revision,
-        previous: r.previous as Record<string, unknown>,
-        changes: r.changes as Record<string, unknown>,
+        previous: r.previous as RevisionPrevious,
+        changes: r.changes as RevisionChanges,
         amendedBy: r.amended_by_email ?? null,
         amendedAt: new Date(r.amended_at as unknown as string),
         sentTo: r.sent_to,
@@ -875,7 +881,7 @@ export class CoachService {
       ...edits.map((e) => ({
         kind: "edit" as const,
         edit: e.id,
-        changes: e.changes as Record<string, unknown>,
+        changes: e.changes as EditChanges,
         editedBy: e.edited_by_email ?? null,
         editedAt: new Date(e.edited_at as unknown as string),
       })),
@@ -1734,7 +1740,7 @@ export class CoachService {
     opts: { limit?: number; offset?: number } = {},
     audience: "leader" | "admin" = "leader",
   ): Promise<{
-    items: Record<string, unknown>[];
+    items: ReportSummaryItem[];
     total: number;
     streakWeeks: number;
     quarterSessions: number;
@@ -1761,7 +1767,7 @@ export class CoachService {
     coachId: string,
     opts: { limit?: number; offset?: number },
     includeHeld: boolean,
-  ): Promise<{ items: Record<string, unknown>[]; total: number }> {
+  ): Promise<{ items: ReportSummaryItem[]; total: number }> {
     const total = await this.reportsRepository.countForCoach(coachId, {
       includeHeld,
     });
@@ -1771,18 +1777,25 @@ export class CoachService {
       includeHeld,
     });
     return {
-      items: rows.map((r) => ({
-        ...rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
-        ...(includeHeld ? { held: r.held === true } : {}),
-      })),
+      items: rows.map(
+        (r) =>
+          ({
+            ...rowToSummary({
+              id: r.id,
+              session_date: r.date,
+              summary: r.summary,
+            }),
+            ...(includeHeld ? { held: r.held === true } : {}),
+          }) as ReportSummaryItem,
+      ),
       total,
     };
   }
 
   private async withRecordingFields(
     coachId: string,
-    items: Record<string, unknown>[],
-  ): Promise<Record<string, unknown>[]> {
+    items: ReportSummaryItem[],
+  ): Promise<ReportSummaryItem[]> {
     if (items.length === 0) return items;
     const [links, media] = await Promise.all([
       this.coachRepository.getRecordingLinksForCoach(coachId),

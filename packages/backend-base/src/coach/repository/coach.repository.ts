@@ -1,6 +1,7 @@
 import type Database from "database/src/models/Database";
 import { type ExpressionBuilder, sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
+import type { ClassRecurrence } from "../dto/coach.dto";
 
 /** The coach portal's user-writable setup fields (one row per user). */
 export interface CoachSettings {
@@ -17,7 +18,7 @@ export interface CoachClassRow {
   id: string;
   name: string;
   classDate: string | null;
-  recurrence: string;
+  recurrence: ClassRecurrence;
   zoomLink: string;
   startTime: string | null;
   timeZone: string | null;
@@ -28,7 +29,7 @@ export interface CoachClassRow {
 export interface CoachClassInput {
   name: string;
   classDate: string | null;
-  recurrence: string;
+  recurrence: ClassRecurrence;
   zoomLink: string;
   startTime: string | null;
   timeZone: string | null;
@@ -211,7 +212,7 @@ export class CoachRepository {
       id: row.id,
       name: row.name,
       classDate: CoachRepository.toIsoDate(row.class_date),
-      recurrence: row.recurrence,
+      recurrence: row.recurrence as ClassRecurrence,
       zoomLink: row.zoom_link,
       startTime: row.start_time,
       timeZone: row.time_zone,

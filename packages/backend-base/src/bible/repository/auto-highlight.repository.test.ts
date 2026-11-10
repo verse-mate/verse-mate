@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import { AutoHighlightRepository } from "./auto-highlight.repository";
 
 describe("AutoHighlightRepository", () => {
@@ -64,7 +65,7 @@ describe("AutoHighlightRepository", () => {
 
       expect(theme).toBeDefined();
       expect(theme?.name).toBe("Key Verses");
-      expect(theme?.color).toBe("yellow");
+      expect(theme?.color).toBe(HighlightColorEnum.yellow);
       expect(theme?.is_system).toBe(true);
     });
 

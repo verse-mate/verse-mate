@@ -1,0 +1,339 @@
+{
+  "status": 200,
+  "body": {
+    "events": [
+      {
+        "slug": "what-are-you-seeking",
+        "title": "What are you seeking?",
+        "summary": "The first words He speaks in John's gospel.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 1,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 1,
+            "verse_start": 35,
+            "verse_end": 39,
+            "is_primary": true,
+            "display": "John 1:35-39"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "QUESTION": 1
+          }
+        },
+        "matched_facets": [
+          {
+            "slug": "what-are-you-seeking",
+            "mode": "WORD",
+            "type": "QUESTION",
+            "type_slug": "questions",
+            "type_label": "Question",
+            "speaker": "JESUS",
+            "actor": null,
+            "title": "What are you seeking?",
+            "text": "What are you seeking?",
+            "summary": "The first words He speaks in John's gospel.",
+            "provenance": 2,
+            "reference": "John 1:35-39",
+            "book_id": 43,
+            "chapter": 1,
+            "verse_start": 35,
+            "verse_end": 39
+          }
+        ],
+        "themes": [
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      },
+      {
+        "slug": "do-you-want-to-be-healed",
+        "title": "Do you want to be healed?",
+        "summary": "Asked of a man who had been lying by the pool for thirty-eight years.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 18,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 5,
+            "verse_start": 1,
+            "verse_end": 9,
+            "is_primary": true,
+            "display": "John 5:1-9"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "QUESTION": 1
+          }
+        },
+        "matched_facets": [
+          {
+            "slug": "do-you-want-to-be-healed",
+            "mode": "WORD",
+            "type": "QUESTION",
+            "type_slug": "questions",
+            "type_label": "Question",
+            "speaker": "JESUS",
+            "actor": null,
+            "title": "Do you want to be healed?",
+            "text": "Do you want to be healed?",
+            "summary": "Asked of a man who had been lying by the pool for thirty-eight years.",
+            "provenance": 2,
+            "reference": "John 5:1-9",
+            "book_id": 43,
+            "chapter": 5,
+            "verse_start": 1,
+            "verse_end": 9
+          }
+        ],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "event-do-not-be-anxious",
+        "title": "Which of you by being anxious can add an hour to his life?",
+        "summary": "Part of a sustained argument that worry is not only painful but useless.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 39,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 6,
+            "verse_start": 25,
+            "verse_end": 34,
+            "is_primary": true,
+            "display": "Matthew 6:25-34"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 12,
+            "verse_start": 22,
+            "verse_end": 31,
+            "is_primary": false,
+            "display": "Luke 12:22-31"
+          }
+        ],
+        "facet_counts": {
+          "words": 3,
+          "actions": 0,
+          "by_type": {
+            "QUESTION": 1,
+            "COMMAND": 2
+          }
+        },
+        "matched_facets": [
+          {
+            "slug": "which-of-you-by-being-anxious",
+            "mode": "WORD",
+            "type": "QUESTION",
+            "type_slug": "questions",
+            "type_label": "Question",
+            "speaker": "JESUS",
+            "actor": null,
+            "title": "Which of you by being anxious can add an hour to his life?",
+            "text": "And which of you by being anxious can add a single hour to his span of life?",
+            "summary": "Part of a sustained argument that worry is not only painful but useless.",
+            "provenance": 2,
+            "reference": "Matthew 6:25-34",
+            "book_id": 40,
+            "chapter": 6,
+            "verse_start": 25,
+            "verse_end": 34
+          }
+        ],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "money",
+            "name": "Money"
+          }
+        ]
+      },
+      {
+        "slug": "event-speck-and-log",
+        "title": "Why do you see the speck in your brother's eye?",
+        "summary": "The question is not whether the speck is there. It is what is in your own eye while you look.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 42,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 7,
+            "verse_start": 1,
+            "verse_end": 5,
+            "is_primary": true,
+            "display": "Matthew 7:1-5"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 6,
+            "verse_start": 37,
+            "verse_end": 42,
+            "is_primary": false,
+            "display": "Luke 6:37-42"
+          }
+        ],
+        "facet_counts": {
+          "words": 2,
+          "actions": 0,
+          "by_type": {
+            "QUESTION": 1,
+            "COMMAND": 1
+          }
+        },
+        "matched_facets": [
+          {
+            "slug": "why-do-you-see-the-speck",
+            "mode": "WORD",
+            "type": "QUESTION",
+            "type_slug": "questions",
+            "type_label": "Question",
+            "speaker": "JESUS",
+            "actor": null,
+            "title": "Why do you see the speck in your brother's eye?",
+            "text": "Why do you see the speck that is in your brother's eye, but do not notice the log that is in your own eye?",
+            "summary": "The question is not whether the speck is there. It is what is in your own eye while you look.",
+            "provenance": 2,
+            "reference": "Matthew 7:1-5",
+            "book_id": 40,
+            "chapter": 7,
+            "verse_start": 1,
+            "verse_end": 5
+          }
+        ],
+        "themes": [
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-true-family",
+        "title": "Who is my mother, and who are my brothers?",
+        "summary": "Told His family is outside asking for Him, He redraws the family line around obedience.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 59,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 12,
+            "verse_start": 46,
+            "verse_end": 50,
+            "is_primary": true,
+            "display": "Matthew 12:46-50"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 3,
+            "verse_start": 31,
+            "verse_end": 35,
+            "is_primary": false,
+            "display": "Mark 3:31-35"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 8,
+            "verse_start": 19,
+            "verse_end": 21,
+            "is_primary": false,
+            "display": "Luke 8:19-21"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "QUESTION": 1
+          }
+        },
+        "matched_facets": [
+          {
+            "slug": "who-is-my-mother-and-my-brothers",
+            "mode": "WORD",
+            "type": "QUESTION",
+            "type_slug": "questions",
+            "type_label": "Question",
+            "speaker": "JESUS",
+            "actor": null,
+            "title": "Who is my mother, and who are my brothers?",
+            "text": "Who is my mother, and who are my brothers?",
+            "summary": "Told His family is outside asking for Him, He redraws the family line around obedience.",
+            "provenance": 2,
+            "reference": "Matthew 12:46-50",
+            "book_id": 40,
+            "chapter": 12,
+            "verse_start": 46,
+            "verse_end": 50
+          }
+        ],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      }
+    ],
+    "total": 27,
+    "limit": 5,
+    "offset": 0
+  }
+}

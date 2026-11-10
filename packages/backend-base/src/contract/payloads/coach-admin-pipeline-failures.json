@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "body": {
+    "total": "<number>",
+    "limit": 200,
+    "offset": 0,
+    "sessions": [
+      {
+        "sourceSessionId": "ff-contract-failed",
+        "coachId": "fixture-avery-lane",
+        "title": "Philippians, Lesson 16",
+        "sessionDate": "2033-03-22",
+        "sessionStartedAt": "<date-time>",
+        "state": "delivery_failed",
+        "attempts": 0,
+        "reportId": null,
+        "reason": "send failed",
+        "holdKind": "send-failed",
+        "action": "requeue",
+        "parallelRun": false,
+        "updatedAt": "<date-time>"
+      }
+    ]
+  }
+}

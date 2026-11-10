@@ -1,0 +1,227 @@
+{
+  "status": 200,
+  "body": {
+    "event": {
+      "slug": "event-bartimaeus",
+      "title": "Blind Bartimaeus",
+      "summary": "Shouted down by the crowd, he shouts louder. Jesus stops the procession and asks what he wants.",
+      "period_slug": "journey-to-jerusalem",
+      "period_name": "The Road to Jerusalem",
+      "sequence": 35,
+      "chronology_confidence": "probable",
+      "parallel_confidence": "probable",
+      "gospels": ["Matthew", "Mark", "Luke"],
+      "passages": [
+        {
+          "book_id": 40,
+          "book_name": "Matthew",
+          "chapter": 20,
+          "verse_start": 29,
+          "verse_end": 34,
+          "is_primary": true,
+          "display": "Matthew 20:29-34"
+        },
+        {
+          "book_id": 41,
+          "book_name": "Mark",
+          "chapter": 10,
+          "verse_start": 46,
+          "verse_end": 52,
+          "is_primary": false,
+          "display": "Mark 10:46-52"
+        },
+        {
+          "book_id": 42,
+          "book_name": "Luke",
+          "chapter": 18,
+          "verse_start": 35,
+          "verse_end": 43,
+          "is_primary": false,
+          "display": "Luke 18:35-43"
+        }
+      ],
+      "facet_counts": {
+        "words": 0,
+        "actions": 2,
+        "by_type": {
+          "HEALING": 1,
+          "COMPASSION": 1
+        }
+      },
+      "matched_facets": [],
+      "themes": [
+        {
+          "slug": "faith",
+          "name": "Faith"
+        },
+        {
+          "slug": "love",
+          "name": "Love"
+        }
+      ]
+    },
+    "accounts": [
+      {
+        "book_id": 40,
+        "gospel": "Matthew",
+        "records_it": true,
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 20,
+            "verse_start": 29,
+            "verse_end": 34,
+            "canonical_order": 88,
+            "is_primary": true,
+            "emphasis": null,
+            "unique_to_account": null,
+            "display": "Matthew 20:29-34",
+            "verses": [
+              {
+                "verse_number": 29,
+                "text": "As they were leaving Jericho, a large crowd followed Him."
+              },
+              {
+                "verse_number": 30,
+                "text": "And two blind men sitting by the road, hearing that Jesus was passing by, cried out, “Lord, have mercy on us, Son of David!”"
+              },
+              {
+                "verse_number": 31,
+                "text": "The crowd sternly told them to be quiet, but they cried out all the more, “Lord, Son of David, have mercy on us!”"
+              },
+              {
+                "verse_number": 32,
+                "text": "And Jesus stopped and called them, and said, “What do you want Me to do for you?”"
+              },
+              {
+                "verse_number": 33,
+                "text": "They said to Him, “Lord, we want our eyes to be opened.”"
+              },
+              {
+                "verse_number": 34,
+                "text": "Moved with compassion, Jesus touched their eyes; and immediately they regained their sight and followed Him."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "book_id": 41,
+        "gospel": "Mark",
+        "records_it": true,
+        "passages": [
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 10,
+            "verse_start": 46,
+            "verse_end": 52,
+            "canonical_order": 56,
+            "is_primary": false,
+            "emphasis": null,
+            "unique_to_account": null,
+            "display": "Mark 10:46-52",
+            "verses": [
+              {
+                "verse_number": 46,
+                "text": "Then they came to Jericho. And as He was leaving Jericho with His disciples and a large crowd, a blind beggar named Bartimaeus, the son of Timaeus, was sitting by the road."
+              },
+              {
+                "verse_number": 47,
+                "text": "When he heard that it was Jesus the Nazarene, he began to cry out and say, “Jesus, Son of David, have mercy on me!”"
+              },
+              {
+                "verse_number": 48,
+                "text": "Many were sternly telling him to be quiet, but he kept crying out all the more, “Son of David, have mercy on me!”"
+              },
+              {
+                "verse_number": 49,
+                "text": "And Jesus stopped and said, “Call him here.” So they called the blind man, saying to him, “Take courage, stand up! He is calling for you.”"
+              },
+              {
+                "verse_number": 50,
+                "text": "Throwing aside his cloak, he jumped up and came to Jesus."
+              },
+              {
+                "verse_number": 51,
+                "text": "And answering him, Jesus said, “What do you want Me to do for you?” And the blind man said to Him, “Rabboni, I want to regain my sight!”"
+              },
+              {
+                "verse_number": 52,
+                "text": "And Jesus said to him, “Go; your faith has made you well.” Immediately he regained his sight and began following Him on the road."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "book_id": 42,
+        "gospel": "Luke",
+        "records_it": true,
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 18,
+            "verse_start": 35,
+            "verse_end": 43,
+            "canonical_order": 89,
+            "is_primary": false,
+            "emphasis": null,
+            "unique_to_account": null,
+            "display": "Luke 18:35-43",
+            "verses": [
+              {
+                "verse_number": 35,
+                "text": "As Jesus was approaching Jericho, a blind man was sitting by the road begging."
+              },
+              {
+                "verse_number": 36,
+                "text": "Now hearing a crowd going by, he began to inquire what this was."
+              },
+              {
+                "verse_number": 37,
+                "text": "They told him that Jesus of Nazareth was passing by."
+              },
+              {
+                "verse_number": 38,
+                "text": "And he called out, saying, “Jesus, Son of David, have mercy on me!”"
+              },
+              {
+                "verse_number": 39,
+                "text": "Those who led the way were sternly telling him to be quiet; but he kept crying out all the more, “Son of David, have mercy on me!”"
+              },
+              {
+                "verse_number": 40,
+                "text": "And Jesus stopped and commanded that he be brought to Him; and when he came near, He questioned him,"
+              },
+              {
+                "verse_number": 41,
+                "text": "“What do you want Me to do for you?” And he said, “Lord, I want to regain my sight!”"
+              },
+              {
+                "verse_number": 42,
+                "text": "And Jesus said to him, “Receive your sight; your faith has made you well.”"
+              },
+              {
+                "verse_number": 43,
+                "text": "Immediately he regained his sight and began following Him, glorifying God; and when all the people saw it, they gave praise to God."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "book_id": 43,
+        "gospel": "John",
+        "records_it": false,
+        "passages": []
+      }
+    ],
+    "shared_by": ["Matthew", "Mark", "Luke"],
+    "note": "",
+    "note_provenance": null,
+    "parallel_confidence": "probable"
+  }
+}

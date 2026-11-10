@@ -1,4 +1,5 @@
 import { BibleRepository } from "../../bible/repository/bible.repository";
+import type { InductiveStudy } from "../../shared/schemas/inductive-study.schema";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
 import {
@@ -8,6 +9,7 @@ import {
   JESUS_SECTIONS,
   JESUS_SECTION_META,
   type JesusEventNarrativeType,
+  type JesusFacetMode,
   type JesusFacetType,
   getFacetTypeFromSlug,
   resolveFacetTypeFilter,
@@ -618,7 +620,7 @@ export class JesusEventService {
   private async getStudy(
     eventId: string,
     languageCode: string,
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<InductiveStudy | null> {
     let row = await this.events.getExplanation(eventId, languageCode, "study");
     if (!row && languageCode !== FALLBACK_LANGUAGE) {
       row = await this.events.getExplanation(
@@ -633,7 +635,7 @@ export class JesusEventService {
       return typeof parsed === "object" &&
         parsed !== null &&
         !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
+        ? (parsed as InductiveStudy)
         : null;
     } catch {
       return null;
@@ -671,7 +673,7 @@ function pickChannel(
 
 function toFacet(facet: {
   slug: string;
-  mode: string;
+  mode: JesusFacetMode;
   type: string;
   speaker: string | null;
   actor: string | null;

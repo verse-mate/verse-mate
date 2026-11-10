@@ -1,0 +1,82 @@
+{
+  "status": 200,
+  "body": {
+    "scoreSeries": [
+      {
+        "date": "2032-11-02",
+        "dateLabel": "November 2, 2032",
+        "session": "Philippians, Lesson 02",
+        "score": 70.5,
+        "status": "On Target",
+        "reportId": "contract-na-leader-2032-11-02"
+      },
+      {
+        "date": "2032-11-09",
+        "dateLabel": "November 9, 2032",
+        "session": "Philippians, Lesson 09",
+        "score": 74.1,
+        "status": "Strong",
+        "reportId": "contract-na-leader-2032-11-09"
+      }
+    ],
+    "clusterSeries": [
+      {
+        "date": "2032-11-02",
+        "dateLabel": "November 2, 2032",
+        "Teaching Craft": 23.43,
+        "Building Ministry": 22.01,
+        "Engaging People": 12.78,
+        "Being Real": 12.78
+      },
+      {
+        "date": "2032-11-09",
+        "dateLabel": "November 9, 2032",
+        "Teaching Craft": 24.42,
+        "Building Ministry": 22.94,
+        "Engaging People": 13.32,
+        "Being Real": 13.32
+      }
+    ],
+    "dimensionSeries": [
+      {
+        "date": "2032-11-02",
+        "dateLabel": "November 2, 2032",
+        "Session Structure & Flow": 4,
+        "Newcomer Welcome": 4,
+        "Scripture Engagement": 4,
+        "Facilitation vs. Lecture": 4,
+        "Application Questions": 4,
+        "Participant Engagement": 4,
+        "Visual Aids": 4,
+        "Vulnerability / Authenticity": 4,
+        "Memory Reinforcement": null,
+        "Homework References": 4,
+        "Prayer": 4,
+        "Leader Development": 4
+      },
+      {
+        "date": "2032-11-09",
+        "dateLabel": "November 9, 2032",
+        "Session Structure & Flow": 4,
+        "Newcomer Welcome": 4,
+        "Scripture Engagement": 4,
+        "Facilitation vs. Lecture": 4,
+        "Application Questions": 4,
+        "Participant Engagement": 4,
+        "Visual Aids": 4,
+        "Vulnerability / Authenticity": 4,
+        "Memory Reinforcement": null,
+        "Homework References": 4,
+        "Prayer": 4,
+        "Leader Development": 4
+      }
+    ],
+    "delta": {
+      "score": 3.6,
+      "from": 70.5,
+      "to": 74.1,
+      "fromLabel": "November 2, 2032",
+      "toLabel": "November 9, 2032"
+    }
+  }
+}

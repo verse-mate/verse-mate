@@ -1,0 +1,80 @@
+{
+  "status": 200,
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "theme_id": 1,
+        "name": "Key Verses",
+        "color": "yellow",
+        "description": "Foundational truths and essential doctrine",
+        "is_system": true,
+        "priority": 1,
+        "is_active": true,
+        "created_at": "<date-time>",
+        "updated_at": "<date-time>",
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 2,
+        "name": "Promises from God",
+        "color": "blue",
+        "description": "Divine promises and covenants",
+        "is_system": true,
+        "priority": 2,
+        "is_active": true,
+        "created_at": "<date-time>",
+        "updated_at": "<date-time>",
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 3,
+        "name": "Commands",
+        "color": "green",
+        "description": "Direct commands and instructions",
+        "is_system": true,
+        "priority": 3,
+        "is_active": true,
+        "created_at": "<date-time>",
+        "updated_at": "<date-time>",
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 4,
+        "name": "Warnings",
+        "color": "orange",
+        "description": "Warnings, prophecies, and cautionary passages",
+        "is_system": true,
+        "priority": 4,
+        "is_active": true,
+        "created_at": "<date-time>",
+        "updated_at": "<date-time>",
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 5,
+        "name": "Comfort",
+        "color": "pink",
+        "description": "Comfort, encouragement, and salvation passages",
+        "is_system": true,
+        "priority": 5,
+        "is_active": true,
+        "created_at": "<date-time>",
+        "updated_at": "<date-time>",
+        "default_relevance_threshold": 3
+      },
+      {
+        "theme_id": 6,
+        "name": "God's Nature",
+        "color": "purple",
+        "description": "Characteristics of God and repeating divine themes",
+        "is_system": true,
+        "priority": 6,
+        "is_active": true,
+        "created_at": "<date-time>",
+        "updated_at": "<date-time>",
+        "default_relevance_threshold": 3
+      }
+    ]
+  }
+}

@@ -1,6 +1,9 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
+import { StandardErrorResponses } from "../common/response-schemas";
+import { InductiveStudySchema } from "../shared/schemas/inductive-study.schema";
 import shared from "../shared/shared.plugin";
+import { JESUS_CONFIDENCE_LEVELS, JESUS_FACET_MODES } from "./jesus.constants";
 import { JesusEventService } from "./services/jesus-event.service";
 import { JesusService } from "./services/jesus.service";
 import { resolveLanguage } from "./utils/language.utils";
@@ -157,11 +160,10 @@ const CollectionDetailResponseSchema = t.Object({
 const ErrorSchema = t.Object({ error: t.String() });
 
 // ── Event graph schemas ───────────────────────────────────────────────────
-//
-// Responses are deliberately loose on the generated/structured extras
-// (`t.Any()` for nested lists whose shape the content pipeline still owns) so
-// adding a field to a reveal or a reaction doesn't require a schema migration
-// in lockstep. The event card itself is pinned, because both clients render it.
+
+const ConfidenceSchema = t.UnionEnum(JESUS_CONFIDENCE_LEVELS);
+
+const FacetModeSchema = t.UnionEnum(JESUS_FACET_MODES);
 
 const EventPassageSchema = t.Object({
   book_id: t.Number(),
@@ -175,7 +177,7 @@ const EventPassageSchema = t.Object({
 
 const FacetSchema = t.Object({
   slug: t.String(),
-  mode: t.String(),
+  mode: FacetModeSchema,
   type: t.String(),
   type_slug: t.String(),
   type_label: t.String(),
@@ -199,8 +201,8 @@ const EventCardSchema = t.Object({
   period_slug: t.Union([t.String(), t.Null()]),
   period_name: t.Union([t.String(), t.Null()]),
   sequence: t.Union([t.Number(), t.Null()]),
-  chronology_confidence: t.String(),
-  parallel_confidence: t.String(),
+  chronology_confidence: ConfidenceSchema,
+  parallel_confidence: ConfidenceSchema,
   gospels: t.Array(t.String()),
   passages: t.Array(EventPassageSchema),
   facet_counts: t.Object({
@@ -219,41 +221,131 @@ const EventListResponseSchema = t.Object({
   offset: t.Number(),
 });
 
+const HydratedPassageSchema = t.Object({
+  book_id: t.Number(),
+  book_name: t.String(),
+  chapter: t.Number(),
+  verse_start: t.Union([t.Number(), t.Null()]),
+  verse_end: t.Union([t.Number(), t.Null()]),
+  canonical_order: t.Union([t.Number(), t.Null()]),
+  is_primary: t.Boolean(),
+  emphasis: t.Union([t.String(), t.Null()]),
+  unique_to_account: t.Union([t.String(), t.Null()]),
+  display: t.String(),
+  verses: t.Array(t.Object({ verse_number: t.Number(), text: t.String() })),
+});
+
+const RevealSchema = t.Object({
+  content: t.String(),
+  source_ref: t.Union([t.String(), t.Null()]),
+  provenance: t.Number(),
+});
+
 const EventDetailResponseSchema = t.Object({
-  event: t.Any(),
+  event: t.Object({
+    ...EventCardSchema.properties,
+    location: t.Union([t.String(), t.Null()]),
+    approximate_date: t.Union([t.String(), t.Null()]),
+    people: t.Array(
+      t.Object({ person: t.String(), role: t.Union([t.String(), t.Null()]) }),
+    ),
+  }),
   words: t.Array(FacetSchema),
   actions: t.Array(FacetSchema),
-  passages: t.Array(t.Any()),
+  passages: t.Array(HydratedPassageSchema),
   reveals: t.Object({
-    says_about_himself: t.Array(t.Any()),
-    demonstrates: t.Array(t.Any()),
-    others_say: t.Array(t.Any()),
-    narrator_says: t.Array(t.Any()),
+    says_about_himself: t.Array(RevealSchema),
+    demonstrates: t.Array(RevealSchema),
+    others_say: t.Array(RevealSchema),
+    narrator_says: t.Array(RevealSchema),
   }),
-  reactions: t.Array(t.Any()),
-  explanation: t.Record(t.String(), t.String()),
-  // One inductive study across every Gospel account (InductiveStudy shape),
-  // or null — single-account events, and events not yet generated.
-  study: t.Union([t.Record(t.String(), t.Any()), t.Null()]),
+  reactions: t.Array(
+    t.Object({
+      who: t.String(),
+      what: t.String(),
+      source_ref: t.Union([t.String(), t.Null()]),
+      provenance: t.Number(),
+    }),
+  ),
+  explanation: t.Object({
+    overview: t.String(),
+    compare: t.String(),
+    insights: t.String(),
+    application: t.String(),
+  }),
+  study: t.Union([InductiveStudySchema, t.Null()]),
   related: t.Array(EventCardSchema),
 });
 
 const CompareResponseSchema = t.Object({
   event: EventCardSchema,
-  accounts: t.Array(t.Any()),
+  accounts: t.Array(
+    t.Object({
+      book_id: t.Number(),
+      gospel: t.String(),
+      records_it: t.Boolean(),
+      passages: t.Array(HydratedPassageSchema),
+    }),
+  ),
   shared_by: t.Array(t.String()),
   note: t.String(),
   note_provenance: t.Union([t.Number(), t.Null()]),
-  parallel_confidence: t.String(),
+  parallel_confidence: ConfidenceSchema,
+});
+
+const EventPeriodSchema = t.Object({
+  slug: t.String(),
+  name: t.String(),
+  subtitle: t.Union([t.String(), t.Null()]),
+  description: t.Union([t.String(), t.Null()]),
+  sort_order: t.Number(),
+  event_count: t.Number(),
+});
+
+const EventCollectionSchema = t.Object({
+  slug: t.String(),
+  name: t.String(),
+  subtitle: t.Union([t.String(), t.Null()]),
+  description: t.Union([t.String(), t.Null()]),
+  is_featured: t.Boolean(),
+  sort_order: t.Number(),
+  event_count: t.Number(),
 });
 
 const EventOverviewResponseSchema = t.Object({
   total_events: t.Number(),
   total_facets: t.Number(),
-  sections: t.Array(t.Any()),
-  periods: t.Array(t.Any()),
-  themes: t.Array(t.Any()),
-  collections: t.Array(t.Any()),
+  sections: t.Array(
+    t.Object({
+      section: t.String(),
+      label: t.String(),
+      blurb: t.String(),
+      sort_order: t.Number(),
+      facet_count: t.Number(),
+      types: t.Array(
+        t.Object({
+          type: t.String(),
+          mode: FacetModeSchema,
+          slug: t.String(),
+          label: t.String(),
+          singular: t.String(),
+          blurb: t.String(),
+          facet_count: t.Number(),
+        }),
+      ),
+    }),
+  ),
+  periods: t.Array(EventPeriodSchema),
+  themes: t.Array(
+    t.Object({
+      slug: t.String(),
+      name: t.String(),
+      description: t.Union([t.String(), t.Null()]),
+      sort_order: t.Number(),
+      event_count: t.Number(),
+    }),
+  ),
+  collections: t.Array(EventCollectionSchema),
 });
 
 const TopicPointSchema = t.Object({
@@ -284,7 +376,7 @@ const TopicGroupSchema = t.Object({
 const EventBrowseResponseSchema = t.Object({
   type: t.Object({
     type: t.String(),
-    mode: t.String(),
+    mode: FacetModeSchema,
     slug: t.String(),
     label: t.String(),
     singular: t.String(),
@@ -304,10 +396,17 @@ const ForPassageResponseSchema = t.Object({
   events: t.Array(EventCardSchema),
 });
 
-const EventLifeResponseSchema = t.Object({ periods: t.Array(t.Any()) });
+const EventLifeResponseSchema = t.Object({
+  periods: t.Array(
+    t.Object({
+      ...EventPeriodSchema.properties,
+      events: t.Array(EventCardSchema),
+    }),
+  ),
+});
 
 const EventCollectionResponseSchema = t.Object({
-  collection: t.Any(),
+  collection: EventCollectionSchema,
   events: t.Array(EventCardSchema),
 });
 
@@ -347,7 +446,7 @@ const plugin = new Elysia()
             description:
               "The full navigational skeleton — sections, kinds with counts, life periods, themes and featured studies. Clients render the hub from this payload instead of hardcoding the taxonomy.",
           },
-          response: OverviewResponseSchema,
+          response: { 200: OverviewResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -380,7 +479,7 @@ const plugin = new Elysia()
             description:
               "Paginated entry cards. All filters are AND-ed, so /jesus/entries?kind=question&theme=prayer is 'every question Jesus asked about prayer'.",
           },
-          response: EntryListResponseSchema,
+          response: { 200: EntryListResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -423,6 +522,7 @@ const plugin = new Elysia()
           response: {
             200: EntryDetailResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -447,7 +547,7 @@ const plugin = new Elysia()
             description:
               "The chronological walk through the ministry, grouped by period. Empty periods are included so the timeline reads as a complete arc.",
           },
-          response: LifeResponseSchema,
+          response: { 200: LifeResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -466,7 +566,7 @@ const plugin = new Elysia()
             lang: t.Optional(t.String()),
           }),
           detail: { tags: ["Jesus"], summary: "Explore by topic" },
-          response: ThemesResponseSchema,
+          response: { 200: ThemesResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -487,7 +587,10 @@ const plugin = new Elysia()
             lang: t.Optional(t.String()),
           }),
           detail: { tags: ["Jesus"], summary: "Popular studies" },
-          response: CollectionsResponseSchema,
+          response: {
+            200: CollectionsResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -524,6 +627,7 @@ const plugin = new Elysia()
           response: {
             200: CollectionDetailResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -562,7 +666,10 @@ const plugin = new Elysia()
             description:
               "The bridge from ordinary reading — given a verse, the Gospel event(s) that cover it, with their parallel accounts. Called on the reader's hot path, so it returns compact cards only.",
           },
-          response: ForPassageResponseSchema,
+          response: {
+            200: ForPassageResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -597,7 +704,7 @@ const plugin = new Elysia()
             description:
               "Every category is a view over the graph: ?type=questions is 'every question Jesus asked', ?section=actions is everything He did. Filters are AND-ed.",
           },
-          response: EventListResponseSchema,
+          response: { 200: EventListResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -621,7 +728,10 @@ const plugin = new Elysia()
             description:
               "Sections, facet types with counts, periods, themes and featured studies. Clients render the hub from this rather than hardcoding the taxonomy.",
           },
-          response: EventOverviewResponseSchema,
+          response: {
+            200: EventOverviewResponseSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -663,6 +773,7 @@ const plugin = new Elysia()
           response: {
             200: EventBrowseResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -687,7 +798,7 @@ const plugin = new Elysia()
             description:
               "The chronological walk. Each event carries its own chronology confidence, since a harmonized sequence is a reconstruction rather than something scripture specifies.",
           },
-          response: EventLifeResponseSchema,
+          response: { 200: EventLifeResponseSchema, ...StandardErrorResponses },
         },
       )
       .get(
@@ -724,6 +835,7 @@ const plugin = new Elysia()
           response: {
             200: EventCollectionResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -767,6 +879,7 @@ const plugin = new Elysia()
           response: {
             200: CompareResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       )
@@ -810,6 +923,7 @@ const plugin = new Elysia()
           response: {
             200: EventDetailResponseSchema,
             404: ErrorSchema,
+            ...StandardErrorResponses,
           },
         },
       ),

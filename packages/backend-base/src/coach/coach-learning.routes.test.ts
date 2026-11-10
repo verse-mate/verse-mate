@@ -48,7 +48,7 @@ beforeAll(async () => {
 afterAll(async () => {
   restore();
   await clearLearning();
-  await conn
+  await conn()
     .deleteFrom("coach_admins")
     .where("email", "=", EMAILS[0])
     .execute();
@@ -277,7 +277,7 @@ describe("authoring", () => {
     );
     expect(videos.objects.has(key)).toBe(false);
     expect(
-      await conn
+      await conn()
         .selectFrom("coach_learning_lessons")
         .select("id")
         .where("module_id", "=", m.id)
@@ -358,7 +358,7 @@ describe("authoring", () => {
       );
       expect(res.status).toBe(403);
     }
-    const row = await conn
+    const row = await conn()
       .selectFrom("coach_learning_modules")
       .select(["title", "published"])
       .where("id", "=", m.id)
@@ -477,7 +477,7 @@ describe("the path", () => {
       answers: m.questions.map((q) => ({ questionId: q, option: 0 })),
     });
     expect(res.status).toBe(403);
-    const subs = await conn
+    const subs = await conn()
       .selectFrom("coach_learning_submissions")
       .selectAll()
       .execute();
@@ -746,7 +746,7 @@ describe("checks", () => {
       });
       expect(res.status).toBe(400);
       expect(
-        await conn
+        await conn()
           .selectFrom("coach_learning_submissions")
           .selectAll()
           .execute(),
@@ -761,7 +761,10 @@ describe("checks", () => {
     expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
     expect(statuses[10]).toBe(429);
     expect(
-      await conn.selectFrom("coach_learning_submissions").selectAll().execute(),
+      await conn()
+        .selectFrom("coach_learning_submissions")
+        .selectAll()
+        .execute(),
     ).toHaveLength(10);
   });
 
@@ -775,7 +778,10 @@ describe("checks", () => {
     expect(res.status).toBe(400);
     expect(res.body?.details.refusal).toBe("incomplete");
     expect(
-      await conn.selectFrom("coach_learning_submissions").selectAll().execute(),
+      await conn()
+        .selectFrom("coach_learning_submissions")
+        .selectAll()
+        .execute(),
     ).toEqual([]);
   });
 
@@ -794,7 +800,10 @@ describe("checks", () => {
     expect(res.status).toBe(409);
     expect(res.body?.details.refusal).toBe("check-changed");
     expect(
-      await conn.selectFrom("coach_learning_submissions").selectAll().execute(),
+      await conn()
+        .selectFrom("coach_learning_submissions")
+        .selectAll()
+        .execute(),
     ).toEqual([]);
     const now = await as(learner).get(`learning/modules/${m.id}/check`);
     expect(now.body?.questions[1].prompt).toBe("Reworded");
@@ -812,16 +821,18 @@ describe("checks", () => {
     const isLocked = new Promise<void>((r) => {
       locked = r;
     });
-    const lock = conn.transaction().execute(async (trx) => {
-      await trx
-        .selectFrom("coach_learning_modules")
-        .select("id")
-        .where("id", "=", m.id)
-        .forNoKeyUpdate()
-        .execute();
-      locked();
-      await held;
-    });
+    const lock = conn()
+      .transaction()
+      .execute(async (trx) => {
+        await trx
+          .selectFrom("coach_learning_modules")
+          .select("id")
+          .where("id", "=", m.id)
+          .forNoKeyUpdate()
+          .execute();
+        locked();
+        await held;
+      });
     await isLocked;
     const edit = as(admin).put(`admin/learning/questions/${m.questions[1]}`, {
       prompt: "Answer key changed",
@@ -832,7 +843,7 @@ describe("checks", () => {
       const waiting = await sql<{ n: number }>`
         select count(*)::int as n from pg_stat_activity
         where wait_event_type = 'Lock' and datname = current_database()`.execute(
-        conn,
+        conn(),
       );
       if (waiting.rows[0].n > 0) break;
       if (waited > 5000) throw new Error("the edit never reached the bump");
@@ -883,7 +894,7 @@ describe("checks", () => {
       expect(res.status).toBe(409);
       expect(res.body?.details.refusal).toBe("check-changed");
       expect(
-        await conn
+        await conn()
           .selectFrom("coach_learning_submissions")
           .selectAll()
           .execute(),
@@ -955,15 +966,15 @@ describe("completion", () => {
     await pass(learner, one.id);
     await as(admin).post(`admin/learning/modules/${two.id}/unpublish`);
     const yesterday = new Date(Date.now() - 86_400_000);
-    await conn
+    await conn()
       .updateTable("coach_learning_enrolments")
       .set({ enrolled_at: yesterday })
       .execute();
-    await conn
+    await conn()
       .updateTable("coach_learning_submissions")
       .set({ submitted_at: yesterday })
       .execute();
-    await conn
+    await conn()
       .updateTable("coach_learning_lesson_completions")
       .set({ done_at: yesterday })
       .execute();

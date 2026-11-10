@@ -11,7 +11,11 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
-import { StandardErrorResponses } from "../common/response-schemas";
+import {
+  GuardedUnauthorizedResponse,
+  NotFoundResponse,
+  StandardErrorResponses,
+} from "../common/response-schemas";
 import { DailyVerseService } from "../daily-verse/services/daily-verse.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { assertLanguageCode } from "../shared/i18n/language-code";
@@ -121,6 +125,8 @@ const plugin = new Elysia()
             response: {
               200: UserPreferencesUpdateSchema,
               ...StandardErrorResponses,
+              ...GuardedUnauthorizedResponse,
+              ...NotFoundResponse,
             },
           },
         ),

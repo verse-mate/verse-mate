@@ -1,0 +1,1216 @@
+{
+  "status": 200,
+  "body": {
+    "collection": {
+      "slug": "the-last-week",
+      "name": "The last week",
+      "subtitle": "Palm Sunday to the empty tomb",
+      "description": "The gospels give roughly a third of their length to seven days. This study follows them in order.",
+      "is_featured": false,
+      "sort_order": 10,
+      "event_count": 22
+    },
+    "events": [
+      {
+        "slug": "event-temple-cleansing",
+        "title": "Cleansing the temple",
+        "summary": "A whip of cords, overturned tables, and a quotation about a house of prayer becoming a den of robbers.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 4,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke", "John"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 21,
+            "verse_start": 12,
+            "verse_end": 17,
+            "is_primary": true,
+            "display": "Matthew 21:12-17"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 11,
+            "verse_start": 15,
+            "verse_end": 19,
+            "is_primary": false,
+            "display": "Mark 11:15-19"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 19,
+            "verse_start": 45,
+            "verse_end": 48,
+            "is_primary": false,
+            "display": "Luke 19:45-48"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 2,
+            "verse_start": 13,
+            "verse_end": 22,
+            "is_primary": false,
+            "display": "John 2:13-22"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "CONFRONTATION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "prayer",
+            "name": "Prayer"
+          },
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          }
+        ]
+      },
+      {
+        "slug": "event-triumphal-entry",
+        "title": "The triumphal entry",
+        "summary": "He arranges His own arrival on a borrowed colt, deliberately fulfilling Zechariah in front of everyone.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 2,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke", "John"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 21,
+            "verse_start": 1,
+            "verse_end": 11,
+            "is_primary": true,
+            "display": "Matthew 21:1-11"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 11,
+            "verse_start": 1,
+            "verse_end": 11,
+            "is_primary": false,
+            "display": "Mark 11:1-11"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 19,
+            "verse_start": 28,
+            "verse_end": 40,
+            "is_primary": false,
+            "display": "Luke 19:28-40"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 12,
+            "verse_start": 12,
+            "verse_end": 19,
+            "is_primary": false,
+            "display": "John 12:12-19"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "weeping-over-jerusalem",
+        "title": "Weeping over Jerusalem",
+        "summary": "In the middle of a celebration, He looks at the city and grieves what it does not know.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 3,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 23,
+            "verse_start": 37,
+            "verse_end": 39,
+            "is_primary": true,
+            "display": "Matthew 23:37-39"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 19,
+            "verse_start": 41,
+            "verse_end": 44,
+            "is_primary": false,
+            "display": "Luke 19:41-44"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "event-fig-tree-cursed",
+        "title": "Withering the fig tree",
+        "summary": "A tree in full leaf with no fruit, cursed on the way into Jerusalem — an acted parable about the temple.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 4,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 21,
+            "verse_start": 18,
+            "verse_end": 22,
+            "is_primary": true,
+            "display": "Matthew 21:18-22"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 11,
+            "verse_start": 12,
+            "verse_end": 25,
+            "is_primary": false,
+            "display": "Mark 11:12-25"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          }
+        ]
+      },
+      {
+        "slug": "event-authority-question",
+        "title": "By what authority are you doing these things?",
+        "summary": "He answers a question with a question about John's baptism, and they refuse to answer it.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 5,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 21,
+            "verse_start": 23,
+            "verse_end": 27,
+            "is_primary": true,
+            "display": "Matthew 21:23-27"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 11,
+            "verse_start": 27,
+            "verse_end": 33,
+            "is_primary": false,
+            "display": "Mark 11:27-33"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 20,
+            "verse_start": 1,
+            "verse_end": 8,
+            "is_primary": false,
+            "display": "Luke 20:1-8"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "CONFRONTATION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          }
+        ]
+      },
+      {
+        "slug": "event-taxes-to-caesar",
+        "title": "The question about paying taxes",
+        "summary": "Pharisees and Herodians — natural enemies — cooperate to trap Him, and He escapes with a coin.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 9,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 22,
+            "verse_start": 15,
+            "verse_end": 22,
+            "is_primary": true,
+            "display": "Matthew 22:15-22"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 12,
+            "verse_start": 13,
+            "verse_end": 17,
+            "is_primary": false,
+            "display": "Mark 12:13-17"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 20,
+            "verse_start": 20,
+            "verse_end": 26,
+            "is_primary": false,
+            "display": "Luke 20:20-26"
+          }
+        ],
+        "facet_counts": {
+          "words": 2,
+          "actions": 1,
+          "by_type": {
+            "CONFRONTATION": 1,
+            "QUESTION": 1,
+            "COMMAND": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "money",
+            "name": "Money"
+          }
+        ]
+      },
+      {
+        "slug": "event-greatest-commandment",
+        "title": "Love God, love your neighbour",
+        "summary": "Asked to rank 613 commandments, He gives two — and says everything else hangs on them.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 14,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 22,
+            "verse_start": 34,
+            "verse_end": 40,
+            "is_primary": true,
+            "display": "Matthew 22:34-40"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 12,
+            "verse_start": 28,
+            "verse_end": 34,
+            "is_primary": false,
+            "display": "Mark 12:28-34"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 10,
+            "verse_start": 27,
+            "verse_end": 27,
+            "is_primary": false,
+            "display": "Luke 10:27"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "COMMAND": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-seven-woes",
+        "title": "Woe to you, scribes and Pharisees",
+        "summary": "Seven woes delivered in the temple courts — whitewashed tombs, strained gnats, swallowed camels.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 15,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 23,
+            "verse_start": 1,
+            "verse_end": 39,
+            "is_primary": true,
+            "display": "Matthew 23:1-39"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 11,
+            "verse_start": 37,
+            "verse_end": 54,
+            "is_primary": false,
+            "display": "Luke 11:37-54"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "CONFRONTATION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "event-widows-offering",
+        "title": "The widow's two small coins",
+        "summary": "He sits opposite the treasury and watches. She put in more than all of them, because she put in everything.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 16,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 12,
+            "verse_start": 41,
+            "verse_end": 44,
+            "is_primary": true,
+            "display": "Mark 12:41-44"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 21,
+            "verse_start": 1,
+            "verse_end": 4,
+            "is_primary": false,
+            "display": "Luke 21:1-4"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "TEACHING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "money",
+            "name": "Money"
+          }
+        ]
+      },
+      {
+        "slug": "event-olivet-discourse",
+        "title": "The Olivet Discourse",
+        "summary": "Sitting opposite the temple He has just left, He describes its fall and His return, and tells them to keep watch.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 18,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 24,
+            "verse_start": 1,
+            "verse_end": 51,
+            "is_primary": true,
+            "display": "Matthew 24:1-51"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 13,
+            "verse_start": 1,
+            "verse_end": 37,
+            "is_primary": false,
+            "display": "Mark 13:1-37"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 21,
+            "verse_start": 5,
+            "verse_end": 36,
+            "is_primary": false,
+            "display": "Luke 21:5-36"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "TEACHING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "event-last-supper",
+        "title": "The Last Supper",
+        "summary": "A Passover meal in a borrowed room, a betrayal announced, and bread and wine given a new meaning.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 25,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke", "John"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 26,
+            "verse_start": 17,
+            "verse_end": 30,
+            "is_primary": true,
+            "display": "Matthew 26:17-30"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 14,
+            "verse_start": 12,
+            "verse_end": 26,
+            "is_primary": false,
+            "display": "Mark 14:12-26"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 22,
+            "verse_start": 7,
+            "verse_end": 23,
+            "is_primary": false,
+            "display": "Luke 22:7-23"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 13,
+            "verse_start": 1,
+            "verse_end": 30,
+            "is_primary": false,
+            "display": "John 13:1-30"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1,
+            "COMMAND": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      },
+      {
+        "slug": "washing-the-disciples-feet",
+        "title": "Washing the disciples' feet",
+        "summary": "Knowing the Father had given all things into His hands, He took a towel — including for the man about to betray Him.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 26,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 13,
+            "verse_start": 1,
+            "verse_end": 17,
+            "is_primary": true,
+            "display": "John 13:1-17"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      },
+      {
+        "slug": "the-upper-room-discourse",
+        "title": "The Upper Room Discourse",
+        "summary": "Four chapters of last words: a place prepared, a Helper promised, a vine, and peace not as the world gives.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 36,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John", "John", "John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 14,
+            "verse_start": 1,
+            "verse_end": 31,
+            "is_primary": true,
+            "display": "John 14:1-31"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 15,
+            "verse_start": 1,
+            "verse_end": 27,
+            "is_primary": false,
+            "display": "John 15:1-27"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 16,
+            "verse_start": 1,
+            "verse_end": 33,
+            "is_primary": false,
+            "display": "John 16:1-33"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "TEACHING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "the-high-priestly-prayer",
+        "title": "The High Priestly Prayer",
+        "summary": "He prays aloud for Himself, for the eleven, and for everyone who would ever believe through their word.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 37,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 17,
+            "verse_start": 1,
+            "verse_end": 26,
+            "is_primary": true,
+            "display": "John 17:1-26"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "TEACHING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "prayer",
+            "name": "Prayer"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-gethsemane",
+        "title": "Gethsemane",
+        "summary": "\"Not as I will, but as you will.\" He asks three times for the cup to pass, and goes anyway.",
+        "period_slug": "cross",
+        "period_name": "The Cross",
+        "sequence": 1,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 26,
+            "verse_start": 36,
+            "verse_end": 46,
+            "is_primary": true,
+            "display": "Matthew 26:36-46"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 14,
+            "verse_start": 32,
+            "verse_end": 42,
+            "is_primary": false,
+            "display": "Mark 14:32-42"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 22,
+            "verse_start": 39,
+            "verse_end": 46,
+            "is_primary": false,
+            "display": "Luke 22:39-46"
+          }
+        ],
+        "facet_counts": {
+          "words": 2,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1,
+            "QUESTION": 1,
+            "COMMAND": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "prayer",
+            "name": "Prayer"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "event-sanhedrin-trial",
+        "title": "The trial before the Sanhedrin",
+        "summary": "Contradictory witnesses, a silent defendant, and one question He finally answers.",
+        "period_slug": "cross",
+        "period_name": "The Cross",
+        "sequence": 6,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 26,
+            "verse_start": 57,
+            "verse_end": 68,
+            "is_primary": true,
+            "display": "Matthew 26:57-68"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 14,
+            "verse_start": 53,
+            "verse_end": 65,
+            "is_primary": false,
+            "display": "Mark 14:53-65"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 22,
+            "verse_start": 66,
+            "verse_end": 71,
+            "is_primary": false,
+            "display": "Luke 22:66-71"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 1,
+          "by_type": {
+            "CONFRONTATION": 1,
+            "CLAIM": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "event-pilate-trial",
+        "title": "Jesus before Pilate",
+        "summary": "A governor who can find no guilt in Him, a crowd that will not relent, and a question left hanging: what is truth?",
+        "period_slug": "cross",
+        "period_name": "The Cross",
+        "sequence": 8,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "John", "John"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 27,
+            "verse_start": 11,
+            "verse_end": 26,
+            "is_primary": true,
+            "display": "Matthew 27:11-26"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 18,
+            "verse_start": 28,
+            "verse_end": 40,
+            "is_primary": false,
+            "display": "John 18:28-40"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 19,
+            "verse_start": 1,
+            "verse_end": 16,
+            "is_primary": false,
+            "display": "John 19:1-16"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "ENCOUNTER": 1,
+            "CONFRONTATION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          }
+        ]
+      },
+      {
+        "slug": "father-forgive-them",
+        "title": "Father, forgive them",
+        "summary": "His first recorded words from the cross are an intercession for the people driving in the nails.",
+        "period_slug": "cross",
+        "period_name": "The Cross",
+        "sequence": 11,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 23,
+            "verse_start": 32,
+            "verse_end": 38,
+            "is_primary": true,
+            "display": "Luke 23:32-38"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "prayer",
+            "name": "Prayer"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "the-thief-on-the-cross",
+        "title": "The thief on the cross",
+        "summary": "A dying criminal makes the simplest request in the gospels and gets an immediate promise.",
+        "period_slug": "cross",
+        "period_name": "The Cross",
+        "sequence": 12,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 23,
+            "verse_start": 39,
+            "verse_end": 43,
+            "is_primary": true,
+            "display": "Luke 23:39-43"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          }
+        ]
+      },
+      {
+        "slug": "event-cry-of-dereliction",
+        "title": "My God, my God, why have you forsaken me?",
+        "summary": "The hardest question in the gospels, and He is the one asking it — quoting Psalm 22 from the cross.",
+        "period_slug": "cross",
+        "period_name": "The Cross",
+        "sequence": 14,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Psalms", "Matthew", "Mark"],
+        "passages": [
+          {
+            "book_id": 19,
+            "book_name": "Psalms",
+            "chapter": 22,
+            "verse_start": 1,
+            "verse_end": 1,
+            "is_primary": true,
+            "display": "Psalms 22:1"
+          },
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 27,
+            "verse_start": 45,
+            "verse_end": 50,
+            "is_primary": false,
+            "display": "Matthew 27:45-50"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 15,
+            "verse_start": 33,
+            "verse_end": 37,
+            "is_primary": false,
+            "display": "Mark 15:33-37"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "QUESTION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "event-resurrection-morning",
+        "title": "Mary Magdalene at the tomb",
+        "summary": "The first witness of the resurrection is a woman who mistook Him for the gardener until He said her name.",
+        "period_slug": "resurrection",
+        "period_name": "Resurrection & Ascension",
+        "sequence": 1,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "John"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 28,
+            "verse_start": 1,
+            "verse_end": 10,
+            "is_primary": true,
+            "display": "Matthew 28:1-10"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 20,
+            "verse_start": 1,
+            "verse_end": 18,
+            "is_primary": false,
+            "display": "John 20:1-18"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "ENCOUNTER": 1,
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "the-road-to-emmaus",
+        "title": "The road to Emmaus",
+        "summary": "Seven miles of Bible study with a stranger, and they only recognise Him when He breaks the bread.",
+        "period_slug": "resurrection",
+        "period_name": "Resurrection & Ascension",
+        "sequence": 4,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 24,
+            "verse_start": 13,
+            "verse_end": 35,
+            "is_primary": true,
+            "display": "Luke 24:13-35"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      }
+    ]
+  }
+}

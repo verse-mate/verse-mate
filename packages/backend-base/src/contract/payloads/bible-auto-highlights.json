@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "auto_highlight_id": "<number>",
+        "theme_id": 1,
+        "book_id": 1,
+        "chapter_number": 1,
+        "start_verse": 1,
+        "end_verse": 3,
+        "relevance_score": 2,
+        "created_at": "<date-time>",
+        "theme_name": "Key Verses",
+        "theme_color": "yellow"
+      }
+    ]
+  }
+}

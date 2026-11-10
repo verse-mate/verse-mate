@@ -11,8 +11,17 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { isoDate, isoDateOrNull } from "../common/iso-date";
 import { createRateLimit } from "../common/rate-limit.middleware";
-import { StandardErrorResponses } from "../common/response-schemas";
+import {
+  ConflictResponse,
+  DateTime,
+  DateTimeOrNull,
+  ForbiddenResponse,
+  NotFoundResponse,
+  StandardErrorResponses,
+  UnauthorizedResponse,
+} from "../common/response-schemas";
 import { getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
 import { CoachIdentityService } from "./coach-identity.service";
@@ -48,6 +57,7 @@ import {
   NotetakerZoomSchema,
   ParallelRunComparisonSchema,
   ReportSchema,
+  ReportSummaryItemSchema,
   ReviewStateSchema,
   RevisionResultSchema,
   RevisionSendSchema,
@@ -69,6 +79,7 @@ import {
   AddLeaderDto,
   AddNoteDto,
   AdminCoachClassDto,
+  type ClassRecurrence,
   CoachClassDto,
   UpdateAffiliatedChurchDto,
   UpdateBibleCoachDto,
@@ -180,7 +191,7 @@ const MeSchema = t.Object({
 function normalizeClassBody(body: {
   name: string;
   classDate: string;
-  recurrence: string;
+  recurrence: ClassRecurrence;
   zoomLink: string;
   startTime?: string;
   timeZone?: string;
@@ -223,7 +234,7 @@ function normalizeClassBody(body: {
 }
 
 const SummaryPageSchema = t.Object({
-  items: t.Array(t.Record(t.String(), t.Unknown())),
+  items: t.Array(ReportSummaryItemSchema),
   total: t.Number(),
   streakWeeks: t.Number(),
   quarterSessions: t.Number(),
@@ -268,9 +279,9 @@ const CoachSummarySchema = t.Object({
   ]),
 });
 
-const TrendRowSchema = t.Record(
-  t.String(),
-  t.Union([t.Number(), t.String(), t.Null()]),
+const TrendRowSchema = t.Object(
+  { date: t.String(), dateLabel: t.String() },
+  { additionalProperties: t.Union([t.Number(), t.Null()]) },
 );
 
 const TrendsSchema = t.Object({
@@ -343,6 +354,7 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ classes: t.Array(AdminCoachClassSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
           },
         },
       )
@@ -366,6 +378,7 @@ const plugin = new Elysia()
           response: {
             200: AddressChangeDescriptionSchema,
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -384,6 +397,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ email: t.String(), noticeSent: t.Boolean() }),
             ...StandardErrorResponses,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -398,7 +413,14 @@ const plugin = new Elysia()
             throw refuse("GET /coach/me", "confirm-email");
           throw new ForbiddenError("Not a coaching account");
         },
-        { response: { 200: MeSchema, ...StandardErrorResponses } },
+        {
+          response: {
+            200: MeSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
       )
       .get(
         "/reports",
@@ -413,6 +435,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ reports: t.Array(ReportSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -442,6 +466,8 @@ const plugin = new Elysia()
           response: {
             200: SummaryPageSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -467,6 +493,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ report: ReportSchema }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -505,6 +534,9 @@ const plugin = new Elysia()
               expiresInSeconds: t.Number(),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -532,6 +564,9 @@ const plugin = new Elysia()
               expiresInSeconds: t.Number(),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -550,6 +585,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ classes: t.Array(UploadClassSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -566,6 +603,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ uploads: t.Array(UploadViewSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -588,7 +627,14 @@ const plugin = new Elysia()
         },
         {
           body: UploadRequestBodySchema,
-          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+          response: {
+            200: UploadPartsSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
         },
       )
       .post(
@@ -607,7 +653,13 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ id: t.String() }),
-          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+          response: {
+            200: UploadPartsSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .post(
@@ -629,6 +681,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ status: UploadViewSchema.properties.status }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -641,7 +697,14 @@ const plugin = new Elysia()
           if (!trends) throw new ForbiddenError("Not a coaching account");
           return trends;
         },
-        { response: { 200: TrendsSchema, ...StandardErrorResponses } },
+        {
+          response: {
+            200: TrendsSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
       )
       // The signed-in leader's own monthly summary (full parity with the
       // individual monthly PDF) for a YYYY-MM month.
@@ -665,6 +728,8 @@ const plugin = new Elysia()
           response: {
             200: LeaderMonthlyResponseSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -688,6 +753,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ zoomLink: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -710,6 +777,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ affiliatedChurch: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -732,6 +801,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ bibleCoach: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -753,6 +824,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ classes: t.Array(CoachClassSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -772,6 +845,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ class: CoachClassSchema }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -800,8 +875,10 @@ const plugin = new Elysia()
           body: CoachClassDto,
           response: {
             200: t.Object({ class: CoachClassSchema }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -824,8 +901,10 @@ const plugin = new Elysia()
           params: t.Object({ id: t.String() }),
           response: {
             200: t.Object({ success: t.Boolean() }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -845,6 +924,8 @@ const plugin = new Elysia()
           response: {
             200: NotetakerStatusSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -872,7 +953,15 @@ const plugin = new Elysia()
             );
           return state;
         },
-        { response: { 200: ReviewStateSchema, ...StandardErrorResponses } },
+        {
+          response: {
+            200: ReviewStateSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
+        },
       )
       .post(
         "/admin/reports/:reportId/dimensions/:dimensionN",
@@ -921,6 +1010,10 @@ const plugin = new Elysia()
               status: t.String(),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -955,6 +1048,10 @@ const plugin = new Elysia()
           response: {
             200: RevisionResultSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -980,6 +1077,10 @@ const plugin = new Elysia()
           response: {
             200: RevisionResultSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1004,6 +1105,10 @@ const plugin = new Elysia()
           response: {
             200: RevisionResultSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1015,13 +1120,24 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           return {
-            revisions: await coachService.listRevisions(params.reportId),
+            revisions: (await coachService.listRevisions(params.reportId)).map(
+              (entry) =>
+                entry.kind === "revision"
+                  ? {
+                      ...entry,
+                      amendedAt: isoDate(entry.amendedAt),
+                      sentAt: isoDateOrNull(entry.sentAt),
+                    }
+                  : { ...entry, editedAt: isoDate(entry.editedAt) },
+            ),
           };
         },
         {
           response: {
             200: RevisionsSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1050,6 +1166,10 @@ const plugin = new Elysia()
           response: {
             200: RevisionSendSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1071,6 +1191,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ requeued: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1096,7 +1219,12 @@ const plugin = new Elysia()
           query: t.Object({
             windowDays: t.Optional(t.Numeric({ minimum: 1, maximum: 365 })),
           }),
-          response: { 200: CoverageReportSchema, ...StandardErrorResponses },
+          response: {
+            200: CoverageReportSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
         },
       )
       .get(
@@ -1112,6 +1240,8 @@ const plugin = new Elysia()
           response: {
             200: ParallelRunComparisonSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1136,6 +1266,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ attested: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1164,6 +1297,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ attested: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1186,6 +1322,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ classes: t.Array(UploadClassSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1207,6 +1346,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ uploads: t.Array(UploadViewSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1238,7 +1379,14 @@ const plugin = new Elysia()
               replace: t.Optional(t.Boolean()),
             }),
           ]),
-          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+          response: {
+            200: UploadPartsSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
         },
       )
       .post(
@@ -1260,7 +1408,13 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ id: t.String() }),
-          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+          response: {
+            200: UploadPartsSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .post(
@@ -1283,6 +1437,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ status: UploadViewSchema.properties.status }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1301,6 +1459,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ duplicates: t.Array(LikelyDuplicateSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1327,6 +1487,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ dismissed: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1352,6 +1515,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ queued: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1368,6 +1535,8 @@ const plugin = new Elysia()
           response: {
             200: IdentityAuditSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1394,6 +1563,8 @@ const plugin = new Elysia()
               ),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1417,6 +1588,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ granted: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1440,6 +1614,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ revoked: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1466,6 +1644,9 @@ const plugin = new Elysia()
               failed: t.Array(t.String()),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1488,6 +1669,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ reports: t.Array(MonthlyReportRowSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1519,6 +1702,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ edited: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1549,6 +1736,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ released: t.Boolean(), sent: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1575,6 +1766,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ produced: t.Number() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1591,6 +1784,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ classes: t.Array(RotatingClassSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1616,6 +1811,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ id: t.Number() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1648,6 +1847,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ id: t.Number() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1673,6 +1876,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ rotatingOnly: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1683,7 +1889,15 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
-          return { requests: await coachService.listPendingReshares() };
+          return {
+            requests: (await coachService.listPendingReshares()).map(
+              (request) => ({
+                ...request,
+                sessionStartedAt: isoDateOrNull(request.sessionStartedAt),
+                requestedAt: isoDate(request.requestedAt),
+              }),
+            ),
+          };
         },
         {
           response: {
@@ -1694,8 +1908,8 @@ const plugin = new Elysia()
                   coachId: t.Union([t.String(), t.Null()]),
                   title: t.String(),
                   sessionDate: t.String(),
-                  sessionStartedAt: t.Union([t.Date(), t.Null()]),
-                  requestedAt: t.Date(),
+                  sessionStartedAt: DateTimeOrNull,
+                  requestedAt: DateTime,
                   attempts: t.Number(),
                   asked: t.Boolean(),
                   parallelRun: t.Boolean(),
@@ -1703,6 +1917,8 @@ const plugin = new Elysia()
               ),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1719,7 +1935,16 @@ const plugin = new Elysia()
             limit,
             offset,
           });
-          return { ...page, limit, offset };
+          return {
+            ...page,
+            sessions: page.sessions.map((session) => ({
+              ...session,
+              sessionStartedAt: isoDateOrNull(session.sessionStartedAt),
+              updatedAt: isoDate(session.updatedAt),
+            })),
+            limit,
+            offset,
+          };
         },
         {
           query: t.Object({
@@ -1739,7 +1964,7 @@ const plugin = new Elysia()
                   coachId: t.Union([t.String(), t.Null()]),
                   title: t.String(),
                   sessionDate: t.String(),
-                  sessionStartedAt: t.Union([t.Date(), t.Null()]),
+                  sessionStartedAt: DateTimeOrNull,
                   state: t.String(),
                   attempts: t.Number(),
                   reportId: t.Union([t.String(), t.Null()]),
@@ -1753,11 +1978,13 @@ const plugin = new Elysia()
                     t.Null(),
                   ]),
                   parallelRun: t.Boolean(),
-                  updatedAt: t.Date(),
+                  updatedAt: DateTime,
                 }),
               ),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1790,6 +2017,10 @@ const plugin = new Elysia()
               skipped: t.Optional(t.Array(t.String())),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1816,6 +2047,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ requeued: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1840,6 +2075,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ sent: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -1866,6 +2105,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ resolved: t.Boolean() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1882,6 +2124,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ coaches: t.Array(CoachSummarySchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -1908,8 +2152,10 @@ const plugin = new Elysia()
           query: PageQuery,
           response: {
             200: SummaryPageSchema,
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1936,8 +2182,10 @@ const plugin = new Elysia()
           params: t.Object({ id: t.String(), reportId: t.String() }),
           response: {
             200: t.Object({ report: ReportSchema }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1960,8 +2208,10 @@ const plugin = new Elysia()
           params: t.Object({ id: t.String() }),
           response: {
             200: TrendsSchema,
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1995,8 +2245,10 @@ const plugin = new Elysia()
           query: t.Object({ month: t.String() }),
           response: {
             200: LeaderMonthlyResponseSchema,
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -2015,6 +2267,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ classes: t.Array(AdminCoachClassSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -2040,8 +2294,10 @@ const plugin = new Elysia()
           body: AdminCoachClassDto,
           response: {
             200: t.Object({ class: AdminCoachClassSchema }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -2065,8 +2321,10 @@ const plugin = new Elysia()
           body: CoachClassDto,
           response: {
             200: t.Object({ class: CoachClassSchema }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -2085,8 +2343,10 @@ const plugin = new Elysia()
           params: t.Object({ id: t.String() }),
           response: {
             200: t.Object({ success: t.Boolean() }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -2112,6 +2372,8 @@ const plugin = new Elysia()
           response: {
             200: NotetakerZoomSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -2160,6 +2422,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ coach: CoachSummarySchema }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -2187,8 +2452,10 @@ const plugin = new Elysia()
               titleMatch: t.Array(t.String()),
               altEmails: t.Array(t.String()),
             }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -2260,6 +2527,10 @@ const plugin = new Elysia()
               resolved: t.Number(),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -2307,6 +2578,10 @@ const plugin = new Elysia()
               confirmationSent: t.Boolean(),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -2337,6 +2612,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ coachId: t.String(), state: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -2371,8 +2650,10 @@ const plugin = new Elysia()
           body: UpdateRecordingLinkDto,
           response: {
             200: t.Object({ recordingUrl: t.String() }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -2408,8 +2689,11 @@ const plugin = new Elysia()
           body: AddNoteDto,
           response: {
             200: t.Object({ note: NoteSchema }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -2431,6 +2715,8 @@ const plugin = new Elysia()
           response: {
             200: MonthlySchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       ),

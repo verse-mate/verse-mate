@@ -144,6 +144,50 @@ const run = (study: unknown, raw?: string) =>
   });
 
 describe("validateEventStudy", () => {
+  it.each([
+    [
+      "a step without its summary",
+      (study: ReturnType<typeof validStudy>) => {
+        (study.steps[0] as { summary?: string }).summary = undefined;
+      },
+      "/steps/0",
+    ],
+    [
+      "a key-word count written as text",
+      (study: ReturnType<typeof validStudy>) => {
+        (
+          study.steps[2] as { inventory: Array<{ count: unknown }> }
+        ).inventory[0].count = "3";
+      },
+      "/steps/2",
+    ],
+    [
+      "a contrast without its type",
+      (study: ReturnType<typeof validStudy>) => {
+        (study.steps[4] as { items: Array<{ type?: string }> }).items[0].type =
+          undefined;
+      },
+      "/steps/4",
+    ],
+    [
+      "a list without its columns",
+      (study: ReturnType<typeof validStudy>) => {
+        (
+          study.steps[3] as { lists: Array<{ columns?: string[] }> }
+        ).lists[0].columns = undefined;
+      },
+      "/steps/3",
+    ],
+  ])("refuses %s, which the served schema would refuse", (_, change, path) => {
+    const study = validStudy();
+    change(study);
+    const { study: stored, issues } = run(study);
+    expect(stored).toBeNull();
+    expect(
+      issues.some((i) => i.rule === "schema" && i.detail.startsWith(path)),
+    ).toBe(true);
+  });
+
   it("accepts a well-formed study and fills its header from the event", () => {
     const { study, issues } = run(validStudy());
     expect(issues).toEqual([]);

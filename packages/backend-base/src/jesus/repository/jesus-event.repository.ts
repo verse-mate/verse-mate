@@ -2,7 +2,11 @@ import type Database from "database/src/models/Database";
 import { type ExpressionBuilder, sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 import { containsPattern } from "../../shared/utils/like-pattern";
-import { JESUS_FACET_TYPES, type JesusFacetType } from "../jesus.constants";
+import {
+  JESUS_FACET_TYPES,
+  type JesusFacetMode,
+  type JesusFacetType,
+} from "../jesus.constants";
 import { formatReference } from "../utils/reference.utils";
 
 const DEFAULT_LANGUAGE = "en-US";
@@ -41,7 +45,7 @@ export interface JesusPassageRow {
 
 export interface JesusFacetRow {
   slug: string;
-  mode: string;
+  mode: JesusFacetMode;
   type: string;
   speaker: string | null;
   actor: string | null;
@@ -782,7 +786,7 @@ export class JesusEventRepository {
       const list = map.get(row.event_id) ?? [];
       list.push({
         slug: row.slug,
-        mode: row.mode,
+        mode: row.mode as JesusFacetMode,
         type: row.type,
         speaker: row.speaker,
         actor: row.actor,

@@ -8,9 +8,12 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { isoDateOrNull } from "../common/iso-date";
 import {
   AuthErrorResponses,
+  NotFoundResponse,
   StandardErrorResponses,
+  UnauthorizedResponse,
 } from "../common/response-schemas";
 import { createIpRateLimit } from "../middleware/rate-limit";
 import { type AiProvider, getAiProvider } from "../shared/ai";
@@ -20,6 +23,7 @@ import { RatingDto } from "./dto/book/rating.dto";
 import { BibleRepository } from "./repository/bible.repository";
 import { PromptRepository } from "./repository/prompt.repository";
 import {
+  AutoHighlightsSchema,
   BibleVersionsSchema,
   BookSchema,
   BookmarkActionSchema,
@@ -30,6 +34,7 @@ import {
   ExplanationSchema,
   HighlightAddSchema,
   HighlightDeleteSchema,
+  HighlightThemesSchema,
   HighlightUpdateSchema,
   HighlightsSchema,
   LanguagesSchema,
@@ -45,6 +50,8 @@ import {
   StudyLabelsSchema,
   StudySchema,
   TestamentsSchema,
+  ThemePreferenceUpdateSchema,
+  ThemePreferencesSchema,
 } from "./schemas/bible-response.schema";
 import { BibleSearchRepository } from "./search/bible-search.repository";
 import {
@@ -241,6 +248,7 @@ const plugin = new Elysia()
           response: {
             200: ChapterSchema,
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -265,6 +273,7 @@ const plugin = new Elysia()
           response: {
             200: BibleSearchResponseSchema,
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -397,6 +406,7 @@ const plugin = new Elysia()
           response: {
             200: ExplanationSchema,
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -763,6 +773,7 @@ const plugin = new Elysia()
             200: NoteAddSchema,
             ...StandardErrorResponses,
             ...AuthErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1094,7 +1105,14 @@ const plugin = new Elysia()
             error:
               ("error" in result ? result.error : undefined) ||
               "Failed to create highlight",
-            overlaps: "overlaps" in result ? result.overlaps : undefined,
+            overlaps:
+              "overlaps" in result && result.overlaps
+                ? result.overlaps.map((overlap) => ({
+                    ...overlap,
+                    created_at: isoDateOrNull(overlap.created_at),
+                    updated_at: isoDateOrNull(overlap.updated_at),
+                  }))
+                : undefined,
           };
         },
         {
@@ -1192,6 +1210,7 @@ const plugin = new Elysia()
           response: {
             200: HighlightDeleteSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
           },
         },
       )
@@ -1243,7 +1262,13 @@ const plugin = new Elysia()
             default_relevance: defaultRelevance,
           });
 
-          return { success: true, data: highlights };
+          return {
+            success: true,
+            data: highlights.map((highlight) => ({
+              ...highlight,
+              created_at: isoDateOrNull(highlight.created_at),
+            })),
+          };
         },
         {
           params: t.Object({
@@ -1255,12 +1280,24 @@ const plugin = new Elysia()
             theme_relevance: t.Optional(t.String()),
             min_relevance: t.Optional(t.String()),
           }),
+          response: { 200: AutoHighlightsSchema, ...StandardErrorResponses },
         },
       )
-      .get("/highlight-themes", async ({ store: { autoHighlightService } }) => {
-        const themes = await autoHighlightService.getActiveThemes();
-        return { success: true, data: themes };
-      })
+      .get(
+        "/highlight-themes",
+        async ({ store: { autoHighlightService } }) => {
+          const themes = await autoHighlightService.getActiveThemes();
+          return {
+            success: true,
+            data: themes.map((theme) => ({
+              ...theme,
+              created_at: isoDateOrNull(theme.created_at),
+              updated_at: isoDateOrNull(theme.updated_at),
+            })),
+          };
+        },
+        { response: { 200: HighlightThemesSchema, ...StandardErrorResponses } },
+      )
       .get(
         "/user/theme-preferences",
         async ({ currentUserId, store: { autoHighlightService } }) => {
@@ -1271,6 +1308,13 @@ const plugin = new Elysia()
           const preferences =
             await autoHighlightService.getUserThemePreferences(currentUserId);
           return { success: true, data: preferences };
+        },
+        {
+          response: {
+            200: ThemePreferencesSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+          },
         },
       )
       .patch(
@@ -1304,6 +1348,11 @@ const plugin = new Elysia()
             custom_color: t.Optional(t.String()),
             relevance_threshold: t.Optional(t.Number()),
           }),
+          response: {
+            200: ThemePreferenceUpdateSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+          },
         },
       ),
   );

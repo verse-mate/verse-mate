@@ -4,9 +4,19 @@ import { clientBucket } from "../common/client-ip";
 import { createErrorHandler } from "../common/error-handler";
 import { ForbiddenError, UnauthorizedError } from "../common/errors";
 import { createRateLimit } from "../common/rate-limit.middleware";
-import { StandardErrorResponses } from "../common/response-schemas";
+import {
+  ConflictResponse,
+  ForbiddenResponse,
+  NotFoundResponse,
+  StandardErrorResponses,
+  UnauthorizedResponse,
+} from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
-import { CoachLearningService, LEARNERS_PAGE } from "./coach-learning.service";
+import {
+  CoachLearningService,
+  JOIN_REQUEST_STATUSES,
+  LEARNERS_PAGE,
+} from "./coach-learning.service";
 import { CoachService } from "./coach.service";
 
 const Nullable = <T extends Parameters<typeof t.Union>[0][number]>(s: T) =>
@@ -23,12 +33,7 @@ const ContinueSchema = Nullable(
   ]),
 );
 
-const RequestStatus = t.Union([
-  t.Literal("open"),
-  t.Literal("approved"),
-  t.Literal("declined"),
-  t.Literal("already-in-program"),
-]);
+const RequestStatus = t.UnionEnum(JOIN_REQUEST_STATUSES);
 
 const JoinRequestSchema = t.Object({
   id: t.Number(),
@@ -223,7 +228,7 @@ const LearnersSchema = t.Object({
       completedAt: Nullable(t.String()),
       passed: t.Number(),
       total: t.Number(),
-      request: Nullable(t.String()),
+      request: Nullable(RequestStatus),
     }),
   ),
 });
@@ -284,7 +289,13 @@ const plugin = new Elysia()
         "/learning",
         ({ store: { learningService }, currentUserId, coach }) =>
           learningService.state(signedIn(currentUserId), coach()),
-        { response: { 200: ProgramStateSchema, ...StandardErrorResponses } },
+        {
+          response: {
+            200: ProgramStateSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+          },
+        },
       )
       .post(
         "/learning/enrol",
@@ -293,7 +304,14 @@ const plugin = new Elysia()
           await learningService.enrol(id);
           return learningService.state(id, coach());
         },
-        { response: { 200: ProgramStateSchema, ...StandardErrorResponses } },
+        {
+          response: {
+            200: ProgramStateSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .get(
         "/learning/lessons/:id",
@@ -301,7 +319,13 @@ const plugin = new Elysia()
           learningService.lesson(signedIn(currentUserId), params.id),
         {
           params: IdParam,
-          response: { 200: LessonSchema, ...StandardErrorResponses },
+          response: {
+            200: LessonSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .post(
@@ -318,7 +342,13 @@ const plugin = new Elysia()
         },
         {
           params: IdParam,
-          response: { 200: ProgramStateSchema, ...StandardErrorResponses },
+          response: {
+            200: ProgramStateSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .get(
@@ -338,7 +368,13 @@ const plugin = new Elysia()
         },
         {
           params: IdParam,
-          response: { 200: VideoUrlSchema, ...StandardErrorResponses },
+          response: {
+            200: VideoUrlSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .get(
@@ -347,7 +383,13 @@ const plugin = new Elysia()
           learningService.check(signedIn(currentUserId), params.id),
         {
           params: IdParam,
-          response: { 200: CheckSchema, ...StandardErrorResponses },
+          response: {
+            200: CheckSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .post(
@@ -367,7 +409,14 @@ const plugin = new Elysia()
               { maxItems: 100 },
             ),
           }),
-          response: { 200: GradeSchema, ...StandardErrorResponses },
+          response: {
+            200: GradeSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
         },
       )
       .post(
@@ -384,6 +433,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ request: Nullable(JoinRequestSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -392,7 +444,14 @@ const plugin = new Elysia()
         async ({ store: { learningService } }) => {
           return { modules: await learningService.adminTree() };
         },
-        { response: { 200: AdminTreeSchema, ...StandardErrorResponses } },
+        {
+          response: {
+            200: AdminTreeSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
       )
       .post(
         "/admin/learning/modules",
@@ -401,7 +460,12 @@ const plugin = new Elysia()
         },
         {
           body: ModuleBody,
-          response: { 200: Created, ...StandardErrorResponses },
+          response: {
+            200: Created,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
         },
       )
       .put(
@@ -410,7 +474,15 @@ const plugin = new Elysia()
           await learningService.reorderModules(body.ids);
           return ok;
         },
-        { body: OrderBody, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          body: OrderBody,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
       )
       .put(
         "/admin/learning/modules/:id",
@@ -421,7 +493,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: ModuleBody,
-          response: { 200: Ok, ...StandardErrorResponses },
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .post(
@@ -430,7 +508,17 @@ const plugin = new Elysia()
           await learningService.publishModule(params.id, true);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .post(
         "/admin/learning/modules/:id/unpublish",
@@ -438,7 +526,17 @@ const plugin = new Elysia()
           await learningService.publishModule(params.id, false);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .delete(
         "/admin/learning/modules/:id",
@@ -446,7 +544,17 @@ const plugin = new Elysia()
           await learningService.deleteModule(params.id);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .post(
         "/admin/learning/modules/:id/lessons",
@@ -456,7 +564,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: LessonBody,
-          response: { 200: Created, ...StandardErrorResponses },
+          response: {
+            200: Created,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .put(
@@ -468,7 +582,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: OrderBody,
-          response: { 200: Ok, ...StandardErrorResponses },
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .post(
@@ -479,7 +599,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: QuestionBody,
-          response: { 200: Created, ...StandardErrorResponses },
+          response: {
+            200: Created,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .put(
@@ -491,7 +617,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: OrderBody,
-          response: { 200: Ok, ...StandardErrorResponses },
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .put(
@@ -503,7 +635,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: QuestionBody,
-          response: { 200: Ok, ...StandardErrorResponses },
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .delete(
@@ -512,7 +650,17 @@ const plugin = new Elysia()
           await learningService.deleteQuestion(params.id);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .get(
         "/admin/learning/lessons/:id",
@@ -521,7 +669,13 @@ const plugin = new Elysia()
         },
         {
           params: IdParam,
-          response: { 200: LessonSchema, ...StandardErrorResponses },
+          response: {
+            200: LessonSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .put(
@@ -533,7 +687,13 @@ const plugin = new Elysia()
         {
           params: IdParam,
           body: LessonBody,
-          response: { 200: Ok, ...StandardErrorResponses },
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
         },
       )
       .post(
@@ -542,7 +702,17 @@ const plugin = new Elysia()
           await learningService.publishLesson(params.id, true);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .post(
         "/admin/learning/lessons/:id/unpublish",
@@ -550,7 +720,17 @@ const plugin = new Elysia()
           await learningService.publishLesson(params.id, false);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .delete(
         "/admin/learning/lessons/:id",
@@ -558,7 +738,17 @@ const plugin = new Elysia()
           await learningService.deleteLesson(params.id);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
+          },
+        },
       )
       .post(
         "/admin/learning/lessons/:id/video/upload",
@@ -574,6 +764,9 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ uploadUrl: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -587,6 +780,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ type: t.String() }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -596,7 +793,16 @@ const plugin = new Elysia()
           await learningService.removeVideo(params.id);
           return ok;
         },
-        { params: IdParam, response: { 200: Ok, ...StandardErrorResponses } },
+        {
+          params: IdParam,
+          response: {
+            200: Ok,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+          },
+        },
       )
       .get(
         "/admin/learning/requests",
@@ -607,6 +813,8 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ requests: t.Array(OpenRequestSchema) }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
           },
         },
       )
@@ -631,6 +839,10 @@ const plugin = new Elysia()
               leaderId: Nullable(t.String()),
             }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -644,6 +856,10 @@ const plugin = new Elysia()
           response: {
             200: t.Object({ status: t.Literal("declined") }),
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+            ...NotFoundResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -658,7 +874,12 @@ const plugin = new Elysia()
             limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
             offset: t.Optional(t.Numeric({ minimum: 0 })),
           }),
-          response: { 200: LearnersSchema, ...StandardErrorResponses },
+          response: {
+            200: LearnersSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
         },
       ),
   );

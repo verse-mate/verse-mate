@@ -18,6 +18,15 @@ export const VIDEO_TYPES = ["video/mp4", "video/webm"] as const;
 export type VideoType = (typeof VIDEO_TYPES)[number];
 export const LEARNERS_PAGE = 25;
 
+export const JOIN_REQUEST_STATUSES = [
+  "open",
+  "approved",
+  "declined",
+  "already-in-program",
+] as const;
+
+export type JoinRequestStatus = (typeof JOIN_REQUEST_STATUSES)[number];
+
 export type LearningStorage = Pick<
   ObjectStorageService,
   | "getGlobalObjectUploadUrl"
@@ -366,11 +375,7 @@ export class CoachLearningService {
     return row
       ? {
           id: row.id,
-          status: row.status as
-            | "open"
-            | "approved"
-            | "declined"
-            | "already-in-program",
+          status: row.status as JoinRequestStatus,
           reason: row.reason,
           note: row.note,
           sentAt: row.created_at.toISOString(),
@@ -854,7 +859,7 @@ export class CoachLearningService {
           JOIN coach_learning_modules m ON m.id = s.module_id AND m.published
           WHERE s.user_id = e.user_id AND s.passed
         )`.as("passed"),
-        sql<string | null>`(
+        sql<JoinRequestStatus | null>`(
           SELECT r.status FROM coach_learning_join_requests r
           WHERE r.user_id = e.user_id ORDER BY r.id DESC LIMIT 1
         )`.as("request"),

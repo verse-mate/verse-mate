@@ -1,0 +1,10 @@
+{
+  "status": 403,
+  "body": {
+    "error": "FORBIDDEN",
+    "message": "Confirm your email to see your coaching reports: open the link we send to your address",
+    "details": {
+      "refusal": "confirm-email"
+    }
+  }
+}

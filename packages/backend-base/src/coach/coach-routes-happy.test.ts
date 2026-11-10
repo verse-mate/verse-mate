@@ -6,6 +6,7 @@ import { Elysia } from "elysia";
 import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import { fixtureLeaderSummary } from "./coach-fixture";
 import { isolateTable } from "./coach-test-tables";
 import { MemoryStorage } from "./coach-upload.fixture";
 import coachPlugin from "./coach.plugin";
@@ -364,14 +365,9 @@ describe("the monthly report routes on a real row", () => {
         coach_id: LEADER_A,
         month: "2031-05",
         summary: JSON.stringify({
+          ...fixtureLeaderSummary(),
           month: "2031-05",
           monthLabel: "May 2031",
-          strengths: [{ text: "Old", session: "2031-05-02" }],
-          growth: [{ text: "Old", session: "2031-05-02" }],
-          trends: ["Old"],
-          conversationGuide: [{ label: "Open", q: "Old?" }],
-          focus: { clusterName: "Teaching Craft", goals: ["Old"] },
-          clusters: [{ name: "Teaching Craft", insight: "Old" }],
         }),
         state: "held",
         hold_reason: "held for review",

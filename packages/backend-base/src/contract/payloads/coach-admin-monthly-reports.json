@@ -1,0 +1,899 @@
+{
+  "status": 200,
+  "body": {
+    "reports": [
+      {
+        "id": "<number>",
+        "kind": "leader",
+        "coachId": "fixture-avery-lane",
+        "month": "2033-03",
+        "state": "parallel-run",
+        "holdReason": "held for review: strengths: 1, three to five expected; strengths: a quote is not found in the month's sessions (\"let us read it first\"); growth areas: three to five, each with a tip; conversation guide: 1 questions, three to five expected; next month's focus: 1 goals, two or three expected",
+        "skipped": [],
+        "summary": {
+          "delta": 11.2,
+          "focus": {
+            "goals": ["One delegated prayer each week"],
+            "clusterPct": 78,
+            "clusterName": "Teaching Craft"
+          },
+          "group": "Tuesday Dawn Group, Cedar Hollow Fellowship",
+          "month": "2033-03",
+          "glance": {
+            "avg": {
+              "bm": 78,
+              "br": 78,
+              "ep": 78,
+              "tc": 78,
+              "status": "Strong",
+              "composite": 77.6
+            },
+            "rows": [
+              {
+                "bm": 74,
+                "br": 74,
+                "ep": 74,
+                "tc": 74,
+                "date": "2033-03-08",
+                "status": "Strong",
+                "session": "Philippians, Lesson 08",
+                "composite": 74.2
+              },
+              {
+                "bm": 81,
+                "br": 81,
+                "ep": 81,
+                "tc": 81,
+                "date": "2033-03-15",
+                "status": "Strong",
+                "session": "Philippians, Lesson 15",
+                "composite": 81
+              }
+            ]
+          },
+          "growth": [
+            {
+              "text": "Talk ratio. Ask and count to seven",
+              "session": "2033-03-10"
+            }
+          ],
+          "status": {
+            "emoji": "🟢",
+            "label": "Strong"
+          },
+          "trends": ["Participation held steady (2033-03-10)."],
+          "profile": {
+            "study": "Philippians",
+            "format": "Zoom",
+            "groupSize": 12
+          },
+          "clusters": [
+            {
+              "key": "tc",
+              "name": "Teaching Craft",
+              "avgPct": 78,
+              "weight": 33,
+              "insight": "Scripture led every discussion.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Session Structure & Flow"
+              },
+              "statusLabel": "Strong",
+              "strongestDim": {
+                "val": 4,
+                "name": "Session Structure & Flow"
+              }
+            },
+            {
+              "key": "bm",
+              "name": "Building Ministry",
+              "avgPct": 78,
+              "weight": 31,
+              "insight": "Homework came up every week.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Newcomer Welcome"
+              },
+              "statusLabel": "Strong",
+              "strongestDim": {
+                "val": 4,
+                "name": "Newcomer Welcome"
+              }
+            },
+            {
+              "key": "ep",
+              "name": "Engaging People",
+              "avgPct": 78,
+              "weight": 18,
+              "insight": "Quiet members were called on by name.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Facilitation vs. Lecture"
+              },
+              "statusLabel": "Strong",
+              "strongestDim": {
+                "val": 4,
+                "name": "Facilitation vs. Lecture"
+              }
+            },
+            {
+              "key": "br",
+              "name": "Being Real",
+              "avgPct": 78,
+              "weight": 18,
+              "insight": "The leader shared a hard week honestly.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Vulnerability / Authenticity"
+              },
+              "statusLabel": "Strong",
+              "strongestDim": {
+                "val": 4,
+                "name": "Vulnerability / Authenticity"
+              }
+            }
+          ],
+          "leaderId": "fixture-avery-lane",
+          "sessions": [
+            {
+              "date": "2033-03-08",
+              "status": "Strong",
+              "session": "Philippians, Lesson 08",
+              "composite": 74.2,
+              "dimensions": [
+                {
+                  "n": 1,
+                  "name": "Session Structure & Flow",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 2,
+                  "name": "Newcomer Welcome",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                },
+                {
+                  "n": 3,
+                  "name": "Scripture Engagement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 4,
+                  "name": "Facilitation vs. Lecture",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Engaging People"
+                },
+                {
+                  "n": 5,
+                  "name": "Application Questions",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 6,
+                  "name": "Participant Engagement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Engaging People"
+                },
+                {
+                  "n": 7,
+                  "name": "Visual Aids",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 8,
+                  "name": "Vulnerability / Authenticity",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Being Real"
+                },
+                {
+                  "n": 9,
+                  "name": "Memory Reinforcement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 10,
+                  "name": "Homework References",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                },
+                {
+                  "n": 11,
+                  "name": "Prayer",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Being Real"
+                },
+                {
+                  "n": 12,
+                  "name": "Leader Development",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                }
+              ]
+            },
+            {
+              "date": "2033-03-15",
+              "status": "Strong",
+              "session": "Philippians, Lesson 15",
+              "composite": 81,
+              "dimensions": [
+                {
+                  "n": 1,
+                  "name": "Session Structure & Flow",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 2,
+                  "name": "Newcomer Welcome",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                },
+                {
+                  "n": 3,
+                  "name": "Scripture Engagement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 4,
+                  "name": "Facilitation vs. Lecture",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Engaging People"
+                },
+                {
+                  "n": 5,
+                  "name": "Application Questions",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 6,
+                  "name": "Participant Engagement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Engaging People"
+                },
+                {
+                  "n": 7,
+                  "name": "Visual Aids",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 8,
+                  "name": "Vulnerability / Authenticity",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Being Real"
+                },
+                {
+                  "n": 9,
+                  "name": "Memory Reinforcement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 10,
+                  "name": "Homework References",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                },
+                {
+                  "n": 11,
+                  "name": "Prayer",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Being Real"
+                },
+                {
+                  "n": 12,
+                  "name": "Leader Development",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                }
+              ]
+            }
+          ],
+          "composite": 77.6,
+          "strengths": [
+            {
+              "text": "Scripture first: “let us read it first”",
+              "session": "2033-03-10"
+            }
+          ],
+          "clusterAvg": {
+            "bm": 78,
+            "br": 78,
+            "ep": 78,
+            "tc": 78
+          },
+          "leaderName": "Avery Lane",
+          "monthLabel": "March 2033",
+          "trajectory": [
+            {
+              "date": "2033-03-08",
+              "delta": null,
+              "status": "Strong",
+              "session": "Philippians, Lesson 08",
+              "composite": 74.2
+            },
+            {
+              "date": "2033-03-15",
+              "delta": 6.8,
+              "status": "Strong",
+              "session": "Philippians, Lesson 15",
+              "composite": 81
+            }
+          ],
+          "sessionsCount": 2,
+          "priorComposite": 66.4,
+          "priorMonthLabel": "February 2033",
+          "conversationGuide": [
+            {
+              "q": "What made scripture land?",
+              "label": "Strongest area"
+            }
+          ]
+        }
+      },
+      {
+        "id": "<number>",
+        "kind": "leader",
+        "coachId": "fixture-jordan-pike",
+        "month": "2033-03",
+        "state": "parallel-run",
+        "holdReason": "held for review: strengths: 1, three to five expected; strengths: a quote is not found in the month's sessions (\"let us read it first\"); growth areas: three to five, each with a tip; conversation guide: 1 questions, three to five expected; next month's focus: 1 goals, two or three expected",
+        "skipped": [],
+        "summary": {
+          "delta": null,
+          "focus": {
+            "goals": ["One delegated prayer each week"],
+            "clusterPct": 59,
+            "clusterName": "Teaching Craft"
+          },
+          "group": "Thursday Evening Group, Riverbend Chapel",
+          "month": "2033-03",
+          "glance": {
+            "avg": {
+              "bm": 59,
+              "br": 59,
+              "ep": 59,
+              "tc": 59,
+              "status": "Developing",
+              "composite": 58.7
+            },
+            "rows": [
+              {
+                "bm": 59,
+                "br": 59,
+                "ep": 59,
+                "tc": 59,
+                "date": "2033-03-10",
+                "status": "Developing",
+                "session": "Philippians, Lesson 10",
+                "composite": 58.7
+              }
+            ]
+          },
+          "growth": [
+            {
+              "text": "Talk ratio. Ask and count to seven",
+              "session": "2033-03-10"
+            }
+          ],
+          "status": {
+            "emoji": "🟠",
+            "label": "Developing"
+          },
+          "trends": ["Participation held steady (2033-03-10)."],
+          "profile": {
+            "study": "Philippians",
+            "format": "Zoom",
+            "groupSize": 12
+          },
+          "clusters": [
+            {
+              "key": "tc",
+              "name": "Teaching Craft",
+              "avgPct": 59,
+              "weight": 33,
+              "insight": "Scripture led every discussion.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Session Structure & Flow"
+              },
+              "statusLabel": "Developing",
+              "strongestDim": {
+                "val": 4,
+                "name": "Session Structure & Flow"
+              }
+            },
+            {
+              "key": "bm",
+              "name": "Building Ministry",
+              "avgPct": 59,
+              "weight": 31,
+              "insight": "Homework came up every week.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Newcomer Welcome"
+              },
+              "statusLabel": "Developing",
+              "strongestDim": {
+                "val": 4,
+                "name": "Newcomer Welcome"
+              }
+            },
+            {
+              "key": "ep",
+              "name": "Engaging People",
+              "avgPct": 59,
+              "weight": 18,
+              "insight": "Quiet members were called on by name.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Facilitation vs. Lecture"
+              },
+              "statusLabel": "Developing",
+              "strongestDim": {
+                "val": 4,
+                "name": "Facilitation vs. Lecture"
+              }
+            },
+            {
+              "key": "br",
+              "name": "Being Real",
+              "avgPct": 59,
+              "weight": 18,
+              "insight": "The leader shared a hard week honestly.",
+              "weakestDim": {
+                "val": 4,
+                "name": "Vulnerability / Authenticity"
+              },
+              "statusLabel": "Developing",
+              "strongestDim": {
+                "val": 4,
+                "name": "Vulnerability / Authenticity"
+              }
+            }
+          ],
+          "leaderId": "fixture-jordan-pike",
+          "sessions": [
+            {
+              "date": "2033-03-10",
+              "status": "Developing",
+              "session": "Philippians, Lesson 10",
+              "composite": 58.7,
+              "dimensions": [
+                {
+                  "n": 1,
+                  "name": "Session Structure & Flow",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 2,
+                  "name": "Newcomer Welcome",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                },
+                {
+                  "n": 3,
+                  "name": "Scripture Engagement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 4,
+                  "name": "Facilitation vs. Lecture",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Engaging People"
+                },
+                {
+                  "n": 5,
+                  "name": "Application Questions",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 6,
+                  "name": "Participant Engagement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Engaging People"
+                },
+                {
+                  "n": 7,
+                  "name": "Visual Aids",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 8,
+                  "name": "Vulnerability / Authenticity",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Being Real"
+                },
+                {
+                  "n": 9,
+                  "name": "Memory Reinforcement",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Teaching Craft"
+                },
+                {
+                  "n": 10,
+                  "name": "Homework References",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                },
+                {
+                  "n": 11,
+                  "name": "Prayer",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Being Real"
+                },
+                {
+                  "n": 12,
+                  "name": "Leader Development",
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
+                  "cluster": "Building Ministry"
+                }
+              ]
+            }
+          ],
+          "composite": 58.7,
+          "strengths": [
+            {
+              "text": "Scripture first: “let us read it first”",
+              "session": "2033-03-10"
+            }
+          ],
+          "clusterAvg": {
+            "bm": 59,
+            "br": 59,
+            "ep": 59,
+            "tc": 59
+          },
+          "leaderName": "Jordan Pike",
+          "monthLabel": "March 2033",
+          "trajectory": [
+            {
+              "date": "2033-03-10",
+              "delta": null,
+              "status": "Developing",
+              "session": "Philippians, Lesson 10",
+              "composite": 58.7
+            }
+          ],
+          "sessionsCount": 1,
+          "priorComposite": null,
+          "priorMonthLabel": "February 2033",
+          "conversationGuide": [
+            {
+              "q": "What made scripture land?",
+              "label": "Strongest area"
+            }
+          ]
+        }
+      },
+      {
+        "id": "<number>",
+        "kind": "program",
+        "coachId": null,
+        "month": "2033-03",
+        "state": "parallel-run",
+        "holdReason": null,
+        "skipped": [],
+        "summary": {
+          "bands": [
+            {
+              "count": 0,
+              "label": "Exceptional"
+            },
+            {
+              "count": 1,
+              "label": "Strong"
+            },
+            {
+              "count": 0,
+              "label": "On Target"
+            },
+            {
+              "count": 1,
+              "label": "Developing"
+            },
+            {
+              "count": 0,
+              "label": "Early Stage"
+            }
+          ],
+          "month": "2033-03",
+          "trends": {
+            "text": ["Participation rose across the program."],
+            "priorAvg": 66.4,
+            "allTimeAvg": 70.1,
+            "bestImproving": {
+              "id": "fixture-avery-lane",
+              "name": "Avery Lane",
+              "delta": 11.2
+            },
+            "needsAttention": {
+              "avg": 4,
+              "name": "Session Structure & Flow"
+            },
+            "mostImprovedDimension": {
+              "name": "Session Structure & Flow",
+              "delta": 0
+            }
+          },
+          "heatMap": {
+            "rows": [
+              {
+                "id": "fixture-avery-lane",
+                "name": "Avery Lane",
+                "cells": [
+                  {
+                    "n": 1,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 2,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 3,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 4,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 5,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 6,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 7,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 8,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 9,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 10,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 11,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 12,
+                    "avg": 4,
+                    "mark": "strong"
+                  }
+                ]
+              },
+              {
+                "id": "fixture-jordan-pike",
+                "name": "Jordan Pike",
+                "cells": [
+                  {
+                    "n": 1,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 2,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 3,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 4,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 5,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 6,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 7,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 8,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 9,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 10,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 11,
+                    "avg": 4,
+                    "mark": "strong"
+                  },
+                  {
+                    "n": 12,
+                    "avg": 4,
+                    "mark": "strong"
+                  }
+                ]
+              }
+            ],
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement"
+              },
+              {
+                "n": 10,
+                "name": "Homework References"
+              },
+              {
+                "n": 11,
+                "name": "Prayer"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development"
+              }
+            ]
+          },
+          "overview": {
+            "to": "2033-03-15",
+            "from": "2033-03-08",
+            "leaders": 2,
+            "sessions": 3
+          },
+          "snapshots": [
+            {
+              "id": "fixture-avery-lane",
+              "name": "Avery Lane",
+              "text": "Avery Lane: 77.6 (Strong), up 11.2 from February 2033. Strong on scripture, growing in delegation."
+            },
+            {
+              "id": "fixture-jordan-pike",
+              "name": "Jordan Pike",
+              "text": "Jordan Pike: 58.7 (Developing). Strong on scripture, growing in delegation."
+            }
+          ],
+          "monthLabel": "March 2033",
+          "initiatives": [
+            "Coach this next month (Session Structure & Flow averaged 4 across the program)",
+            "Coach this next month (Avery Lane moved +11.2 from 2033-02)"
+          ],
+          "leaderboard": [
+            {
+              "id": "fixture-avery-lane",
+              "name": "Avery Lane",
+              "status": "Strong",
+              "composite": 77.6
+            },
+            {
+              "id": "fixture-jordan-pike",
+              "name": "Jordan Pike",
+              "status": "Developing",
+              "composite": 58.7
+            }
+          ],
+          "priorityMatrix": {
+            "lowest": ["fixture-jordan-pike", "fixture-avery-lane"],
+            "plateau": [],
+            "declining": []
+          },
+          "executiveSummary": ["The program held steady this month."]
+        }
+      }
+    ]
+  }
+}

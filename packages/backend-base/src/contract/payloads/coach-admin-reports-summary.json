@@ -1,0 +1,64 @@
+{
+  "status": 200,
+  "body": {
+    "items": [
+      {
+        "id": "fixture-avery-2033-03-15",
+        "date": "2033-03-15",
+        "score": 81,
+        "topic": "Philippians 2",
+        "docUrl": "",
+        "pdfUrl": "https://example.org/reports/fixture.pdf",
+        "status": "Strong",
+        "session": "Philippians, Lesson 15",
+        "duration": "1h 05m",
+        "attendees": 12,
+        "dateLabel": "March 15, 2033",
+        "newcomers": 1,
+        "statusEmoji": "🟢",
+        "held": false,
+        "hasRetainedRecording": false,
+        "attachedRecordingUrl": null
+      },
+      {
+        "id": "fixture-avery-2033-03-08",
+        "date": "2033-03-08",
+        "score": 74.2,
+        "topic": "Philippians 2",
+        "docUrl": "",
+        "pdfUrl": "https://example.org/reports/fixture.pdf",
+        "status": "Strong",
+        "session": "Philippians, Lesson 08",
+        "duration": "1h 05m",
+        "attendees": 12,
+        "dateLabel": "March 8, 2033",
+        "newcomers": 1,
+        "statusEmoji": "🟢",
+        "held": false,
+        "hasRetainedRecording": false,
+        "attachedRecordingUrl": null
+      },
+      {
+        "id": "fixture-avery-2033-02-22",
+        "date": "2033-02-22",
+        "score": 66.4,
+        "topic": "Philippians 2",
+        "docUrl": "",
+        "pdfUrl": "https://example.org/reports/fixture.pdf",
+        "status": "On Target",
+        "session": "Philippians, Lesson 22",
+        "duration": "1h 05m",
+        "attendees": 12,
+        "dateLabel": "February 22, 2033",
+        "newcomers": 1,
+        "statusEmoji": "🟡",
+        "held": false,
+        "hasRetainedRecording": false,
+        "attachedRecordingUrl": null
+      }
+    ],
+    "total": 3,
+    "streakWeeks": 2,
+    "quarterSessions": 3
+  }
+}

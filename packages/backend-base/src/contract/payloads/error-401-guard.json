@@ -1,0 +1,7 @@
+{
+  "status": 401,
+  "body": {
+    "name": "Error",
+    "message": "Invalid bearer token"
+  }
+}

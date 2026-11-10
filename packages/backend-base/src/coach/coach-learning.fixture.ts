@@ -12,7 +12,7 @@ import {
 import coachPlugin from "./coach.plugin";
 import { CoachService } from "./coach.service";
 
-export const conn = Database.getOrCreateConnection();
+export const conn = () => Database.getOrCreateConnection();
 
 export class MemoryVideos implements LearningStorage {
   objects = new Map<string, Uint8Array>();
@@ -74,7 +74,7 @@ export const LEARNING_TABLES = [
 ] as const;
 
 export async function clearLearning() {
-  for (const table of LEARNING_TABLES) await conn.deleteFrom(table).execute();
+  for (const table of LEARNING_TABLES) await conn().deleteFrom(table).execute();
 }
 
 export function learningApp() {
@@ -112,10 +112,10 @@ export async function account(
   email: string,
   options: { confirmed?: boolean; firstName?: string; lastName?: string } = {},
 ): Promise<Account> {
-  await conn.deleteFrom("user").where("email", "=", email).execute();
+  await conn().deleteFrom("user").where("email", "=", email).execute();
   const confirmed = options.confirmed ?? true;
   const id = (
-    await conn
+    await conn()
       .insertInto("user")
       .values({
         email,
@@ -142,7 +142,7 @@ export async function resetLimits(...who: Account[]) {
 }
 
 export async function dropAccounts(emails: string[]) {
-  const rows = await conn
+  const rows = await conn()
     .selectFrom("user")
     .select("id")
     .where("email", "in", emails)
@@ -150,15 +150,15 @@ export async function dropAccounts(emails: string[]) {
   for (const r of rows)
     await redisClient.set(cacheConstants.accessToken(r.id as string), [], "1s");
   if (rows.length)
-    await conn.deleteFrom("user").where("email", "in", emails).execute();
+    await conn().deleteFrom("user").where("email", "in", emails).execute();
 }
 
 export async function makeAdmin(who: Account) {
-  await conn
+  await conn()
     .deleteFrom("coach_admins")
     .where("email", "=", who.email)
     .execute();
-  await conn
+  await conn()
     .insertInto("coach_admins")
     .values({ email: who.email, user_id: who.id as never })
     .execute();

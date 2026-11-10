@@ -1,0 +1,399 @@
+{
+  "status": 200,
+  "body": {
+    "total_events": 214,
+    "total_facets": 248,
+    "sections": [
+      {
+        "section": "words",
+        "label": "His Words",
+        "blurb": "Teachings, questions, commands and claims",
+        "sort_order": 1,
+        "facet_count": 109,
+        "types": [
+          {
+            "type": "TEACHING",
+            "mode": "WORD",
+            "slug": "teachings",
+            "label": "Teachings",
+            "singular": "Teaching",
+            "blurb": "What He taught, and what it means",
+            "facet_count": 30
+          },
+          {
+            "type": "QUESTION",
+            "mode": "WORD",
+            "slug": "questions",
+            "label": "Questions",
+            "singular": "Question",
+            "blurb": "The questions He asked, and why",
+            "facet_count": 27
+          },
+          {
+            "type": "COMMAND",
+            "mode": "WORD",
+            "slug": "commands",
+            "label": "Commands",
+            "singular": "Command",
+            "blurb": "What He told His followers to do",
+            "facet_count": 30
+          },
+          {
+            "type": "CLAIM",
+            "mode": "WORD",
+            "slug": "claims",
+            "label": "Claims",
+            "singular": "Claim",
+            "blurb": "What He said about Himself",
+            "facet_count": 22
+          },
+          {
+            "type": "PROMISE",
+            "mode": "WORD",
+            "slug": "promises",
+            "label": "Promises",
+            "singular": "Promise",
+            "blurb": "What He pledged to those who follow",
+            "facet_count": 0
+          },
+          {
+            "type": "WARNING",
+            "mode": "WORD",
+            "slug": "warnings",
+            "label": "Warnings",
+            "singular": "Warning",
+            "blurb": "The hard sayings He refused to soften",
+            "facet_count": 0
+          },
+          {
+            "type": "PRAYER",
+            "mode": "WORD",
+            "slug": "prayers",
+            "label": "Prayers",
+            "singular": "Prayer",
+            "blurb": "When He spoke to the Father",
+            "facet_count": 0
+          },
+          {
+            "type": "PROPHECY",
+            "mode": "WORD",
+            "slug": "prophecies",
+            "label": "Prophecies",
+            "singular": "Prophecy",
+            "blurb": "What He foretold",
+            "facet_count": 0
+          }
+        ]
+      },
+      {
+        "section": "actions",
+        "label": "His Actions",
+        "blurb": "Miracles, healings, encounters, compassion and confrontations",
+        "sort_order": 2,
+        "facet_count": 99,
+        "types": [
+          {
+            "type": "MIRACLE",
+            "mode": "ACTION",
+            "slug": "miracles",
+            "label": "Miracles",
+            "singular": "Miracle",
+            "blurb": "Signs of the Kingdom breaking in",
+            "facet_count": 13
+          },
+          {
+            "type": "HEALING",
+            "mode": "ACTION",
+            "slug": "healings",
+            "label": "Healings",
+            "singular": "Healing",
+            "blurb": "Every body He restored",
+            "facet_count": 25
+          },
+          {
+            "type": "ENCOUNTER",
+            "mode": "ACTION",
+            "slug": "encounters",
+            "label": "Encounters",
+            "singular": "Encounter",
+            "blurb": "The people He met, one by one",
+            "facet_count": 26
+          },
+          {
+            "type": "COMPASSION",
+            "mode": "ACTION",
+            "slug": "compassion",
+            "label": "Compassion",
+            "singular": "Act of compassion",
+            "blurb": "Where He stopped, touched, and wept",
+            "facet_count": 17
+          },
+          {
+            "type": "CONFRONTATION",
+            "mode": "ACTION",
+            "slug": "confrontations",
+            "label": "Confrontations",
+            "singular": "Confrontation",
+            "blurb": "Where He refused to back down",
+            "facet_count": 18
+          },
+          {
+            "type": "SYMBOLIC_ACTION",
+            "mode": "ACTION",
+            "slug": "symbolic-actions",
+            "label": "Symbolic actions",
+            "singular": "Symbolic action",
+            "blurb": "Acted parables — the fig tree, the towel",
+            "facet_count": 0
+          }
+        ]
+      },
+      {
+        "section": "parables",
+        "label": "Parables",
+        "blurb": "Study all of Jesus' parables",
+        "sort_order": 3,
+        "facet_count": 40,
+        "types": [
+          {
+            "type": "PARABLE",
+            "mode": "WORD",
+            "slug": "parables",
+            "label": "Parables",
+            "singular": "Parable",
+            "blurb": "Every story He told",
+            "facet_count": 40
+          }
+        ]
+      }
+    ],
+    "periods": [
+      {
+        "slug": "incarnation",
+        "name": "Incarnation & Birth",
+        "subtitle": "Matthew 1–2 · Luke 1–2 · John 1",
+        "description": "The Word becomes flesh. Angels announce Him, a virgin bears Him, shepherds and magi find Him, and a king tries to kill Him.",
+        "sort_order": 1,
+        "event_count": 0
+      },
+      {
+        "slug": "hidden-years",
+        "name": "The Hidden Years",
+        "subtitle": "Luke 2:40-52",
+        "description": "Nearly three decades pass in near silence. The one glimpse Scripture gives is a twelve-year-old in the temple, already about His Father's business.",
+        "sort_order": 2,
+        "event_count": 1
+      },
+      {
+        "slug": "preparation",
+        "name": "Baptism & Temptation",
+        "subtitle": "Matthew 3–4 · Mark 1 · Luke 3–4",
+        "description": "The Father speaks over Him at the Jordan, the Spirit drives Him into the wilderness, and He answers the tempter with Scripture alone.",
+        "sort_order": 3,
+        "event_count": 3
+      },
+      {
+        "slug": "early-ministry",
+        "name": "Early Ministry",
+        "subtitle": "John 1–4",
+        "description": "First disciples, first sign, first cleansing of the temple, and two conversations that define the gospel — with a ruler by night and a woman at noon.",
+        "sort_order": 4,
+        "event_count": 10
+      },
+      {
+        "slug": "galilean-ministry",
+        "name": "The Galilean Ministry",
+        "subtitle": "Matthew 4–15 · Mark 1–7 · Luke 4–9",
+        "description": "The crowds swell. He preaches the Kingdom on a hillside, heals whoever comes, calms a sea, and feeds thousands from a boy's lunch.",
+        "sort_order": 5,
+        "event_count": 101
+      },
+      {
+        "slug": "turning-point",
+        "name": "The Turning Point",
+        "subtitle": "Matthew 16–18 · Mark 8–9 · Luke 9",
+        "description": "At Caesarea Philippi Peter names Him Messiah — and from that moment He begins to speak plainly about the cross.",
+        "sort_order": 6,
+        "event_count": 12
+      },
+      {
+        "slug": "journey-to-jerusalem",
+        "name": "The Road to Jerusalem",
+        "subtitle": "Luke 9:51–19:27 · John 7–11",
+        "description": "He sets His face toward Jerusalem. Most of the parables belong to this stretch, told to crowds who do not yet know where the road ends.",
+        "sort_order": 7,
+        "event_count": 57
+      },
+      {
+        "slug": "passion-week",
+        "name": "Passion Week",
+        "subtitle": "Matthew 21–26 · Mark 11–14 · Luke 19–22 · John 12–17",
+        "description": "From the colt on Palm Sunday to the bread and cup in the upper room — seven days that the gospels slow almost to a standstill.",
+        "sort_order": 8,
+        "event_count": 37
+      },
+      {
+        "slug": "cross",
+        "name": "The Cross",
+        "subtitle": "Matthew 26–27 · Mark 14–15 · Luke 22–23 · John 18–19",
+        "description": "Betrayal, trial, and crucifixion. He answers almost nothing, forgives almost everyone, and finishes what He came to do.",
+        "sort_order": 9,
+        "event_count": 14
+      },
+      {
+        "slug": "resurrection",
+        "name": "Resurrection & Ascension",
+        "subtitle": "Matthew 28 · Mark 16 · Luke 24 · John 20–21",
+        "description": "An empty tomb, a gardener who says her name, a road to Emmaus, breakfast on a beach, and a commission that reaches every nation.",
+        "sort_order": 10,
+        "event_count": 12
+      }
+    ],
+    "themes": [
+      {
+        "slug": "kingdom",
+        "name": "Kingdom",
+        "description": "The reign of God breaking into the world — what it is like, who enters it, and how it grows.",
+        "sort_order": 1,
+        "event_count": 57
+      },
+      {
+        "slug": "faith",
+        "name": "Faith",
+        "description": "Trust that acts. Where Jesus found it, where He marvelled at its absence, and what He said it could do.",
+        "sort_order": 2,
+        "event_count": 59
+      },
+      {
+        "slug": "salvation",
+        "name": "Salvation",
+        "description": "Being found, forgiven, and given life — why He came and what He came to accomplish.",
+        "sort_order": 3,
+        "event_count": 59
+      },
+      {
+        "slug": "prayer",
+        "name": "Prayer",
+        "description": "How He prayed and how He taught His followers to pray — persistently, privately, and to a Father.",
+        "sort_order": 4,
+        "event_count": 17
+      },
+      {
+        "slug": "money",
+        "name": "Money",
+        "description": "Possessions, generosity, and the two masters no one can serve at once.",
+        "sort_order": 5,
+        "event_count": 21
+      },
+      {
+        "slug": "judgment",
+        "name": "Judgment",
+        "description": "The reckoning He promised — separation, accountability, and the return of the Son of Man.",
+        "sort_order": 6,
+        "event_count": 29
+      },
+      {
+        "slug": "love",
+        "name": "Love",
+        "description": "Love for God, neighbour, stranger and enemy — the command He called greatest and the mark He gave His followers.",
+        "sort_order": 7,
+        "event_count": 73
+      },
+      {
+        "slug": "discipleship",
+        "name": "Discipleship",
+        "description": "What it costs to follow Him, and what He promised those who do.",
+        "sort_order": 8,
+        "event_count": 57
+      },
+      {
+        "slug": "prophecy",
+        "name": "Prophecy",
+        "description": "What He foretold — about Himself, Jerusalem, His followers, and the end of the age.",
+        "sort_order": 9,
+        "event_count": 29
+      },
+      {
+        "slug": "warnings",
+        "name": "Warnings",
+        "description": "The woes, the cautions, and the hard sayings He refused to soften.",
+        "sort_order": 10,
+        "event_count": 38
+      }
+    ],
+    "collections": [
+      {
+        "slug": "the-i-am-statements",
+        "name": "The I AM statements",
+        "subtitle": "Eight claims that got Him killed",
+        "description": "Seven metaphors and one bare declaration. Read together, John's \"I am\" sayings are the clearest self-portrait Jesus ever gave — and the reason the religious leaders reached for stones.",
+        "is_featured": true,
+        "sort_order": 1,
+        "event_count": 8
+      },
+      {
+        "slug": "every-question-jesus-asked",
+        "name": "Every question Jesus asked",
+        "subtitle": "He asked far more than He answered",
+        "description": "Jesus is asked roughly 180 questions in the gospels and answers a handful of them directly. He asks over 300. This study walks through them — because the questions are the teaching.",
+        "is_featured": true,
+        "sort_order": 2,
+        "event_count": 27
+      },
+      {
+        "slug": "every-miracle-of-jesus",
+        "name": "Every miracle of Jesus",
+        "subtitle": "Signs of a Kingdom breaking in",
+        "description": "Healings, exorcisms, provision, power over nature, and three people raised from the dead — every recorded miracle, with its parallel accounts held together. Lists of these run to 33, 35, 37 or 40; the spread is a counting question, not a doctrinal one. \"He healed many\" is one line and an unknown number of miracles, and John closes by saying the world could not contain the books.",
+        "is_featured": true,
+        "sort_order": 3,
+        "event_count": 38
+      },
+      {
+        "slug": "what-the-miracles-reveal",
+        "name": "What the miracles reveal",
+        "subtitle": "Eight signs, and the claim each one makes",
+        "description": "The pattern matters more than the count. Taken together the signs stop being a list of wonders and start making one claim: authority over disease (the evening at Peter's door), over demons (the Gerasene), over nature (the stilled squall), over scarcity (five loaves), over what was broken from birth (the man born blind), over death (Lazarus) and — the one the crowd found hardest — over sin (the paralytic, forgiven before he was healed). The eighth is not like the other seven. Lazarus was raised and died again; the resurrection is not a reversal of death but the defeat of it, and John says he chose which signs to record so that you would believe exactly that.",
+        "is_featured": true,
+        "sort_order": 4,
+        "event_count": 8
+      },
+      {
+        "slug": "every-parable-of-jesus",
+        "name": "Every parable of Jesus",
+        "subtitle": "The stories He told instead of arguing",
+        "description": "Forty stories about soil, seeds, sons, servants, feasts and money — told to crowds who thought they were being entertained.",
+        "is_featured": true,
+        "sort_order": 5,
+        "event_count": 40
+      },
+      {
+        "slug": "jesus-and-the-pharisees",
+        "name": "Jesus and the Pharisees",
+        "subtitle": "Where He refused to back down",
+        "description": "The running conflict that shapes the whole ministry: Sabbath, ritual, authority, taxes, and finally a trial. The most religious people in the room consistently got Him most wrong.",
+        "is_featured": true,
+        "sort_order": 6,
+        "event_count": 12
+      },
+      {
+        "slug": "jesus-and-outsiders",
+        "name": "Jesus and outsiders",
+        "subtitle": "Who He went out of His way for",
+        "description": "A Roman officer, a Samaritan woman, a Syrophoenician mother, lepers, tax collectors, a criminal on a cross. The pattern is hard to miss once you look for it.",
+        "is_featured": true,
+        "sort_order": 7,
+        "event_count": 13
+      },
+      {
+        "slug": "what-he-said-about-god",
+        "name": "What He said about God",
+        "subtitle": "The Father, in His own words",
+        "description": "Jesus talks about His Father constantly — as one who feeds birds, runs to meet returning sons, knows what you need before you ask, and can be seen by looking at Him.",
+        "is_featured": true,
+        "sort_order": 8,
+        "event_count": 11
+      }
+    ]
+  }
+}

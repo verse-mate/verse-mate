@@ -50,8 +50,11 @@ const as = (who: Account) => ({
 });
 
 async function clearLeaders() {
-  await conn.deleteFrom("coach_leaders").where("slug", "in", SLUGS).execute();
-  await conn.deleteFrom("coach_leaders").where("email", "in", EMAILS).execute();
+  await conn().deleteFrom("coach_leaders").where("slug", "in", SLUGS).execute();
+  await conn()
+    .deleteFrom("coach_leaders")
+    .where("email", "in", EMAILS)
+    .execute();
 }
 
 beforeAll(async () => {
@@ -63,7 +66,7 @@ afterAll(async () => {
   restore();
   await clearLearning();
   await clearLeaders();
-  await conn
+  await conn()
     .deleteFrom("coach_admins")
     .where("email", "=", EMAILS[0])
     .execute();
@@ -148,7 +151,7 @@ describe("sending a request", () => {
   });
 
   it("Unverified address, including one marked verified before the confirmation existed: no request", async () => {
-    await conn
+    await conn()
       .updateTable("user")
       .set({ email_verified_at: null })
       .where("id", "=", learner.id as never)
@@ -161,7 +164,7 @@ describe("sending a request", () => {
       false,
     );
     expect(
-      await conn
+      await conn()
         .selectFrom("coach_learning_join_requests")
         .selectAll()
         .execute(),
@@ -173,7 +176,7 @@ describe("sending a request", () => {
     const res = await as(learner).post("learning/join-request", {});
     expect(res.body?.details.refusal).toBe("not-completed");
     expect(
-      await conn
+      await conn()
         .selectFrom("coach_learning_join_requests")
         .selectAll()
         .execute(),
@@ -199,7 +202,7 @@ describe("sending a request", () => {
       request: { id, status: "open" },
     });
     expect(
-      await conn
+      await conn()
         .selectFrom("coach_learning_join_requests")
         .selectAll()
         .execute(),
@@ -217,7 +220,7 @@ describe("sending a request", () => {
     expect(again.body?.details.refusal).toBe("already-leader");
 
     const otherId = await requested(second);
-    await conn
+    await conn()
       .insertInto("coach_leaders")
       .values({
         slug: "requests-leader",
@@ -230,7 +233,7 @@ describe("sending a request", () => {
       {},
     );
     expect(dup.body?.status).toBe("already-in-program");
-    await conn
+    await conn()
       .deleteFrom("coach_leaders")
       .where("slug", "=", "requests-leader")
       .execute();
@@ -254,7 +257,7 @@ describe("sending a request", () => {
   });
 
   it("An evaluated leader finishes the program: no join request offered", async () => {
-    await conn
+    await conn()
       .insertInto("coach_leaders")
       .values({ slug: "lydia-leader", email: EMAILS[3], name: "Lydia Leader" })
       .execute();
@@ -278,7 +281,7 @@ describe("answering a request", () => {
       leaderId: "ruth-requester",
     });
     expect(mailer.sent).toEqual([EMAILS[1]]);
-    const row = await conn
+    const row = await conn()
       .selectFrom("coach_leaders")
       .select(["email", "name", "group_name", "user_id"])
       .where("slug", "=", "ruth-requester")
@@ -302,7 +305,7 @@ describe("answering a request", () => {
 
   it("The address is already in the program: no duplicate, closed as already in the program", async () => {
     const id = await requested(learner);
-    await conn
+    await conn()
       .insertInto("coach_leaders")
       .values({ slug: "ruth-renamed", email: EMAILS[1], name: "Ruth Renamed" })
       .execute();
@@ -312,7 +315,7 @@ describe("answering a request", () => {
     );
     expect(res.body?.status).toBe("already-in-program");
     expect(mailer.sent).toEqual([]);
-    const leaders = await conn
+    const leaders = await conn()
       .selectFrom("coach_leaders")
       .select("slug")
       .where("email", "=", EMAILS[1])
@@ -322,7 +325,7 @@ describe("answering a request", () => {
 
   it("A name another leader already uses: nothing added, stays open, the admin sees why and can retry with another name", async () => {
     const id = await requested(learner);
-    await conn
+    await conn()
       .insertInto("coach_leaders")
       .values({
         slug: "ruth-requester",
@@ -346,11 +349,11 @@ describe("answering a request", () => {
       "open",
     );
     expect(mailer.sent).toEqual([]);
-    await conn
+    await conn()
       .deleteFrom("coach_leaders")
       .where("email", "=", "someone-else@example.test")
       .execute();
-    await conn
+    await conn()
       .insertInto("coach_leaders")
       .values({
         slug: "ruth-requester",
@@ -366,7 +369,7 @@ describe("answering a request", () => {
       status: "approved",
       leaderId: "ruth-renamed",
     });
-    await conn
+    await conn()
       .deleteFrom("coach_leaders")
       .where("email", "=", "someone-else@example.test")
       .execute();
@@ -374,7 +377,7 @@ describe("answering a request", () => {
 
   it("The address changed since the request and is not confirmed: no leader for either address, stays open", async () => {
     const id = await requested(learner);
-    await conn
+    await conn()
       .updateTable("user")
       .set({
         email: "requests-moved@example.test",
@@ -389,19 +392,19 @@ describe("answering a request", () => {
     );
     expect(res.status).toBe(409);
     expect(res.body?.details.refusal).toBe("address-unconfirmed");
-    const leaders = await conn
+    const leaders = await conn()
       .selectFrom("coach_leaders")
       .select("slug")
       .where("email", "in", [EMAILS[1], "requests-moved@example.test"])
       .execute();
     expect(leaders).toEqual([]);
-    const row = await conn
+    const row = await conn()
       .selectFrom("coach_learning_join_requests")
       .select("status")
       .where("id", "=", id)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe("open");
-    await conn
+    await conn()
       .deleteFrom("user")
       .where("email", "=", "requests-moved@example.test")
       .execute();
@@ -436,12 +439,12 @@ describe("answering a request", () => {
       }),
     ]);
     expect([approved.status, declined.status].sort()).toEqual([200, 409]);
-    const row = await conn
+    const row = await conn()
       .selectFrom("coach_learning_join_requests")
       .select("status")
       .where("id", "=", id)
       .executeTakeFirstOrThrow();
-    const leaders = await conn
+    const leaders = await conn()
       .selectFrom("coach_leaders")
       .select("slug")
       .where("email", "=", EMAILS[1])
@@ -489,7 +492,7 @@ describe("answering a request", () => {
 
   it("An address saved with capitals is approved with the address the admin saw", async () => {
     const id = await requested(learner);
-    await conn
+    await conn()
       .updateTable("user")
       .set({ email: "Requests-Learner@example.test" })
       .where("id", "=", learner.id as never)
@@ -504,7 +507,7 @@ describe("answering a request", () => {
       expect(res.status).toBe(200);
       expect(mailer.sent).toEqual([EMAILS[1]]);
     } finally {
-      await conn
+      await conn()
         .updateTable("user")
         .set({ email: EMAILS[1] })
         .where("id", "=", learner.id as never)
@@ -522,7 +525,7 @@ describe("answering a request", () => {
     expect(results.find((r) => r.status === 409)?.body?.details.refusal).toBe(
       "request-exists",
     );
-    const rows = await conn
+    const rows = await conn()
       .selectFrom("coach_learning_join_requests")
       .select("id")
       .where("user_id", "=", learner.id as never)
@@ -608,8 +611,8 @@ describe("the learners list", () => {
       { length: 27 },
       (_, i) => `requests-bulk-${i}@example.test`,
     );
-    await conn.deleteFrom("user").where("email", "in", extra).execute();
-    const ids = await conn
+    await conn().deleteFrom("user").where("email", "in", extra).execute();
+    const ids = await conn()
       .insertInto("user")
       .values(
         extra.map((email) => ({
@@ -620,7 +623,7 @@ describe("the learners list", () => {
       )
       .returning("id")
       .execute();
-    await conn
+    await conn()
       .insertInto("coach_learning_enrolments")
       .values(ids.map((r) => ({ user_id: r.id as never })))
       .execute();
@@ -643,7 +646,7 @@ describe("the learners list", () => {
     expect(
       byName.body?.learners.map((l: { email: string }) => l.email),
     ).toEqual([EMAILS[1]]);
-    await conn.deleteFrom("user").where("email", "in", extra).execute();
+    await conn().deleteFrom("user").where("email", "in", extra).execute();
   });
 
   it("Non-admin asks for the learners list: refused", async () => {
@@ -653,7 +656,7 @@ describe("the learners list", () => {
 
 describe("the program leaves coaching alone", () => {
   it("A leader takes the program: the same /coach/me, sessions and roster entry", async () => {
-    await conn
+    await conn()
       .insertInto("coach_leaders")
       .values({ slug: "lydia-leader", email: EMAILS[3], name: "Lydia Leader" })
       .execute();
@@ -698,7 +701,7 @@ describe("the program leaves coaching alone", () => {
       "coach_learning_join_requests",
     ] as const)
       expect(
-        await conn
+        await conn()
           .selectFrom(table)
           .selectAll()
           .where("user_id", "=", learner.id as never)
