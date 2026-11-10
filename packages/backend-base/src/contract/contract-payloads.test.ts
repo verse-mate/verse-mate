@@ -6,16 +6,19 @@ import { sql } from "kysely";
 
 import addFormats from "ajv-formats";
 import Ajv2020 from "ajv/dist/2020";
+import { COACH_PIPELINE_LIVE } from "../coach/coach-cutover";
 import {
   FIXTURE_ADMIN,
   FIXTURE_LEADERS,
   FIXTURE_MONTH,
   FIXTURE_REPORTS,
   clearCoachFixture,
+  fixtureReport,
   seedCoachFixture,
 } from "../coach/coach-fixture";
 import { LEARNING_TABLES } from "../coach/coach-learning.fixture";
 import { CoachMonthlyService } from "../coach/coach-monthly.service";
+import { reportToRow } from "../coach/coach-store.transform";
 import { isolateTable } from "../coach/coach-test-tables";
 import { DIMENSIONS } from "../coach/rubric";
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
@@ -266,6 +269,52 @@ const SESSION_RESHARE = "ff-contract-reshare";
 const AMENDED = FIXTURE_REPORTS[2].report.id;
 const EDITED = FIXTURE_REPORTS[1].report.id;
 const LEADER = FIXTURE_LEADERS[0].slug;
+const NA_LEADER = "contract-na-leader";
+const IRREGULAR_CHAPTER = 2;
+
+const IRREGULAR_STUDY = {
+  bookId: STUDY_BOOK,
+  bookName: "James",
+  chapter: String(IRREGULAR_CHAPTER),
+  title: "James 2",
+  subtitle: null,
+  stepsNote: "kept from an earlier translation run",
+  steps: [
+    {
+      number: 1,
+      kind: "bullets",
+      title: "Read",
+      summary: "Read the chapter twice",
+      intro: null,
+      items: [{ tag: null, text: "Faith and works" }, "a loose line"],
+      note: null,
+      translatedBy: "batch-7",
+    },
+    {
+      number: 2,
+      title: "Ask",
+      items: [{ q: null, a: "James" }],
+    },
+    {
+      number: 3,
+      kind: "lists",
+      title: "Lists",
+      summary: "",
+      lists: [
+        { title: "Works", rows: ["2:14 Faith without works", { ref: "2:17" }] },
+      ],
+    },
+    "a step that is only text",
+  ],
+  interpretation: {
+    intro: null,
+    movements: [
+      { number: 1, title: "Faith works", body: "Shown by deeds" },
+      "loose",
+    ],
+  },
+  application: { questions: [{ range: "2:26", question: null }] },
+};
 
 let jesusEventId = "";
 let themeId = 0;
@@ -371,19 +420,30 @@ async function seedBible() {
     .selectFrom("studies")
     .select("study_id")
     .where("book_id", "=", STUDY_BOOK as never)
-    .where("chapter", "=", STUDY_CHAPTER)
+    .where("chapter", "in", [STUDY_CHAPTER, IRREGULAR_CHAPTER])
     .execute();
   if (studies.length > 0)
     await setAside("study_translations", {
       study_id: studies.map((study) => study.study_id),
     });
-  await setAside("studies", { book_id: STUDY_BOOK, chapter: STUDY_CHAPTER });
+  await setAside("studies", {
+    book_id: STUDY_BOOK,
+    chapter: [STUDY_CHAPTER, IRREGULAR_CHAPTER],
+  });
   await db()
     .insertInto("studies")
     .values({
       book_id: STUDY_BOOK as never,
       chapter: STUDY_CHAPTER,
       content: JSON.stringify(STUDY),
+    })
+    .execute();
+  await db()
+    .insertInto("studies")
+    .values({
+      book_id: STUDY_BOOK as never,
+      chapter: IRREGULAR_CHAPTER,
+      content: JSON.stringify(IRREGULAR_STUDY),
     })
     .execute();
 }
@@ -541,6 +601,27 @@ async function seedCoach() {
     .set({ source_session_id: sql`'ff-' || id` })
     .where("id", "in", [AMENDED, EDITED])
     .execute();
+  await db()
+    .insertInto("coach_leaders")
+    .values({
+      slug: NA_LEADER,
+      email: "contract-na@example.test",
+      name: "Noa Absent",
+    })
+    .execute();
+  for (const [date, score] of [
+    ["2032-11-02", 70.5],
+    ["2032-11-09", 74.1],
+  ] as const) {
+    const report = fixtureReport(`${NA_LEADER}-${date}`, date, score);
+    report.dimensions = report.dimensions.map((d) =>
+      d.n === 9 ? { ...d, score: null, note: "N/A on a first lesson" } : d,
+    );
+    await db()
+      .insertInto("coach_reports")
+      .values(reportToRow(NA_LEADER, report as never) as never)
+      .execute();
+  }
   const existing = await db()
     .selectFrom("coach_classes")
     .select("id")
@@ -572,6 +653,14 @@ async function clearCoach() {
       "in",
       FIXTURE_LEADERS.map((l) => l.slug),
     )
+    .execute();
+  await db()
+    .deleteFrom("coach_reports")
+    .where("coach_id", "=", NA_LEADER)
+    .execute();
+  await db()
+    .deleteFrom("coach_leaders")
+    .where("slug", "=", NA_LEADER)
     .execute();
   await clearCoachFixture(Database);
 }
@@ -669,6 +758,17 @@ describe("bible routes keep their payloads", () => {
     );
   });
 
+  it("a stored study that does not follow the study shape", async () => {
+    matchesFixture(
+      "bible-study-irregular",
+      await call(
+        null,
+        "GET",
+        `/bible/study/${STUDY_BOOK}/${IRREGULAR_CHAPTER}`,
+      ),
+    );
+  });
+
   it("a highlight saved, then one refused for its overlaps", async () => {
     const add = (start: number, end: number) =>
       call(token("reader"), "POST", "/bible/highlight/add", {
@@ -749,6 +849,17 @@ describe("coach routes keep their payloads", () => {
     );
   });
 
+  it("trends with a dimension scored N/A", async () => {
+    matchesFixture(
+      "coach-admin-trends-not-applicable",
+      await call(
+        token("admin"),
+        "GET",
+        `/coach/admin/coaches/${NA_LEADER}/trends`,
+      ),
+    );
+  });
+
   it("the admin's view of a leader", async () => {
     matchesFixture(
       "coach-admin-reports-summary",
@@ -782,16 +893,30 @@ describe("coach routes keep their payloads", () => {
   });
 
   it("a report's revisions after an amend and an edit", async () => {
-    const amended = await call(
-      token("admin"),
-      "POST",
-      `/coach/admin/reports/${AMENDED}/amend`,
-      {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    const amended = await ok(
+      call(token("admin"), "POST", `/coach/admin/reports/${AMENDED}/amend`, {
         dimensions: [{ n: 3, score: 3, rationale: "Fewer cross references" }],
         body: { headline: "A steadier session than it first read" },
-      },
+      }),
+    ).finally(() => {
+      delete process.env[COACH_PIPELINE_LIVE];
+    });
+    expect(amended.body).toMatchObject({ applied: true, sent: true });
+    const reamended = await ok(
+      call(token("admin"), "POST", `/coach/admin/reports/${AMENDED}/amend`, {
+        firstLesson: true,
+        body: {
+          strengthsProse: [
+            {
+              title: "Scripture first",
+              paragraphs: ["Every question went back to the passage."],
+            },
+          ],
+        },
+      }),
     );
-    expect(amended.status).toBe(200);
+    expect(reamended.body?.applied).toBe(true);
     const edited = await call(
       token("admin"),
       "PUT",

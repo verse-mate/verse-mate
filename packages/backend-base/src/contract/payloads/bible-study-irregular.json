@@ -1,0 +1,83 @@
+{
+  "status": 200,
+  "body": {
+    "study": {
+      "book_id": 59,
+      "chapter": 2,
+      "language_code": "en-US",
+      "content": {
+        "steps": [
+          {
+            "kind": "bullets",
+            "note": null,
+            "intro": null,
+            "items": [
+              {
+                "tag": null,
+                "text": "Faith and works"
+              },
+              "a loose line"
+            ],
+            "title": "Read",
+            "number": 1,
+            "summary": "Read the chapter twice",
+            "translatedBy": "batch-7"
+          },
+          {
+            "items": [
+              {
+                "a": "James",
+                "q": null
+              }
+            ],
+            "title": "Ask",
+            "number": 2
+          },
+          {
+            "kind": "lists",
+            "lists": [
+              {
+                "rows": [
+                  "2:14 Faith without works",
+                  {
+                    "ref": "2:17"
+                  }
+                ],
+                "title": "Works"
+              }
+            ],
+            "title": "Lists",
+            "number": 3,
+            "summary": ""
+          },
+          "a step that is only text"
+        ],
+        "title": "James 2",
+        "bookId": 59,
+        "chapter": "2",
+        "bookName": "James",
+        "subtitle": null,
+        "stepsNote": "kept from an earlier translation run",
+        "application": {
+          "questions": [
+            {
+              "range": "2:26",
+              "question": null
+            }
+          ]
+        },
+        "interpretation": {
+          "intro": null,
+          "movements": [
+            {
+              "body": "Shown by deeds",
+              "title": "Faith works",
+              "number": 1
+            },
+            "loose"
+          ]
+        }
+      }
+    }
+  }
+}

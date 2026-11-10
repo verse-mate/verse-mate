@@ -11,7 +11,7 @@
         "holdReason": "held for review: strengths: 1, three to five expected; strengths: a quote is not found in the month's sessions (\"let us read it first\"); growth areas: three to five, each with a tip; conversation guide: 1 questions, three to five expected; next month's focus: 1 goals, two or three expected",
         "skipped": [],
         "summary": {
-          "delta": 10.5,
+          "delta": 10.4,
           "focus": {
             "goals": ["One delegated prayer each week"],
             "clusterPct": 75,
@@ -26,7 +26,7 @@
               "ep": 77,
               "tc": 75,
               "status": "Strong",
-              "composite": 76.9
+              "composite": 76.8
             },
             "rows": [
               {
@@ -43,11 +43,11 @@
                 "bm": 80,
                 "br": 80,
                 "ep": 80,
-                "tc": 76,
+                "tc": 75,
                 "date": "2033-03-15",
                 "status": "Strong",
                 "session": "Philippians, Lesson 15",
-                "composite": 79.68
+                "composite": 79.35
               }
             ]
           },
@@ -231,7 +231,7 @@
               "date": "2033-03-15",
               "status": "Strong",
               "session": "Philippians, Lesson 15",
-              "composite": 79.68,
+              "composite": 79.35,
               "dimensions": [
                 {
                   "n": 1,
@@ -292,8 +292,8 @@
                 {
                   "n": 9,
                   "name": "Memory Reinforcement",
-                  "note": "The group stayed in the passage.",
-                  "score": 4,
+                  "note": "Not applicable: the first lesson of a new study, so there are no prior big ideas to review.",
+                  "score": null,
                   "cluster": "Teaching Craft"
                 },
                 {
@@ -320,7 +320,7 @@
               ]
             }
           ],
-          "composite": 76.9,
+          "composite": 76.8,
           "strengths": [
             {
               "text": "Scripture first: “let us read it first”",
@@ -345,10 +345,10 @@
             },
             {
               "date": "2033-03-15",
-              "delta": 5.5,
+              "delta": 5.1,
               "status": "Strong",
               "session": "Philippians, Lesson 15",
-              "composite": 79.68
+              "composite": 79.35
             }
           ],
           "sessionsCount": 2,
@@ -652,7 +652,7 @@
             "bestImproving": {
               "id": "fixture-avery-lane",
               "name": "Avery Lane",
-              "delta": 10.5
+              "delta": 10.4
             },
             "needsAttention": {
               "avg": 3.7,
@@ -859,7 +859,7 @@
             {
               "id": "fixture-avery-lane",
               "name": "Avery Lane",
-              "text": "Avery Lane: 76.9 (Strong), up 10.5 from February 2033. Strong on scripture, growing in delegation."
+              "text": "Avery Lane: 76.8 (Strong), up 10.4 from February 2033. Strong on scripture, growing in delegation."
             },
             {
               "id": "fixture-jordan-pike",
@@ -870,14 +870,14 @@
           "monthLabel": "March 2033",
           "initiatives": [
             "Coach this next month (Scripture Engagement averaged 3.7 across the program)",
-            "Coach this next month (Avery Lane moved +10.5 from 2033-02)"
+            "Coach this next month (Avery Lane moved +10.4 from 2033-02)"
           ],
           "leaderboard": [
             {
               "id": "fixture-avery-lane",
               "name": "Avery Lane",
               "status": "Strong",
-              "composite": 76.9
+              "composite": 76.8
             },
             {
               "id": "fixture-jordan-pike",
