@@ -1,0 +1,7 @@
+{
+  "status": 422,
+  "body": {
+    "error": "VALIDATION_ERROR",
+    "message": "Invalid request data"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "body": {
+    "revisions": [
+      {
+        "kind": "edit",
+        "edit": "<edit>",
+        "changes": {
+          "improvements": {
+            "to": ["Ask one open question per passage"],
+            "from": ["Leave more silence after a hard question"]
+          },
+          "improvementsProse": {
+            "to": null,
+            "from": null
+          }
+        },
+        "editedBy": "fixture-admin@example.org",
+        "editedAt": "<date-time>"
+      }
+    ]
+  }
+}

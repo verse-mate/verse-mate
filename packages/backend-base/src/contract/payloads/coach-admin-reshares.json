@@ -1,0 +1,18 @@
+{
+  "status": 200,
+  "body": {
+    "requests": [
+      {
+        "sourceSessionId": "ff-contract-reshare",
+        "coachId": "fixture-avery-lane",
+        "title": "Philippians, Lesson 17",
+        "sessionDate": "2033-03-29",
+        "sessionStartedAt": null,
+        "requestedAt": "<date-time>",
+        "attempts": 0,
+        "asked": false,
+        "parallelRun": false
+      }
+    ]
+  }
+}

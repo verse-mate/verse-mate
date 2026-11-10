@@ -1,0 +1,301 @@
+{
+  "status": 200,
+  "body": {
+    "events": [
+      {
+        "slug": "event-divorce-teaching",
+        "title": "On divorce and marriage",
+        "summary": "Asked which grounds are permissible, He goes back past Moses to Genesis and the intention behind it.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 25,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Matthew", "Mark"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 5,
+            "verse_start": 31,
+            "verse_end": 32,
+            "is_primary": true,
+            "display": "Matthew 5:31-32"
+          },
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 19,
+            "verse_start": 3,
+            "verse_end": 12,
+            "is_primary": false,
+            "display": "Matthew 19:3-12"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 10,
+            "verse_start": 2,
+            "verse_end": 12,
+            "is_primary": false,
+            "display": "Mark 10:2-12"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "TEACHING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-blessing-children",
+        "title": "Blessing the children",
+        "summary": "Parents bring children, disciples turn them away, and He takes them in His arms.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 26,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 19,
+            "verse_start": 13,
+            "verse_end": 15,
+            "is_primary": true,
+            "display": "Matthew 19:13-15"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 10,
+            "verse_start": 13,
+            "verse_end": 16,
+            "is_primary": false,
+            "display": "Mark 10:13-16"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 18,
+            "verse_start": 15,
+            "verse_end": 17,
+            "is_primary": false,
+            "display": "Luke 18:15-17"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 2,
+          "by_type": {
+            "ENCOUNTER": 1,
+            "COMPASSION": 1,
+            "COMMAND": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-rich-young-ruler",
+        "title": "The rich young ruler",
+        "summary": "The only person in the gospels who is invited to follow Him and refuses. Mark notes that Jesus loved him.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 29,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 19,
+            "verse_start": 16,
+            "verse_end": 30,
+            "is_primary": true,
+            "display": "Matthew 19:16-30"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 10,
+            "verse_start": 17,
+            "verse_end": 31,
+            "is_primary": false,
+            "display": "Mark 10:17-31"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 18,
+            "verse_start": 18,
+            "verse_end": 30,
+            "is_primary": false,
+            "display": "Luke 18:18-30"
+          }
+        ],
+        "facet_counts": {
+          "words": 2,
+          "actions": 1,
+          "by_type": {
+            "ENCOUNTER": 1,
+            "QUESTION": 1,
+            "COMMAND": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "money",
+            "name": "Money"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      },
+      {
+        "slug": "the-son-of-man-must-suffer",
+        "title": "The Son of Man must suffer",
+        "summary": "From Caesarea Philippi onward He says it plainly and repeatedly — and they keep not hearing it.",
+        "period_slug": "turning-point",
+        "period_name": "The Turning Point",
+        "sequence": 3,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Mark", "Mark", "Mark"],
+        "passages": [
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 8,
+            "verse_start": 31,
+            "verse_end": 31,
+            "is_primary": true,
+            "display": "Mark 8:31"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 9,
+            "verse_start": 31,
+            "verse_end": 31,
+            "is_primary": false,
+            "display": "Mark 9:31"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 10,
+            "verse_start": 33,
+            "verse_end": 34,
+            "is_primary": false,
+            "display": "Mark 10:33-34"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "CLAIM": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "event-greatness-servanthood",
+        "title": "On greatness and servanthood",
+        "summary": "Two disciples ask for the best seats. He redefines the ranking: whoever would be great must serve.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 33,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 20,
+            "verse_start": 20,
+            "verse_end": 28,
+            "is_primary": true,
+            "display": "Matthew 20:20-28"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 10,
+            "verse_start": 35,
+            "verse_end": 45,
+            "is_primary": false,
+            "display": "Mark 10:35-45"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 22,
+            "verse_start": 24,
+            "verse_end": 27,
+            "is_primary": false,
+            "display": "Luke 22:24-27"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 0,
+          "by_type": {
+            "TEACHING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      }
+    ]
+  }
+}

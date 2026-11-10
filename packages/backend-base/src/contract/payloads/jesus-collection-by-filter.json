@@ -1,0 +1,1874 @@
+{
+  "status": 200,
+  "body": {
+    "collection": {
+      "slug": "every-miracle-of-jesus",
+      "name": "Every miracle of Jesus",
+      "subtitle": "Signs of a Kingdom breaking in",
+      "description": "Healings, exorcisms, provision, power over nature, and three people raised from the dead — every recorded miracle, with its parallel accounts held together. Lists of these run to 33, 35, 37 or 40; the spread is a counting question, not a doctrinal one. \"He healed many\" is one line and an unknown number of miracles, and John closes by saying the world could not contain the books.",
+      "is_featured": true,
+      "sort_order": 3,
+      "event_count": 38
+    },
+    "events": [
+      {
+        "slug": "event-cana-wine",
+        "title": "Water into wine at Cana",
+        "summary": "At a wedding running out of wine, He turns six stone jars of water into the best wine of the feast — the first of His signs.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 3,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 2,
+            "verse_start": 1,
+            "verse_end": 11,
+            "is_primary": true,
+            "display": "John 2:1-11"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "healing-the-officials-son",
+        "title": "Healing the official's son",
+        "summary": "A royal official begs Him to come to Capernaum. Jesus heals from a day's journey away, and the father believes before he sees.",
+        "period_slug": "early-ministry",
+        "period_name": "Early Ministry",
+        "sequence": 10,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 4,
+            "verse_start": 46,
+            "verse_end": 54,
+            "is_primary": true,
+            "display": "John 4:46-54"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "event-capernaum-demoniac",
+        "title": "Driving out an unclean spirit in Capernaum",
+        "summary": "In the synagogue a demon names Him aloud. He silences it and casts it out, and the crowd realises His authority is not borrowed.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 5,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 1,
+            "verse_start": 21,
+            "verse_end": 28,
+            "is_primary": true,
+            "display": "Mark 1:21-28"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 4,
+            "verse_start": 31,
+            "verse_end": 37,
+            "is_primary": false,
+            "display": "Luke 4:31-37"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          }
+        ]
+      },
+      {
+        "slug": "event-peters-mother-in-law",
+        "title": "Healing Peter's mother-in-law",
+        "summary": "He takes her hand and the fever leaves. She gets up and serves them — the first thing healing produces is service.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 6,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 8,
+            "verse_start": 14,
+            "verse_end": 15,
+            "is_primary": true,
+            "display": "Matthew 8:14-15"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 1,
+            "verse_start": 29,
+            "verse_end": 31,
+            "is_primary": false,
+            "display": "Mark 1:29-31"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 4,
+            "verse_start": 38,
+            "verse_end": 39,
+            "is_primary": false,
+            "display": "Luke 4:38-39"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "HEALING": 1,
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-evening-healings",
+        "title": "Healing everyone who came",
+        "summary": "Whole evenings spent at a door, laying hands on each one — the gospels record it almost in passing.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 8,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 8,
+            "verse_start": 16,
+            "verse_end": 17,
+            "is_primary": true,
+            "display": "Matthew 8:16-17"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 1,
+            "verse_start": 32,
+            "verse_end": 34,
+            "is_primary": false,
+            "display": "Mark 1:32-34"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 4,
+            "verse_start": 40,
+            "verse_end": 41,
+            "is_primary": false,
+            "display": "Luke 4:40-41"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "miraculous-catch-of-fish",
+        "title": "The miraculous catch of fish",
+        "summary": "After a fruitless night, Peter lets down the nets on His word and the catch nearly sinks two boats. Peter falls at His knees.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 9,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 5,
+            "verse_start": 1,
+            "verse_end": 11,
+            "is_primary": true,
+            "display": "Luke 5:1-11"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      },
+      {
+        "slug": "event-leper-cleansed",
+        "title": "Cleansing a leper",
+        "summary": "\"If you are willing, you can make me clean.\" He reaches out and touches the untouchable before He says a word.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 10,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 8,
+            "verse_start": 1,
+            "verse_end": 4,
+            "is_primary": true,
+            "display": "Matthew 8:1-4"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 1,
+            "verse_start": 40,
+            "verse_end": 45,
+            "is_primary": false,
+            "display": "Mark 1:40-45"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 5,
+            "verse_start": 12,
+            "verse_end": 16,
+            "is_primary": false,
+            "display": "Luke 5:12-16"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "HEALING": 1,
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-paralytic-roof",
+        "title": "The paralytic lowered through the roof",
+        "summary": "Four friends dig through a roof. He forgives the man's sins first — then heals him to prove He had the right to.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 12,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 9,
+            "verse_start": 1,
+            "verse_end": 8,
+            "is_primary": true,
+            "display": "Matthew 9:1-8"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 2,
+            "verse_start": 1,
+            "verse_end": 12,
+            "is_primary": false,
+            "display": "Mark 2:1-12"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 5,
+            "verse_start": 17,
+            "verse_end": 26,
+            "is_primary": false,
+            "display": "Luke 5:17-26"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "HEALING": 1,
+            "CONFRONTATION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          }
+        ]
+      },
+      {
+        "slug": "healing-at-bethesda",
+        "title": "Healing at the pool of Bethesda",
+        "summary": "Thirty-eight years of waiting end with a question and a command. It happens on a Sabbath, and the trouble begins.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 17,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 5,
+            "verse_start": 1,
+            "verse_end": 15,
+            "is_primary": true,
+            "display": "John 5:1-15"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "event-withered-hand",
+        "title": "Healing the man with the withered hand",
+        "summary": "They watch to see if He will heal on the Sabbath. He does it in the middle of the synagogue, grieved at their hard hearts.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 22,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke", "Luke", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 12,
+            "verse_start": 9,
+            "verse_end": 14,
+            "is_primary": true,
+            "display": "Matthew 12:9-14"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 3,
+            "verse_start": 1,
+            "verse_end": 6,
+            "is_primary": false,
+            "display": "Mark 3:1-6"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 6,
+            "verse_start": 6,
+            "verse_end": 11,
+            "is_primary": false,
+            "display": "Luke 6:6-11"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 13,
+            "verse_start": 10,
+            "verse_end": 17,
+            "is_primary": false,
+            "display": "Luke 13:10-17"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 14,
+            "verse_start": 1,
+            "verse_end": 6,
+            "is_primary": false,
+            "display": "Luke 14:1-6"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "HEALING": 1,
+            "CONFRONTATION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "event-centurion-servant",
+        "title": "Healing the centurion's servant",
+        "summary": "A Roman officer says a word from a distance will do. Jesus marvels — He has not found such faith in Israel.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 49,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 8,
+            "verse_start": 5,
+            "verse_end": 13,
+            "is_primary": true,
+            "display": "Matthew 8:5-13"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 7,
+            "verse_start": 1,
+            "verse_end": 10,
+            "is_primary": false,
+            "display": "Luke 7:1-10"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "raising-the-widows-son-at-nain",
+        "title": "Raising the widow's son at Nain",
+        "summary": "He meets a funeral procession, has compassion on the mother, stops the bier and gives her son back to her.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 50,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 7,
+            "verse_start": 11,
+            "verse_end": 17,
+            "is_primary": true,
+            "display": "Luke 7:11-17"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-beelzebul",
+        "title": "The Beelzebul accusation",
+        "summary": "Accused of casting out demons by the prince of demons, He points out that a divided kingdom cannot stand.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 56,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 12,
+            "verse_start": 22,
+            "verse_end": 32,
+            "is_primary": true,
+            "display": "Matthew 12:22-32"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 3,
+            "verse_start": 20,
+            "verse_end": 30,
+            "is_primary": false,
+            "display": "Mark 3:20-30"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 11,
+            "verse_start": 14,
+            "verse_end": 23,
+            "is_primary": false,
+            "display": "Luke 11:14-23"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "CONFRONTATION": 1,
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "event-storm-stilled",
+        "title": "Calming the storm",
+        "summary": "Asleep in the stern through a squall. He rebukes the wind, then asks them why they were afraid.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 69,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 8,
+            "verse_start": 23,
+            "verse_end": 27,
+            "is_primary": true,
+            "display": "Matthew 8:23-27"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 4,
+            "verse_start": 35,
+            "verse_end": 41,
+            "is_primary": false,
+            "display": "Mark 4:35-41"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 8,
+            "verse_start": 22,
+            "verse_end": 25,
+            "is_primary": false,
+            "display": "Luke 8:22-25"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1,
+            "QUESTION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "event-gerasene-demoniac",
+        "title": "The Gerasene demoniac",
+        "summary": "A man no chain could hold is left clothed and in his right mind. The town asks Jesus to leave.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 72,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 8,
+            "verse_start": 28,
+            "verse_end": 34,
+            "is_primary": true,
+            "display": "Matthew 8:28-34"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 5,
+            "verse_start": 1,
+            "verse_end": 20,
+            "is_primary": false,
+            "display": "Mark 5:1-20"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 8,
+            "verse_start": 26,
+            "verse_end": 39,
+            "is_primary": false,
+            "display": "Luke 8:26-39"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "HEALING": 1,
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      },
+      {
+        "slug": "event-bleeding-woman",
+        "title": "The woman who touched His garment",
+        "summary": "Twelve years of bleeding, and no doctor could help. She touches the fringe of His cloak in a crowd and He stops everything to find her.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 74,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 9,
+            "verse_start": 20,
+            "verse_end": 22,
+            "is_primary": true,
+            "display": "Matthew 9:20-22"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 5,
+            "verse_start": 25,
+            "verse_end": 34,
+            "is_primary": false,
+            "display": "Mark 5:25-34"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 8,
+            "verse_start": 43,
+            "verse_end": 48,
+            "is_primary": false,
+            "display": "Luke 8:43-48"
+          }
+        ],
+        "facet_counts": {
+          "words": 1,
+          "actions": 2,
+          "by_type": {
+            "HEALING": 1,
+            "COMPASSION": 1,
+            "QUESTION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-jairus-daughter",
+        "title": "Raising Jairus' daughter",
+        "summary": "A synagogue ruler's daughter dies while Jesus is delayed. He tells him only to believe, then takes her hand: \"Little girl, arise.\"",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 77,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 9,
+            "verse_start": 18,
+            "verse_end": 26,
+            "is_primary": true,
+            "display": "Matthew 9:18-26"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 5,
+            "verse_start": 21,
+            "verse_end": 43,
+            "is_primary": false,
+            "display": "Mark 5:21-43"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 8,
+            "verse_start": 40,
+            "verse_end": 56,
+            "is_primary": false,
+            "display": "Luke 8:40-56"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "MIRACLE": 1,
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "healing-two-blind-men",
+        "title": "Healing two blind men",
+        "summary": "\"Do you believe that I am able to do this?\" He touches their eyes according to their faith.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 79,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 9,
+            "verse_start": 27,
+            "verse_end": 31,
+            "is_primary": true,
+            "display": "Matthew 9:27-31"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "healing-a-mute-demoniac",
+        "title": "Healing a mute demoniac",
+        "summary": "The crowds marvel; the Pharisees say He casts out demons by the prince of demons. The same act, two verdicts.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 81,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 9,
+            "verse_start": 32,
+            "verse_end": 34,
+            "is_primary": true,
+            "display": "Matthew 9:32-34"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "event-feeding-5000",
+        "title": "Feeding the five thousand",
+        "summary": "Five loaves, two fish, and twelve baskets left over — the only miracle all four gospels record.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 88,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke", "John"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 14,
+            "verse_start": 13,
+            "verse_end": 21,
+            "is_primary": true,
+            "display": "Matthew 14:13-21"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 6,
+            "verse_start": 30,
+            "verse_end": 44,
+            "is_primary": false,
+            "display": "Mark 6:30-44"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 9,
+            "verse_start": 10,
+            "verse_end": 17,
+            "is_primary": false,
+            "display": "Luke 9:10-17"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 6,
+            "verse_start": 1,
+            "verse_end": 14,
+            "is_primary": false,
+            "display": "John 6:1-14"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "event-walking-on-water",
+        "title": "Walking on the water",
+        "summary": "He comes to them in the fourth watch. Peter walks, then looks at the wind, then sinks — and is caught.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 90,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "John"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 14,
+            "verse_start": 22,
+            "verse_end": 33,
+            "is_primary": true,
+            "display": "Matthew 14:22-33"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 6,
+            "verse_start": 45,
+            "verse_end": 52,
+            "is_primary": false,
+            "display": "Mark 6:45-52"
+          },
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 6,
+            "verse_start": 16,
+            "verse_end": 21,
+            "is_primary": false,
+            "display": "John 6:16-21"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "event-gennesaret-healings",
+        "title": "Many healed at Gennesaret",
+        "summary": "They run through the whole region carrying the sick on mats and beg only to touch the fringe of His cloak. Everyone who touches it is made well.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 91,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 14,
+            "verse_start": 34,
+            "verse_end": 36,
+            "is_primary": true,
+            "display": "Matthew 14:34-36"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 6,
+            "verse_start": 53,
+            "verse_end": 56,
+            "is_primary": false,
+            "display": "Mark 6:53-56"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-syrophoenician-woman",
+        "title": "The Syrophoenician woman's daughter",
+        "summary": "A Gentile mother refuses to be turned away and answers Him from inside His own metaphor. He calls her faith great.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 96,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 15,
+            "verse_start": 21,
+            "verse_end": 28,
+            "is_primary": true,
+            "display": "Matthew 15:21-28"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 7,
+            "verse_start": 24,
+            "verse_end": 30,
+            "is_primary": false,
+            "display": "Mark 7:24-30"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          }
+        ]
+      },
+      {
+        "slug": "healing-a-deaf-and-mute-man",
+        "title": "Healing a deaf and mute man",
+        "summary": "He takes the man aside privately, sighs, and says \"Ephphatha\" — be opened.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 97,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Mark"],
+        "passages": [
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 7,
+            "verse_start": 31,
+            "verse_end": 37,
+            "is_primary": true,
+            "display": "Mark 7:31-37"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "event-feeding-4000",
+        "title": "Feeding the four thousand",
+        "summary": "Three days without food in Gentile territory. \"I have compassion on the crowd\" — and He does it again.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 98,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 15,
+            "verse_start": 32,
+            "verse_end": 39,
+            "is_primary": true,
+            "display": "Matthew 15:32-39"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 8,
+            "verse_start": 1,
+            "verse_end": 10,
+            "is_primary": false,
+            "display": "Mark 8:1-10"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "healing-a-blind-man-at-bethsaida",
+        "title": "The blind man at Bethsaida",
+        "summary": "The only healing that comes in two stages — first men like trees walking, then everything clearly.",
+        "period_slug": "galilean-ministry",
+        "period_name": "The Galilean Ministry",
+        "sequence": 99,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Mark"],
+        "passages": [
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 8,
+            "verse_start": 22,
+            "verse_end": 26,
+            "is_primary": true,
+            "display": "Mark 8:22-26"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          }
+        ]
+      },
+      {
+        "slug": "event-transfiguration",
+        "title": "The Transfiguration",
+        "summary": "On a high mountain His face shines like the sun. Moses and Elijah appear, and the Father speaks again: \"Listen to Him.\"",
+        "period_slug": "turning-point",
+        "period_name": "The Turning Point",
+        "sequence": 7,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 17,
+            "verse_start": 1,
+            "verse_end": 8,
+            "is_primary": true,
+            "display": "Matthew 17:1-8"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 9,
+            "verse_start": 2,
+            "verse_end": 8,
+            "is_primary": false,
+            "display": "Mark 9:2-8"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 9,
+            "verse_start": 28,
+            "verse_end": 36,
+            "is_primary": false,
+            "display": "Luke 9:28-36"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "prophecy",
+            "name": "Prophecy"
+          }
+        ]
+      },
+      {
+        "slug": "event-epileptic-boy",
+        "title": "The boy with an unclean spirit",
+        "summary": "\"I believe; help my unbelief!\" A father's honest prayer at the foot of the mountain of transfiguration.",
+        "period_slug": "turning-point",
+        "period_name": "The Turning Point",
+        "sequence": 8,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 17,
+            "verse_start": 14,
+            "verse_end": 21,
+            "is_primary": true,
+            "display": "Matthew 17:14-21"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 9,
+            "verse_start": 14,
+            "verse_end": 29,
+            "is_primary": false,
+            "display": "Mark 9:14-29"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 9,
+            "verse_start": 37,
+            "verse_end": 43,
+            "is_primary": false,
+            "display": "Luke 9:37-43"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "prayer",
+            "name": "Prayer"
+          }
+        ]
+      },
+      {
+        "slug": "the-coin-in-the-fish",
+        "title": "The coin in the fish's mouth",
+        "summary": "To avoid giving offence over the temple tax, He sends Peter fishing for exactly the right coin.",
+        "period_slug": "turning-point",
+        "period_name": "The Turning Point",
+        "sequence": 9,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 17,
+            "verse_start": 24,
+            "verse_end": 27,
+            "is_primary": true,
+            "display": "Matthew 17:24-27"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "kingdom",
+            "name": "Kingdom"
+          },
+          {
+            "slug": "money",
+            "name": "Money"
+          }
+        ]
+      },
+      {
+        "slug": "healing-the-crippled-woman",
+        "title": "The woman bent double for eighteen years",
+        "summary": "He calls her over on a Sabbath and straightens her. The synagogue ruler is indignant; the crowd rejoices.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 11,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 13,
+            "verse_start": 10,
+            "verse_end": 17,
+            "is_primary": true,
+            "display": "Luke 13:10-17"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "healing-a-man-with-dropsy",
+        "title": "Healing a man with dropsy",
+        "summary": "At a Pharisee's table, on a Sabbath, He asks whether it is lawful to heal — and no one will answer.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 12,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 14,
+            "verse_start": 1,
+            "verse_end": 6,
+            "is_primary": true,
+            "display": "Luke 14:1-6"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          },
+          {
+            "slug": "warnings",
+            "name": "Warnings"
+          }
+        ]
+      },
+      {
+        "slug": "cleansing-ten-lepers",
+        "title": "Cleansing ten lepers",
+        "summary": "Ten are healed on the way. One comes back — and he is a Samaritan.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 21,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 17,
+            "verse_start": 11,
+            "verse_end": 19,
+            "is_primary": true,
+            "display": "Luke 17:11-19"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          }
+        ]
+      },
+      {
+        "slug": "event-bartimaeus",
+        "title": "Blind Bartimaeus",
+        "summary": "Shouted down by the crowd, he shouts louder. Jesus stops the procession and asks what he wants.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 35,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "probable",
+        "gospels": ["Matthew", "Mark", "Luke"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 20,
+            "verse_start": 29,
+            "verse_end": 34,
+            "is_primary": true,
+            "display": "Matthew 20:29-34"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 10,
+            "verse_start": 46,
+            "verse_end": 52,
+            "is_primary": false,
+            "display": "Mark 10:46-52"
+          },
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 18,
+            "verse_start": 35,
+            "verse_end": 43,
+            "is_primary": false,
+            "display": "Luke 18:35-43"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 2,
+          "by_type": {
+            "HEALING": 1,
+            "COMPASSION": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "healing-the-man-born-blind",
+        "title": "The man born blind",
+        "summary": "Mud, a wash in Siloam, and an interrogation. \"One thing I know: I was blind, now I see.\"",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 46,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 9,
+            "verse_start": 1,
+            "verse_end": 41,
+            "is_primary": true,
+            "display": "John 9:1-41"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          }
+        ]
+      },
+      {
+        "slug": "raising-lazarus",
+        "title": "Raising Lazarus",
+        "summary": "Four days in the tomb. He weeps at the grave of a friend He is about to raise, and calls him out by name.",
+        "period_slug": "journey-to-jerusalem",
+        "period_name": "The Road to Jerusalem",
+        "sequence": 54,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 11,
+            "verse_start": 1,
+            "verse_end": 44,
+            "is_primary": true,
+            "display": "John 11:1-44"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "salvation",
+            "name": "Salvation"
+          }
+        ]
+      },
+      {
+        "slug": "event-fig-tree-cursed",
+        "title": "Withering the fig tree",
+        "summary": "A tree in full leaf with no fruit, cursed on the way into Jerusalem — an acted parable about the temple.",
+        "period_slug": "passion-week",
+        "period_name": "Passion Week",
+        "sequence": 4,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Matthew", "Mark"],
+        "passages": [
+          {
+            "book_id": 40,
+            "book_name": "Matthew",
+            "chapter": 21,
+            "verse_start": 18,
+            "verse_end": 22,
+            "is_primary": true,
+            "display": "Matthew 21:18-22"
+          },
+          {
+            "book_id": 41,
+            "book_name": "Mark",
+            "chapter": 11,
+            "verse_start": 12,
+            "verse_end": 25,
+            "is_primary": false,
+            "display": "Mark 11:12-25"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "judgment",
+            "name": "Judgment"
+          }
+        ]
+      },
+      {
+        "slug": "healing-the-servants-ear",
+        "title": "Healing the servant's severed ear",
+        "summary": "His last miracle before the cross repairs the damage done by a disciple defending Him.",
+        "period_slug": "cross",
+        "period_name": "The Cross",
+        "sequence": 5,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["Luke"],
+        "passages": [
+          {
+            "book_id": 42,
+            "book_name": "Luke",
+            "chapter": 22,
+            "verse_start": 49,
+            "verse_end": 51,
+            "is_primary": true,
+            "display": "Luke 22:49-51"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "HEALING": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "love",
+            "name": "Love"
+          }
+        ]
+      },
+      {
+        "slug": "the-second-catch-of-fish",
+        "title": "The catch of 153 fish",
+        "summary": "After the resurrection, another empty night and another word from the shore — and breakfast already cooking.",
+        "period_slug": "resurrection",
+        "period_name": "Resurrection & Ascension",
+        "sequence": 6,
+        "chronology_confidence": "probable",
+        "parallel_confidence": "high",
+        "gospels": ["John"],
+        "passages": [
+          {
+            "book_id": 43,
+            "book_name": "John",
+            "chapter": 21,
+            "verse_start": 1,
+            "verse_end": 14,
+            "is_primary": true,
+            "display": "John 21:1-14"
+          }
+        ],
+        "facet_counts": {
+          "words": 0,
+          "actions": 1,
+          "by_type": {
+            "MIRACLE": 1
+          }
+        },
+        "matched_facets": [],
+        "themes": [
+          {
+            "slug": "faith",
+            "name": "Faith"
+          },
+          {
+            "slug": "discipleship",
+            "name": "Discipleship"
+          }
+        ]
+      }
+    ]
+  }
+}

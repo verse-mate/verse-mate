@@ -1,0 +1,15 @@
+{
+  "status": 403,
+  "body": {
+    "error": "FORBIDDEN",
+    "message": "This lesson is locked",
+    "details": {
+      "refusal": "locked",
+      "next": {
+        "kind": "lesson",
+        "lessonId": "<lessonId>",
+        "moduleId": "<moduleId>"
+      }
+    }
+  }
+}

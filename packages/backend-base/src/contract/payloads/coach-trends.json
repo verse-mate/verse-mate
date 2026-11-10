@@ -1,0 +1,114 @@
+{
+  "status": 200,
+  "body": {
+    "scoreSeries": [
+      {
+        "date": "2033-02-22",
+        "dateLabel": "February 22, 2033",
+        "session": "Philippians, Lesson 22",
+        "score": 66.4,
+        "status": "On Target",
+        "reportId": "fixture-avery-2033-02-22"
+      },
+      {
+        "date": "2033-03-08",
+        "dateLabel": "March 8, 2033",
+        "session": "Philippians, Lesson 08",
+        "score": 74.2,
+        "status": "Strong",
+        "reportId": "fixture-avery-2033-03-08"
+      },
+      {
+        "date": "2033-03-15",
+        "dateLabel": "March 15, 2033",
+        "session": "Philippians, Lesson 15",
+        "score": 81,
+        "status": "Strong",
+        "reportId": "fixture-avery-2033-03-15"
+      }
+    ],
+    "clusterSeries": [
+      {
+        "date": "2033-02-22",
+        "dateLabel": "February 22, 2033",
+        "Teaching Craft": 21.78,
+        "Building Ministry": 20.46,
+        "Engaging People": 11.88,
+        "Being Real": 11.88
+      },
+      {
+        "date": "2033-03-08",
+        "dateLabel": "March 8, 2033",
+        "Teaching Craft": 24.42,
+        "Building Ministry": 22.94,
+        "Engaging People": 13.32,
+        "Being Real": 13.32
+      },
+      {
+        "date": "2033-03-15",
+        "dateLabel": "March 15, 2033",
+        "Teaching Craft": 26.73,
+        "Building Ministry": 25.11,
+        "Engaging People": 14.58,
+        "Being Real": 14.58
+      }
+    ],
+    "dimensionSeries": [
+      {
+        "date": "2033-02-22",
+        "dateLabel": "February 22, 2033",
+        "Session Structure & Flow": 4,
+        "Newcomer Welcome": 4,
+        "Scripture Engagement": 4,
+        "Facilitation vs. Lecture": 4,
+        "Application Questions": 4,
+        "Participant Engagement": 4,
+        "Visual Aids": 4,
+        "Vulnerability / Authenticity": 4,
+        "Memory Reinforcement": 4,
+        "Homework References": 4,
+        "Prayer": 4,
+        "Leader Development": 4
+      },
+      {
+        "date": "2033-03-08",
+        "dateLabel": "March 8, 2033",
+        "Session Structure & Flow": 4,
+        "Newcomer Welcome": 4,
+        "Scripture Engagement": 4,
+        "Facilitation vs. Lecture": 4,
+        "Application Questions": 4,
+        "Participant Engagement": 4,
+        "Visual Aids": 4,
+        "Vulnerability / Authenticity": 4,
+        "Memory Reinforcement": 4,
+        "Homework References": 4,
+        "Prayer": 4,
+        "Leader Development": 4
+      },
+      {
+        "date": "2033-03-15",
+        "dateLabel": "March 15, 2033",
+        "Session Structure & Flow": 4,
+        "Newcomer Welcome": 4,
+        "Scripture Engagement": 4,
+        "Facilitation vs. Lecture": 4,
+        "Application Questions": 4,
+        "Participant Engagement": 4,
+        "Visual Aids": 4,
+        "Vulnerability / Authenticity": 4,
+        "Memory Reinforcement": 4,
+        "Homework References": 4,
+        "Prayer": 4,
+        "Leader Development": 4
+      }
+    ],
+    "delta": {
+      "score": 6.8,
+      "from": 74.2,
+      "to": 81,
+      "fromLabel": "March 8, 2033",
+      "toLabel": "March 15, 2033"
+    }
+  }
+}

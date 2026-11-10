@@ -1,0 +1,28 @@
+{
+  "status": 200,
+  "body": {
+    "total": 2,
+    "limit": 25,
+    "offset": 0,
+    "learners": [
+      {
+        "name": "Lou Locked",
+        "email": "contract-locked@example.test",
+        "enrolledAt": "<date-time>",
+        "completedAt": null,
+        "passed": 0,
+        "total": 1,
+        "request": null
+      },
+      {
+        "name": "Lena Learner",
+        "email": "contract-learner@example.test",
+        "enrolledAt": "<date-time>",
+        "completedAt": "<date-time>",
+        "passed": 1,
+        "total": 1,
+        "request": "open"
+      }
+    ]
+  }
+}

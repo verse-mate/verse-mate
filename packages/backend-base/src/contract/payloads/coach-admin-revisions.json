@@ -1,0 +1,258 @@
+{
+  "status": 200,
+  "body": {
+    "revisions": [
+      {
+        "kind": "revision",
+        "revision": 1,
+        "previous": {
+          "body": {
+            "bigIdeas": [
+              "Humility looks like service",
+              "Joy does not wait on comfort"
+            ],
+            "feedback": {
+              "headline": "A steady session that kept the group in the text",
+              "strengths": [
+                "\"What did Paul ask of them here?\" opened the discussion"
+              ],
+              "improvements": ["Leave more silence after a hard question"],
+              "recommendations": ["Invite one newcomer to read next week"]
+            },
+            "sections": [
+              {
+                "title": "Key Moments",
+                "moments": [
+                  {
+                    "detail": "A member shared a costly story",
+                    "timestamp": "00:12:40"
+                  }
+                ]
+              }
+            ]
+          },
+          "metrics": {
+            "base": 80,
+            "clusters": [
+              {
+                "name": "Teaching Craft",
+                "weight": 33,
+                "scorePct": 81,
+                "contribution": 26.73
+              },
+              {
+                "name": "Building Ministry",
+                "weight": 31,
+                "scorePct": 81,
+                "contribution": 25.11
+              },
+              {
+                "name": "Engaging People",
+                "weight": 18,
+                "scorePct": 81,
+                "contribution": 14.58
+              },
+              {
+                "name": "Being Real",
+                "weight": 18,
+                "scorePct": 81,
+                "contribution": 14.58
+              }
+            ],
+            "sizeBonus": 0,
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "note": "The group stayed in the passage.",
+                "score": 4
+              }
+            ],
+            "newcomerBonus": 1
+          },
+          "summary": {
+            "score": 81,
+            "topic": "Philippians 2",
+            "docUrl": "",
+            "pdfUrl": "https://example.org/reports/fixture.pdf",
+            "status": "Strong",
+            "session": "Philippians, Lesson 15",
+            "duration": "1h 05m",
+            "attendees": 12,
+            "dateLabel": "March 15, 2033",
+            "newcomers": 1,
+            "statusEmoji": "🟢"
+          },
+          "dimensions": [
+            {
+              "n": 1,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 2,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 3,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 4,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 5,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 6,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 7,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 8,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 9,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 10,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 11,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            },
+            {
+              "n": 12,
+              "score": 4,
+              "rationale": "The group stayed in the passage.",
+              "provenance": "machine"
+            }
+          ],
+          "firstLesson": false
+        },
+        "changes": {
+          "body": {
+            "headline": {
+              "to": "A steadier session than it first read",
+              "from": "A steady session that kept the group in the text"
+            }
+          },
+          "dimensions": [
+            {
+              "n": 3,
+              "to": {
+                "score": 3,
+                "rationale": "Fewer cross references"
+              },
+              "from": {
+                "score": 4,
+                "rationale": "The group stayed in the passage."
+              }
+            }
+          ]
+        },
+        "amendedBy": "fixture-admin@example.org",
+        "amendedAt": "<date-time>",
+        "sentTo": [],
+        "skipped": [],
+        "sentAt": null,
+        "attemptedTo": []
+      }
+    ]
+  }
+}
