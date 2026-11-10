@@ -1,25 +1,6 @@
-import {
-  adminPlugin,
-  audioPlugin,
-  authPlugin,
-  bibleBrainPlugin,
-  biblePlugin,
-  coachPlugin,
-  corsPlugin,
-  crawlersPlugin,
-  dailyVersePlugin,
-  healthCheckPlugin,
-  jesusPlugin,
-  lemmaPlugin,
-  notificationsPlugin,
-  offlinePlugin,
-  supportPlugin,
-  topicPlugin,
-  userPlugin,
-  versionPolicyPlugin,
-} from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
+import { contractApp } from "backend-base/src/contract/contract-app";
 import { openapiDocs } from "backend-base/src/contract/openapi-document";
 import bullmqRedisConnection from "backend-base/src/shared/bullmq-redis";
 import { verifyRedisOrExit } from "backend-base/src/shared/redis-startup-check";
@@ -41,25 +22,7 @@ const MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024;
 const app = new Elysia({
   serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES },
 })
-  .use(crawlersPlugin)
-  .get("/favicon.ico", () => new Response(null, { status: 204 }))
-  .use(authPlugin)
-  .use(userPlugin)
-  .use(biblePlugin)
-  .use(coachPlugin)
-  .use(dailyVersePlugin)
-  .use(notificationsPlugin)
-  .use(audioPlugin)
-  .use(bibleBrainPlugin)
-  .use(topicPlugin)
-  .use(jesusPlugin)
-  .use(lemmaPlugin)
-  .use(supportPlugin)
-  .use(adminPlugin)
-  .use(offlinePlugin)
-  .use(healthCheckPlugin)
-  .use(versionPolicyPlugin)
-  .use(corsPlugin)
+  .use(contractApp())
   .use(openapiDocs());
 
 // Export type before .listen() to preserve full type information for Eden Treaty

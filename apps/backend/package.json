@@ -9,7 +9,6 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@elysiajs/openapi": "1.4.11",
     "backend-base": "workspace:*",
     "database": "workspace:*",
     "elysia": "1.4.30"
