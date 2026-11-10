@@ -9,6 +9,7 @@ import {
   JESUS_SECTIONS,
   JESUS_SECTION_META,
   type JesusEventNarrativeType,
+  type JesusFacetMode,
   type JesusFacetType,
   getFacetTypeFromSlug,
   resolveFacetTypeFilter,
@@ -672,7 +673,7 @@ function pickChannel(
 
 function toFacet(facet: {
   slug: string;
-  mode: string;
+  mode: JesusFacetMode;
   type: string;
   speaker: string | null;
   actor: string | null;

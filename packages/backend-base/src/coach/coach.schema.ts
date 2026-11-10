@@ -1,5 +1,6 @@
 import { type Static, t } from "elysia";
 
+import { CLASS_RECURRENCES } from "./dto/coach.dto";
 import { DIMENSIONS } from "./rubric";
 
 export const MODEL_INITIATIVES_MAX = 3;
@@ -61,7 +62,7 @@ const CLASS_FIELDS = {
   id: t.String(),
   name: t.String(),
   classDate: t.Union([t.String(), t.Null()]),
-  recurrence: t.String(),
+  recurrence: t.UnionEnum(CLASS_RECURRENCES),
   zoomLink: t.String(),
   startTime: t.Union([t.String(), t.Null()]),
   timeZone: t.Union([t.String(), t.Null()]),

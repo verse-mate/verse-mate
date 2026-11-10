@@ -34,6 +34,8 @@ export const CLASS_RECURRENCES = [
   "monthly",
 ] as const;
 
+export type ClassRecurrence = (typeof CLASS_RECURRENCES)[number];
+
 /** Body for POST / PUT /coach/classes. `classDate` is an ISO yyyy-mm-dd string
  *  or empty (no pinned date); `zoomLink` is empty or a well-formed http(s) URL
  *  (validated in the plugin so the message matches the zoom-link route).

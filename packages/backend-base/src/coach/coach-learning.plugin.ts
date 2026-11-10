@@ -223,7 +223,7 @@ const LearnersSchema = t.Object({
       completedAt: Nullable(t.String()),
       passed: t.Number(),
       total: t.Number(),
-      request: Nullable(t.String()),
+      request: Nullable(RequestStatus),
     }),
   ),
 });

@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { InductiveStudySchema } from "../shared/schemas/inductive-study.schema";
 import shared from "../shared/shared.plugin";
+import { JESUS_CONFIDENCE_LEVELS, JESUS_FACET_MODES } from "./jesus.constants";
 import { JesusEventService } from "./services/jesus-event.service";
 import { JesusService } from "./services/jesus.service";
 import { resolveLanguage } from "./utils/language.utils";
@@ -159,6 +160,10 @@ const ErrorSchema = t.Object({ error: t.String() });
 
 // ── Event graph schemas ───────────────────────────────────────────────────
 
+const ConfidenceSchema = t.UnionEnum(JESUS_CONFIDENCE_LEVELS);
+
+const FacetModeSchema = t.UnionEnum(JESUS_FACET_MODES);
+
 const EventPassageSchema = t.Object({
   book_id: t.Number(),
   book_name: t.String(),
@@ -171,7 +176,7 @@ const EventPassageSchema = t.Object({
 
 const FacetSchema = t.Object({
   slug: t.String(),
-  mode: t.String(),
+  mode: FacetModeSchema,
   type: t.String(),
   type_slug: t.String(),
   type_label: t.String(),
@@ -195,8 +200,8 @@ const EventCardSchema = t.Object({
   period_slug: t.Union([t.String(), t.Null()]),
   period_name: t.Union([t.String(), t.Null()]),
   sequence: t.Union([t.Number(), t.Null()]),
-  chronology_confidence: t.String(),
-  parallel_confidence: t.String(),
+  chronology_confidence: ConfidenceSchema,
+  parallel_confidence: ConfidenceSchema,
   gospels: t.Array(t.String()),
   passages: t.Array(EventPassageSchema),
   facet_counts: t.Object({
@@ -284,7 +289,7 @@ const CompareResponseSchema = t.Object({
   shared_by: t.Array(t.String()),
   note: t.String(),
   note_provenance: t.Union([t.Number(), t.Null()]),
-  parallel_confidence: t.String(),
+  parallel_confidence: ConfidenceSchema,
 });
 
 const EventPeriodSchema = t.Object({
@@ -319,7 +324,7 @@ const EventOverviewResponseSchema = t.Object({
       types: t.Array(
         t.Object({
           type: t.String(),
-          mode: t.String(),
+          mode: FacetModeSchema,
           slug: t.String(),
           label: t.String(),
           singular: t.String(),
@@ -370,7 +375,7 @@ const TopicGroupSchema = t.Object({
 const EventBrowseResponseSchema = t.Object({
   type: t.Object({
     type: t.String(),
-    mode: t.String(),
+    mode: FacetModeSchema,
     slug: t.String(),
     label: t.String(),
     singular: t.String(),

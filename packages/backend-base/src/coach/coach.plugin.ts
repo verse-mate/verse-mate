@@ -71,6 +71,7 @@ import {
   AddLeaderDto,
   AddNoteDto,
   AdminCoachClassDto,
+  type ClassRecurrence,
   CoachClassDto,
   UpdateAffiliatedChurchDto,
   UpdateBibleCoachDto,
@@ -182,7 +183,7 @@ const MeSchema = t.Object({
 function normalizeClassBody(body: {
   name: string;
   classDate: string;
-  recurrence: string;
+  recurrence: ClassRecurrence;
   zoomLink: string;
   startTime?: string;
   timeZone?: string;
