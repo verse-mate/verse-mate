@@ -48,6 +48,7 @@ import {
   NotetakerZoomSchema,
   ParallelRunComparisonSchema,
   ReportSchema,
+  ReportSummaryItemSchema,
   ReviewStateSchema,
   RevisionResultSchema,
   RevisionSendSchema,
@@ -223,7 +224,7 @@ function normalizeClassBody(body: {
 }
 
 const SummaryPageSchema = t.Object({
-  items: t.Array(t.Record(t.String(), t.Unknown())),
+  items: t.Array(ReportSummaryItemSchema),
   total: t.Number(),
   streakWeeks: t.Number(),
   quarterSessions: t.Number(),

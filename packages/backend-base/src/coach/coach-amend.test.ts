@@ -780,6 +780,7 @@ describe("a delivered report can be revised", () => {
     });
     expect(amended.applied).toBe(true);
     const [revision] = await new CoachService(Database).listRevisions(REPORT);
+    if (revision.kind !== "revision") throw new Error("expected a revision");
     expect(revision.changes.body).toEqual({
       improvements: {
         from: ["Call on quiet members"],

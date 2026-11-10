@@ -1099,7 +1099,14 @@ const plugin = new Elysia()
             error:
               ("error" in result ? result.error : undefined) ||
               "Failed to create highlight",
-            overlaps: "overlaps" in result ? result.overlaps : undefined,
+            overlaps:
+              "overlaps" in result && result.overlaps
+                ? result.overlaps.map((overlap) => ({
+                    ...overlap,
+                    created_at: isoDateOrNull(overlap.created_at),
+                    updated_at: isoDateOrNull(overlap.updated_at),
+                  }))
+                : undefined,
           };
         },
         {

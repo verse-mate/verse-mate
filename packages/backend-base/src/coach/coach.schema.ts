@@ -1,4 +1,4 @@
-import { t } from "elysia";
+import { type Static, t } from "elysia";
 
 import { DIMENSIONS } from "./rubric";
 
@@ -182,6 +182,27 @@ export const ReportSchema = t.Object({
   hasRetainedRecording: t.Optional(t.Boolean()),
   notes: t.Optional(t.Array(NoteSchema)),
 });
+
+export const ReportSummaryItemSchema = t.Object({
+  id: t.String(),
+  date: t.String(),
+  dateLabel: t.String(),
+  session: t.String(),
+  topic: t.String(),
+  duration: t.String(),
+  attendees: t.Union([t.Number(), t.Null()]),
+  newcomers: t.Number(),
+  score: t.Number(),
+  status: t.String(),
+  statusEmoji: t.String(),
+  pdfUrl: t.Optional(t.String()),
+  docUrl: t.Optional(t.String()),
+  held: t.Optional(t.Boolean()),
+  hasRetainedRecording: t.Optional(t.Boolean()),
+  attachedRecordingUrl: t.Optional(t.Union([t.String(), t.Null()])),
+});
+
+export type ReportSummaryItem = Static<typeof ReportSummaryItemSchema>;
 
 // ─── Monthly cross-leader analysis ─────────────────────────────────────────
 
@@ -567,14 +588,148 @@ export const RevisionSendSchema = t.Object({
   skipped: t.Optional(t.Array(t.String())),
 });
 
+const keeps = { additionalProperties: true } as const;
+
+const StoredProseSchema = t.Array(
+  t.Object(
+    {
+      title: t.String(),
+      paragraphs: t.Array(t.String()),
+      evidence: t.Optional(
+        t.Object({ quote: t.String(), timestamp: t.String() }),
+      ),
+    },
+    keeps,
+  ),
+);
+
+const AmendedFieldValue = t.Union([
+  t.String(),
+  t.Array(t.String()),
+  StoredProseSchema,
+  t.Null(),
+]);
+
+const FieldChangeSchema = t.Object({
+  from: t.Optional(AmendedFieldValue),
+  to: AmendedFieldValue,
+});
+
+const ScoreAndRationaleSchema = t.Object({
+  score: t.Union([t.Number(), t.Null()]),
+  rationale: t.String(),
+});
+
+const RevisionPreviousSchema = t.Partial(
+  t.Object({
+    summary: t.Object(
+      {
+        dateLabel: t.Optional(t.String()),
+        session: t.Optional(t.String()),
+        topic: t.Optional(t.String()),
+        duration: t.Optional(t.String()),
+        attendees: t.Optional(t.Union([t.Number(), t.Null()])),
+        newcomers: t.Optional(t.Number()),
+        score: t.Optional(t.Number()),
+        status: t.Optional(t.String()),
+        statusEmoji: t.Optional(t.String()),
+        pdfUrl: t.Optional(t.String()),
+        docUrl: t.Optional(t.String()),
+      },
+      keeps,
+    ),
+    metrics: t.Object(
+      {
+        base: t.Optional(t.Number()),
+        newcomerBonus: t.Optional(t.Number()),
+        sizeBonus: t.Optional(t.Number()),
+        clusters: t.Optional(
+          t.Array(t.Object(ClusterSchema.properties, keeps)),
+        ),
+        dimensions: t.Optional(
+          t.Array(t.Object(DimensionSchema.properties, keeps)),
+        ),
+      },
+      keeps,
+    ),
+    body: t.Object(
+      {
+        bigIdeas: t.Optional(t.Array(t.String())),
+        feedback: t.Optional(
+          t.Object(
+            {
+              headline: t.Optional(t.String()),
+              overview: t.Optional(t.Array(t.String())),
+              strengths: t.Optional(t.Array(t.String())),
+              improvements: t.Optional(t.Array(t.String())),
+              recommendations: t.Optional(t.Array(t.String())),
+              strengthsProse: t.Optional(StoredProseSchema),
+              improvementsProse: t.Optional(StoredProseSchema),
+              recommendationsProse: t.Optional(StoredProseSchema),
+            },
+            keeps,
+          ),
+        ),
+        sections: t.Optional(
+          t.Array(t.Object(SectionSchema.properties, keeps)),
+        ),
+      },
+      keeps,
+    ),
+    firstLesson: t.Boolean(),
+    dimensions: t.Array(
+      t.Object({
+        n: t.Number(),
+        score: t.Union([t.Number(), t.Null()]),
+        rationale: t.String(),
+        provenance: t.String(),
+      }),
+    ),
+  }),
+);
+
+const RevisionChangesSchema = t.Object({
+  dimensions: t.Optional(
+    t.Array(
+      t.Object({
+        n: t.Number(),
+        from: ScoreAndRationaleSchema,
+        to: ScoreAndRationaleSchema,
+      }),
+    ),
+  ),
+  firstLesson: t.Optional(t.Object({ from: t.Boolean(), to: t.Boolean() })),
+  body: t.Optional(
+    t.Object({
+      headline: t.Optional(FieldChangeSchema),
+      overview: t.Optional(FieldChangeSchema),
+      strengths: t.Optional(FieldChangeSchema),
+      improvements: t.Optional(FieldChangeSchema),
+      recommendations: t.Optional(FieldChangeSchema),
+      strengthsProse: t.Optional(FieldChangeSchema),
+      improvementsProse: t.Optional(FieldChangeSchema),
+      recommendationsProse: t.Optional(FieldChangeSchema),
+    }),
+  ),
+});
+
+const EditChangesSchema = t.Object({
+  improvements: t.Optional(FieldChangeSchema),
+  improvementsProse: t.Optional(FieldChangeSchema),
+});
+
+export type RevisionPrevious = Static<typeof RevisionPreviousSchema>;
+export type RevisionChanges = Static<typeof RevisionChangesSchema>;
+export type EditChanges = Static<typeof EditChangesSchema>;
+
 export const RevisionsSchema = t.Object({
   revisions: t.Array(
     t.Union([
       t.Object({
         kind: t.Literal("revision"),
         revision: t.Number(),
-        previous: t.Record(t.String(), t.Unknown()),
-        changes: t.Record(t.String(), t.Unknown()),
+        previous: RevisionPreviousSchema,
+        changes: RevisionChangesSchema,
         amendedBy: t.Union([t.String(), t.Null()]),
         amendedAt: t.Date(),
         sentTo: t.Array(t.String()),
@@ -585,7 +740,7 @@ export const RevisionsSchema = t.Object({
       t.Object({
         kind: t.Literal("edit"),
         edit: t.Number(),
-        changes: t.Record(t.String(), t.Unknown()),
+        changes: EditChangesSchema,
         editedBy: t.Union([t.String(), t.Null()]),
         editedAt: t.Date(),
       }),
@@ -1241,7 +1396,7 @@ export const MonthlyReportRowSchema = t.Object({
   ]),
   holdReason: t.Union([t.String(), t.Null()]),
   skipped: t.Array(t.String()),
-  summary: t.Unknown(),
+  summary: t.Union([LeaderMonthlySummarySchema, ProgramReportSchema]),
 });
 
 export const MonthlyReportEditSchema = t.Object({
