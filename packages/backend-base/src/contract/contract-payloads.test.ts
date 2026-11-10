@@ -865,6 +865,16 @@ describe("error bodies keep their fields", () => {
     );
   });
 
+  it("401 from the session guard, and from a refused password behind it", async () => {
+    matchesFixture("error-401-guard", await call(null, "GET", "/auth/session"));
+    matchesFixture(
+      "error-401-wrong-password",
+      await call(token("reader"), "DELETE", "/auth/account", {
+        password: "not-the-password",
+      }),
+    );
+  });
+
   it("403 with a coach refusal", async () => {
     matchesFixture(
       "error-403-coach-refusal",

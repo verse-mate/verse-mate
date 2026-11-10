@@ -7,8 +7,12 @@ import { UnauthorizedError, ValidationError } from "../common/errors";
 import { authRateLimiters } from "../common/rate-limit.middleware";
 import {
   BooleanResponse,
+  ConflictResponse,
+  GuardedUnauthorizedResponse,
+  NotFoundResponse,
   StandardErrorResponses,
   SuccessResponse,
+  UnauthorizedResponse,
 } from "../common/response-schemas";
 import cacheConstants from "../shared/cache.constants";
 import shared, { type cache as cacheStore } from "../shared/shared.plugin";
@@ -163,6 +167,7 @@ const plugin = new Elysia()
               response: {
                 200: BooleanResponse,
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
               },
             },
           )
@@ -199,6 +204,9 @@ const plugin = new Elysia()
               response: {
                 204: t.Undefined(),
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
+                ...NotFoundResponse,
+                ...ConflictResponse,
               },
             },
           )
@@ -226,6 +234,9 @@ const plugin = new Elysia()
               response: {
                 200: AuthPayloadSchema,
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
+                ...NotFoundResponse,
+                ...ConflictResponse,
               },
             },
           )
@@ -245,6 +256,7 @@ const plugin = new Elysia()
               response: {
                 200: UserSchema,
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
               },
             },
           )
@@ -269,6 +281,7 @@ const plugin = new Elysia()
               response: {
                 200: UserSchema,
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
               },
             },
           )
@@ -295,6 +308,9 @@ const plugin = new Elysia()
                   message: t.String(),
                 }),
                 ...StandardErrorResponses,
+                ...GuardedUnauthorizedResponse,
+                ...NotFoundResponse,
+                ...ConflictResponse,
               },
             },
           ),
@@ -310,6 +326,7 @@ const plugin = new Elysia()
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,
+            ...ConflictResponse,
           },
         },
       )
@@ -336,6 +353,7 @@ const plugin = new Elysia()
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
           },
         },
       )
@@ -515,6 +533,8 @@ const plugin = new Elysia()
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ConflictResponse,
           },
         },
       )
@@ -528,6 +548,7 @@ const plugin = new Elysia()
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
           },
           detail: {
             summary: "Trade a single-use SSO callback code for the session",

@@ -11,7 +11,9 @@ import {
 import { isoDateOrNull } from "../common/iso-date";
 import {
   AuthErrorResponses,
+  NotFoundResponse,
   StandardErrorResponses,
+  UnauthorizedResponse,
 } from "../common/response-schemas";
 import { createIpRateLimit } from "../middleware/rate-limit";
 import { type AiProvider, getAiProvider } from "../shared/ai";
@@ -246,6 +248,7 @@ const plugin = new Elysia()
           response: {
             200: ChapterSchema,
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -270,6 +273,7 @@ const plugin = new Elysia()
           response: {
             200: BibleSearchResponseSchema,
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -402,6 +406,7 @@ const plugin = new Elysia()
           response: {
             200: ExplanationSchema,
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -768,6 +773,7 @@ const plugin = new Elysia()
             200: NoteAddSchema,
             ...StandardErrorResponses,
             ...AuthErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
@@ -1204,6 +1210,7 @@ const plugin = new Elysia()
           response: {
             200: HighlightDeleteSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
           },
         },
       )
@@ -1302,7 +1309,7 @@ const plugin = new Elysia()
             await autoHighlightService.getUserThemePreferences(currentUserId);
           return { success: true, data: preferences };
         },
-        { response: { 200: ThemePreferencesSchema } },
+        { response: { 200: ThemePreferencesSchema, ...UnauthorizedResponse } },
       )
       .patch(
         "/user/theme-preferences/:theme_id",
@@ -1335,7 +1342,10 @@ const plugin = new Elysia()
             custom_color: t.Optional(t.String()),
             relevance_threshold: t.Optional(t.Number()),
           }),
-          response: { 200: ThemePreferenceUpdateSchema },
+          response: {
+            200: ThemePreferenceUpdateSchema,
+            ...UnauthorizedResponse,
+          },
         },
       ),
   );

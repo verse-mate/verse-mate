@@ -3,7 +3,11 @@ import { authDerive } from "../../auth/auth.utils";
 import { clientBucket } from "../../common/client-ip";
 import { createErrorHandler } from "../../common/error-handler";
 import { createRateLimit } from "../../common/rate-limit.middleware";
-import { StandardErrorResponses } from "../../common/response-schemas";
+import {
+  NotFoundResponse,
+  StandardErrorResponses,
+  UnauthorizedResponse,
+} from "../../common/response-schemas";
 import shared from "../../shared/shared.plugin";
 import { ObjectStorageService } from "../../shared/storage/storage.service";
 import { AudioProgressService } from "./audio-progress.service";
@@ -99,6 +103,8 @@ const plugin = new Elysia({ name: "audio" })
             200: AudioResponseSchema,
             202: AudioJobQueuedSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -116,6 +122,8 @@ const plugin = new Elysia({ name: "audio" })
           response: {
             200: AudioJobStatusSchema,
             ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...NotFoundResponse,
           },
         },
       )
@@ -145,8 +153,8 @@ const plugin = new Elysia({ name: "audio" })
           params: ExplanationIdParams,
           response: {
             200: AudioProgressSchema,
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
+            ...NotFoundResponse,
           },
         },
       )
