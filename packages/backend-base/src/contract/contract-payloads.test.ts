@@ -273,6 +273,8 @@ const EDITED = FIXTURE_REPORTS[1].report.id;
 const LEADER = FIXTURE_LEADERS[0].slug;
 const NA_LEADER = "contract-na-leader";
 const KEEPER = "contract-keeper";
+const REAMENDER = "contract-reamender";
+const REAMENDED = `${REAMENDER}-2032-09-14`;
 const EXTRA_KEY_EVENT = "event-baptism";
 const IRREGULAR_CHAPTER = 2;
 
@@ -664,6 +666,75 @@ async function seedCoach() {
       summary: JSON.stringify({ ...kept.summary, venue: "Fellowship hall" }),
     } as never)
     .execute();
+  await db()
+    .insertInto("coach_leaders")
+    .values({
+      slug: REAMENDER,
+      email: "contract-reamender@example.test",
+      name: "Remy Amend",
+    })
+    .execute();
+  const reamend = reportToRow(
+    REAMENDER,
+    fixtureReport(REAMENDED, "2032-09-14", 72.4) as never,
+  );
+  await db()
+    .insertInto("coach_reports")
+    .values({ ...reamend, source_session_id: `ff-${REAMENDED}` } as never)
+    .execute();
+  await db()
+    .insertInto("coach_report_dimension_scores")
+    .values(
+      DIMENSIONS.map((d) => ({
+        report_id: REAMENDED,
+        dimension_n: d.n,
+        score: 4,
+        rationale: "The group stayed in the passage.",
+        provenance: "machine",
+        model_version: "v3-weighted-100",
+      })),
+    )
+    .execute();
+  await db()
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: `ff-${REAMENDED}`,
+      coach_id: REAMENDER,
+      matched_by: "title_match",
+      title: "Philippians, Lesson 14",
+      session_date: "2032-09-14",
+      state: "delivered",
+      report_id: REAMENDED,
+      delivered_to: ["contract-reamender@example.test"],
+      published: true,
+    } as never)
+    .execute();
+  await db()
+    .insertInto("coach_report_amendments")
+    .values({
+      report_id: REAMENDED,
+      revision: 1,
+      coach_id: REAMENDER,
+      previous: JSON.stringify({
+        summary: reamend.summary,
+        metrics: reamend.metrics,
+        body: reamend.body,
+        firstLesson: false,
+        dimensions: [],
+        source: "an earlier amend that also kept its source",
+      }),
+      changes: JSON.stringify({
+        dimensions: [],
+        body: {
+          headline: { from: "A steady session", to: "A steadier session" },
+        },
+        reviewNote: "kept by an earlier amend",
+      }),
+      amended_at: "2032-09-20T10:00:00.000Z",
+      sent_to: ["contract-reamender@example.test"],
+      sent_at: "2032-09-20T10:05:00.000Z",
+    } as never)
+    .execute();
   const existing = await db()
     .selectFrom("coach_classes")
     .select("id")
@@ -679,9 +750,10 @@ async function clearCoach() {
       `ff-${EDITED}`,
       SESSION_FAILED,
       SESSION_RESHARE,
+      `ff-${REAMENDED}`,
     ])
     .execute();
-  const reports = FIXTURE_REPORTS.map((r) => r.report.id);
+  const reports = [...FIXTURE_REPORTS.map((r) => r.report.id), REAMENDED];
   for (const table of [
     "coach_report_amendments",
     "coach_report_edits",
@@ -698,11 +770,11 @@ async function clearCoach() {
     .execute();
   await db()
     .deleteFrom("coach_reports")
-    .where("coach_id", "in", [NA_LEADER, KEEPER])
+    .where("coach_id", "in", [NA_LEADER, KEEPER, REAMENDER])
     .execute();
   await db()
     .deleteFrom("coach_leaders")
-    .where("slug", "in", [NA_LEADER, KEEPER])
+    .where("slug", "in", [NA_LEADER, KEEPER, REAMENDER])
     .execute();
   await clearCoachFixture(Database);
 }
@@ -726,6 +798,17 @@ beforeAll(async () => {
   await login("leader", { firstName: "Avery", lastName: "Lane" });
   await login("admin", { firstName: "Ada", lastName: "Admin" });
   await login("keeper", { firstName: "Kit", lastName: "Keeper" });
+  await db()
+    .deleteFrom("coach_monthly_narratives")
+    .where("month", "=", FIXTURE_MONTH)
+    .execute();
+  await db()
+    .deleteFrom("coach_monthly_leader_summaries")
+    .where("month", "=", FIXTURE_MONTH)
+    .execute();
+  await new CoachMonthlyService(Database, new MonthlyAi(), null).produce(
+    FIXTURE_MONTH,
+  );
   for (const table of LEARNING_TABLES) await setAside(table);
   const topic = await db()
     .selectFrom("topics")
@@ -991,7 +1074,7 @@ describe("coach routes keep their payloads", () => {
     });
     expect(amended.body).toMatchObject({ applied: true, sent: true });
     const reamended = await ok(
-      call(token("admin"), "POST", `/coach/admin/reports/${AMENDED}/amend`, {
+      call(token("admin"), "POST", `/coach/admin/reports/${REAMENDED}/amend`, {
         firstLesson: true,
         body: {
           strengthsProse: [
@@ -1020,6 +1103,14 @@ describe("coach routes keep their payloads", () => {
       ),
     );
     matchesFixture(
+      "coach-admin-revisions-stored-extra-key",
+      await call(
+        token("admin"),
+        "GET",
+        `/coach/admin/reports/${REAMENDED}/revisions`,
+      ),
+    );
+    matchesFixture(
       "coach-admin-edits",
       await call(
         token("admin"),
@@ -1031,17 +1122,6 @@ describe("coach routes keep their payloads", () => {
   });
 
   it("the monthly reports an admin reviews", async () => {
-    await db()
-      .deleteFrom("coach_monthly_narratives")
-      .where("month", "=", FIXTURE_MONTH)
-      .execute();
-    await db()
-      .deleteFrom("coach_monthly_leader_summaries")
-      .where("month", "=", FIXTURE_MONTH)
-      .execute();
-    await new CoachMonthlyService(Database, new MonthlyAi(), null).produce(
-      FIXTURE_MONTH,
-    );
     matchesFixture(
       "coach-admin-monthly-reports",
       await call(
@@ -1069,17 +1149,20 @@ describe("coach routes keep their payloads", () => {
       "GET",
       "/coach/admin/pipeline-failures?limit=200",
     );
-    matchesFixture("coach-admin-pipeline-failures", {
-      status: failures.status,
-      body: {
-        ...failures.body,
-        total: "<total>",
-        sessions: failures.body?.sessions.filter(
-          (s: { sourceSessionId: string }) =>
-            s.sourceSessionId === SESSION_FAILED,
-        ),
+    matchesFixture(
+      "coach-admin-pipeline-failures",
+      {
+        status: failures.status,
+        body: {
+          ...failures.body,
+          sessions: failures.body?.sessions.filter(
+            (s: { sourceSessionId: string }) =>
+              s.sourceSessionId === SESSION_FAILED,
+          ),
+        },
       },
-    });
+      ["body.total"],
+    );
   });
 
   it("learners, a locked lesson and an approval refused for a changed address", async () => {

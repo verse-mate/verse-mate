@@ -11,22 +11,22 @@
         "holdReason": "held for review: strengths: 1, three to five expected; strengths: a quote is not found in the month's sessions (\"let us read it first\"); growth areas: three to five, each with a tip; conversation guide: 1 questions, three to five expected; next month's focus: 1 goals, two or three expected",
         "skipped": [],
         "summary": {
-          "delta": 10.4,
+          "delta": 11.2,
           "focus": {
             "goals": ["One delegated prayer each week"],
-            "clusterPct": 75,
+            "clusterPct": 78,
             "clusterName": "Teaching Craft"
           },
           "group": "Tuesday Dawn Group, Cedar Hollow Fellowship",
           "month": "2033-03",
           "glance": {
             "avg": {
-              "bm": 77,
-              "br": 77,
-              "ep": 77,
-              "tc": 75,
+              "bm": 78,
+              "br": 78,
+              "ep": 78,
+              "tc": 78,
               "status": "Strong",
-              "composite": 76.8
+              "composite": 77.6
             },
             "rows": [
               {
@@ -40,14 +40,14 @@
                 "composite": 74.2
               },
               {
-                "bm": 80,
-                "br": 80,
-                "ep": 80,
-                "tc": 75,
+                "bm": 81,
+                "br": 81,
+                "ep": 81,
+                "tc": 81,
                 "date": "2033-03-15",
                 "status": "Strong",
                 "session": "Philippians, Lesson 15",
-                "composite": 79.35
+                "composite": 81
               }
             ]
           },
@@ -71,12 +71,12 @@
             {
               "key": "tc",
               "name": "Teaching Craft",
-              "avgPct": 75,
+              "avgPct": 78,
               "weight": 33,
               "insight": "Scripture led every discussion.",
               "weakestDim": {
-                "val": 3.5,
-                "name": "Scripture Engagement"
+                "val": 4,
+                "name": "Session Structure & Flow"
               },
               "statusLabel": "Strong",
               "strongestDim": {
@@ -87,7 +87,7 @@
             {
               "key": "bm",
               "name": "Building Ministry",
-              "avgPct": 77,
+              "avgPct": 78,
               "weight": 31,
               "insight": "Homework came up every week.",
               "weakestDim": {
@@ -103,7 +103,7 @@
             {
               "key": "ep",
               "name": "Engaging People",
-              "avgPct": 77,
+              "avgPct": 78,
               "weight": 18,
               "insight": "Quiet members were called on by name.",
               "weakestDim": {
@@ -119,7 +119,7 @@
             {
               "key": "br",
               "name": "Being Real",
-              "avgPct": 77,
+              "avgPct": 78,
               "weight": 18,
               "insight": "The leader shared a hard week honestly.",
               "weakestDim": {
@@ -231,7 +231,7 @@
               "date": "2033-03-15",
               "status": "Strong",
               "session": "Philippians, Lesson 15",
-              "composite": 79.35,
+              "composite": 81,
               "dimensions": [
                 {
                   "n": 1,
@@ -250,8 +250,8 @@
                 {
                   "n": 3,
                   "name": "Scripture Engagement",
-                  "note": "Fewer cross references",
-                  "score": 3,
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
                   "cluster": "Teaching Craft"
                 },
                 {
@@ -292,8 +292,8 @@
                 {
                   "n": 9,
                   "name": "Memory Reinforcement",
-                  "note": "Not applicable: the first lesson of a new study, so there are no prior big ideas to review.",
-                  "score": null,
+                  "note": "The group stayed in the passage.",
+                  "score": 4,
                   "cluster": "Teaching Craft"
                 },
                 {
@@ -320,7 +320,7 @@
               ]
             }
           ],
-          "composite": 76.8,
+          "composite": 77.6,
           "strengths": [
             {
               "text": "Scripture first: “let us read it first”",
@@ -328,10 +328,10 @@
             }
           ],
           "clusterAvg": {
-            "bm": 77,
-            "br": 77,
-            "ep": 77,
-            "tc": 75
+            "bm": 78,
+            "br": 78,
+            "ep": 78,
+            "tc": 78
           },
           "leaderName": "Avery Lane",
           "monthLabel": "March 2033",
@@ -345,10 +345,10 @@
             },
             {
               "date": "2033-03-15",
-              "delta": 5.1,
+              "delta": 6.8,
               "status": "Strong",
               "session": "Philippians, Lesson 15",
-              "composite": 79.35
+              "composite": 81
             }
           ],
           "sessionsCount": 2,
@@ -648,15 +648,15 @@
           "trends": {
             "text": ["Participation rose across the program."],
             "priorAvg": 66.4,
-            "allTimeAvg": 69.7,
+            "allTimeAvg": 70.1,
             "bestImproving": {
               "id": "fixture-avery-lane",
               "name": "Avery Lane",
-              "delta": 10.4
+              "delta": 11.2
             },
             "needsAttention": {
-              "avg": 3.7,
-              "name": "Scripture Engagement"
+              "avg": 4,
+              "name": "Session Structure & Flow"
             },
             "mostImprovedDimension": {
               "name": "Session Structure & Flow",
@@ -681,7 +681,7 @@
                   },
                   {
                     "n": 3,
-                    "avg": 3.5,
+                    "avg": 4,
                     "mark": "strong"
                   },
                   {
@@ -859,7 +859,7 @@
             {
               "id": "fixture-avery-lane",
               "name": "Avery Lane",
-              "text": "Avery Lane: 76.8 (Strong), up 10.4 from February 2033. Strong on scripture, growing in delegation."
+              "text": "Avery Lane: 77.6 (Strong), up 11.2 from February 2033. Strong on scripture, growing in delegation."
             },
             {
               "id": "fixture-jordan-pike",
@@ -869,15 +869,15 @@
           ],
           "monthLabel": "March 2033",
           "initiatives": [
-            "Coach this next month (Scripture Engagement averaged 3.7 across the program)",
-            "Coach this next month (Avery Lane moved +10.4 from 2033-02)"
+            "Coach this next month (Session Structure & Flow averaged 4 across the program)",
+            "Coach this next month (Avery Lane moved +11.2 from 2033-02)"
           ],
           "leaderboard": [
             {
               "id": "fixture-avery-lane",
               "name": "Avery Lane",
               "status": "Strong",
-              "composite": 76.8
+              "composite": 77.6
             },
             {
               "id": "fixture-jordan-pike",
