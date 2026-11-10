@@ -23,7 +23,7 @@ export default function Privacy() {
         align="center"
       >
         <p className="m-0 text-center font-inter text-body text-white/80">
-          Effective Date: December 23, 2025 | Last Updated: December 23, 2025
+          Effective Date: November 10, 2026 | Last Updated: November 10, 2026
         </p>
       </PageHero>
 
@@ -105,7 +105,11 @@ export default function Privacy() {
               <li>Navigation flows</li>
               <li>Error reports and crash data</li>
               <li>Performance metrics</li>
+              <li>How you found us (referring site or campaign)</li>
             </ul>
+            <p className="font-inter text-body text-brand-slate mb-2">
+              On the web, versemate.org and app.versemate.org keep an analytics identifier and a record of your first visit in your browser&rsquo;s storage, until you clear it.
+            </p>
             <p className="font-inter text-body text-brand-slate">
               PostHog data is used solely for product improvement and is not sold to third parties.
             </p>
@@ -264,6 +268,9 @@ export default function Privacy() {
             </h3>
             <p className="font-inter text-body text-brand-slate mb-6">
               You can opt out of analytics tracking in the app settings. This will stop the collection of usage data while still allowing the app to function.
+            </p>
+            <p className="font-inter text-body text-brand-slate mb-6">
+              On the web, you can refuse analytics by blocking storage for versemate.org and app.versemate.org in your browser, which stops collection on both. You can also write to <a href="mailto:info@versemate.org" className="text-brand-tan">info@versemate.org</a> to have the analytics data linked to your account deleted.
             </p>
 
             <h3 className="mb-4 font-inter text-heading-3 text-brand-black">
