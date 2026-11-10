@@ -18,11 +18,14 @@ export const VIDEO_TYPES = ["video/mp4", "video/webm"] as const;
 export type VideoType = (typeof VIDEO_TYPES)[number];
 export const LEARNERS_PAGE = 25;
 
-export type JoinRequestStatus =
-  | "open"
-  | "approved"
-  | "declined"
-  | "already-in-program";
+export const JOIN_REQUEST_STATUSES = [
+  "open",
+  "approved",
+  "declined",
+  "already-in-program",
+] as const;
+
+export type JoinRequestStatus = (typeof JOIN_REQUEST_STATUSES)[number];
 
 export type LearningStorage = Pick<
   ObjectStorageService,

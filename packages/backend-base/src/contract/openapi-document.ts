@@ -45,11 +45,22 @@ export function publishedDocument<T extends Document>(document: T): T {
   return { ...document, paths };
 }
 
+const published = new WeakMap<Document, Document>();
+
+function cachedPublishedDocument(document: Document): Document {
+  let corrected = published.get(document);
+  if (!corrected) {
+    corrected = publishedDocument(document);
+    published.set(document, corrected);
+  }
+  return corrected;
+}
+
 export const openapiDocs = () =>
   new Elysia({ name: "openapi-docs" })
     .onAfterHandle({ as: "global" }, ({ path, response }) =>
       path === OPENAPI_SPEC_PATH
-        ? publishedDocument(response as Document)
+        ? cachedPublishedDocument(response as Document)
         : undefined,
     )
     .use(

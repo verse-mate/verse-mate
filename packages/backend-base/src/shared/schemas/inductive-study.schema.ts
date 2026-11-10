@@ -114,6 +114,8 @@ const StepSegments = t.Object(
   open,
 );
 
+const StepOfAnotherKind = t.Object({ ...stepBase, kind: t.String() }, open);
+
 export const InductiveStudySchema = t.Object(
   {
     bookId: t.Number(),
@@ -198,5 +200,11 @@ export const StoredStudySchema: TSchema = asStored(
   t.Object({
     ...InductiveStudySchema.properties,
     chapter: t.Union([t.Number(), t.String()]),
+    steps: t.Array(
+      t.Union([
+        ...InductiveStudySchema.properties.steps.items.anyOf,
+        StepOfAnotherKind,
+      ]),
+    ),
   }),
 );

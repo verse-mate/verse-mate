@@ -1,5 +1,9 @@
 import { t } from "elysia";
 
+export const DateTime = t.String({ format: "date-time" });
+
+export const DateTimeOrNull = t.Union([DateTime, t.Null()]);
+
 export const ErrorResponse = t.Object({
   error: t.String(),
   message: t.String(),

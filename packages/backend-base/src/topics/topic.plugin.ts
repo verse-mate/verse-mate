@@ -3,7 +3,10 @@ import { authDerive } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import { isoDateOrNull } from "../common/iso-date";
-import { StandardErrorResponses } from "../common/response-schemas";
+import {
+  DateTimeOrNull,
+  StandardErrorResponses,
+} from "../common/response-schemas";
 import { resolveLanguage } from "../jesus/utils/language.utils";
 import shared from "../shared/shared.plugin";
 import { parseAndInjectVerses } from "../shared/verse-parser";
@@ -45,8 +48,8 @@ const TopicSchema = t.Object({
   category: t.String(),
   sort_order: t.Union([t.Number(), t.Null()]),
   is_active: t.Union([t.Boolean(), t.Null()]),
-  created_at: t.Union([t.String({ format: "date-time" }), t.Null()]),
-  updated_at: t.Union([t.String({ format: "date-time" }), t.Null()]),
+  created_at: DateTimeOrNull,
+  updated_at: DateTimeOrNull,
   is_translated: t.Optional(t.Boolean()),
 });
 

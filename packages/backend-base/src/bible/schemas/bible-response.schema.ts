@@ -1,4 +1,5 @@
 import { t } from "elysia";
+import { DateTime, DateTimeOrNull } from "../../common/response-schemas";
 import {
   BookTypeCompact,
   ExplanationTypeEnum,
@@ -361,8 +362,8 @@ const HighlightResponseType = t.Object({
   start_char: t.Union([t.Number(), t.Null()]),
   end_char: t.Union([t.Number(), t.Null()]),
   selected_text: t.Union([t.String(), t.Null()]),
-  created_at: t.String(), // ISO date string (Date serialized)
-  updated_at: t.String(), // ISO date string (Date serialized)
+  created_at: DateTime,
+  updated_at: DateTime,
 });
 
 export const HighlightsSchema = t.Object({
@@ -386,8 +387,8 @@ export const HighlightAddSchema = t.Union([
       t.Array(
         t.Object({
           ...HighlightResponseType.properties,
-          created_at: t.Union([t.String({ format: "date-time" }), t.Null()]),
-          updated_at: t.Union([t.String({ format: "date-time" }), t.Null()]),
+          created_at: DateTimeOrNull,
+          updated_at: DateTimeOrNull,
         }),
       ),
     ),
@@ -427,8 +428,6 @@ export const BookIntroductionSchema = t.Object({
   ]),
   hasViewed: t.Optional(t.Boolean()),
 });
-
-const DateTimeOrNull = t.Union([t.String({ format: "date-time" }), t.Null()]);
 
 export const AutoHighlightsSchema = t.Object({
   success: t.Boolean(),

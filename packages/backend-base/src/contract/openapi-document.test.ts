@@ -3,7 +3,11 @@ import { Validator } from "@seriousme/openapi-schema-validator";
 import { OptionalKind, type TSchema } from "@sinclair/typebox";
 
 import { contractApp } from "./contract-app";
-import { OPENAPI_SPEC_PATH, openapiDocs } from "./openapi-document";
+import {
+  OPENAPI_SPEC_PATH,
+  OPTIONAL_REQUEST_BODIES,
+  openapiDocs,
+} from "./openapi-document";
 import webClientOperations from "./web-client-operations.json";
 
 type Json = Record<string, any>;
@@ -52,6 +56,17 @@ describe("the published document", () => {
       )
       .map((route) => [route.method.toLowerCase(), route.path] as const);
     expect(optional.length).toBeGreaterThan(0);
+    expect(
+      OPTIONAL_REQUEST_BODIES.map(
+        ([method, path]) => `${method} ${path}`,
+      ).sort(),
+    ).toEqual(
+      optional
+        .map(
+          ([method, path]) => `${method} ${path.replace(/:([^/]+)/g, "{$1}")}`,
+        )
+        .sort(),
+    );
     for (const [method, path] of optional) {
       const documented = path.replace(/:([^/]+)/g, "{$1}");
       expect(

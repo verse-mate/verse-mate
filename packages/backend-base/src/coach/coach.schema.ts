@@ -1,4 +1,5 @@
 import { type Static, t } from "elysia";
+import { DateTime, DateTimeOrNull } from "../common/response-schemas";
 
 import { CLASS_RECURRENCES } from "./dto/coach.dto";
 import { DIMENSIONS } from "./rubric";
@@ -744,10 +745,10 @@ export const RevisionsSchema = t.Object({
         previous: RevisionPreviousSchema,
         changes: RevisionChangesSchema,
         amendedBy: t.Union([t.String(), t.Null()]),
-        amendedAt: t.String({ format: "date-time" }),
+        amendedAt: DateTime,
         sentTo: t.Array(t.String()),
         skipped: t.Array(t.String()),
-        sentAt: t.Union([t.String({ format: "date-time" }), t.Null()]),
+        sentAt: DateTimeOrNull,
         attemptedTo: t.Array(t.String()),
       }),
       t.Object({
@@ -755,7 +756,7 @@ export const RevisionsSchema = t.Object({
         edit: t.Number(),
         changes: EditChangesSchema,
         editedBy: t.Union([t.String(), t.Null()]),
-        editedAt: t.String({ format: "date-time" }),
+        editedAt: DateTime,
       }),
     ]),
   ),
@@ -1395,10 +1396,8 @@ export const LikelyDuplicateSchema = t.Object({
   canScoreInstead: t.Boolean(),
 });
 
-export const MonthlyReportRowSchema = t.Object({
+const monthlyReportRow = {
   id: t.Number(),
-  kind: t.Union([t.Literal("leader"), t.Literal("program")]),
-  coachId: t.Union([t.String(), t.Null()]),
   month: t.String(),
   state: t.Union([
     t.Literal("held"),
@@ -1409,8 +1408,22 @@ export const MonthlyReportRowSchema = t.Object({
   ]),
   holdReason: t.Union([t.String(), t.Null()]),
   skipped: t.Array(t.String()),
-  summary: t.Union([LeaderMonthlySummarySchema, ProgramReportSchema]),
-});
+};
+
+export const MonthlyReportRowSchema = t.Union([
+  t.Object({
+    ...monthlyReportRow,
+    kind: t.Literal("leader"),
+    coachId: t.String(),
+    summary: LeaderMonthlySummarySchema,
+  }),
+  t.Object({
+    ...monthlyReportRow,
+    kind: t.Literal("program"),
+    coachId: t.Null(),
+    summary: ProgramReportSchema,
+  }),
+]);
 
 export const MonthlyReportEditSchema = t.Object({
   strengths: t.Optional(

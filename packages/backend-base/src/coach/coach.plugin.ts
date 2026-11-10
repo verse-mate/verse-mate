@@ -15,6 +15,8 @@ import { isoDate, isoDateOrNull } from "../common/iso-date";
 import { createRateLimit } from "../common/rate-limit.middleware";
 import {
   ConflictResponse,
+  DateTime,
+  DateTimeOrNull,
   ForbiddenResponse,
   NotFoundResponse,
   StandardErrorResponses,
@@ -1906,11 +1908,8 @@ const plugin = new Elysia()
                   coachId: t.Union([t.String(), t.Null()]),
                   title: t.String(),
                   sessionDate: t.String(),
-                  sessionStartedAt: t.Union([
-                    t.String({ format: "date-time" }),
-                    t.Null(),
-                  ]),
-                  requestedAt: t.String({ format: "date-time" }),
+                  sessionStartedAt: DateTimeOrNull,
+                  requestedAt: DateTime,
                   attempts: t.Number(),
                   asked: t.Boolean(),
                   parallelRun: t.Boolean(),
@@ -1965,10 +1964,7 @@ const plugin = new Elysia()
                   coachId: t.Union([t.String(), t.Null()]),
                   title: t.String(),
                   sessionDate: t.String(),
-                  sessionStartedAt: t.Union([
-                    t.String({ format: "date-time" }),
-                    t.Null(),
-                  ]),
+                  sessionStartedAt: DateTimeOrNull,
                   state: t.String(),
                   attempts: t.Number(),
                   reportId: t.Union([t.String(), t.Null()]),
@@ -1982,7 +1978,7 @@ const plugin = new Elysia()
                     t.Null(),
                   ]),
                   parallelRun: t.Boolean(),
-                  updatedAt: t.String({ format: "date-time" }),
+                  updatedAt: DateTime,
                 }),
               ),
             }),

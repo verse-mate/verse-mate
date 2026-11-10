@@ -5500,23 +5500,13 @@
                   "request": {
                     "anyOf": [
                       {
-                        "anyOf": [
-                          {
-                            "const": "open",
-                            "type": "string"
-                          },
-                          {
-                            "const": "approved",
-                            "type": "string"
-                          },
-                          {
-                            "const": "declined",
-                            "type": "string"
-                          },
-                          {
-                            "const": "already-in-program",
-                            "type": "string"
-                          }
+                        "default": "open",
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "approved",
+                          "declined",
+                          "already-in-program"
                         ]
                       },
                       {
@@ -6729,79 +6719,64 @@
             "reports": {
               "type": "array",
               "items": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "number"
-                  },
-                  "kind": {
-                    "anyOf": [
-                      {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "month": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "anyOf": [
+                          {
+                            "const": "held",
+                            "type": "string"
+                          },
+                          {
+                            "const": "pending",
+                            "type": "string"
+                          },
+                          {
+                            "const": "sending",
+                            "type": "string"
+                          },
+                          {
+                            "const": "sent",
+                            "type": "string"
+                          },
+                          {
+                            "const": "parallel-run",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "holdReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "skipped": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "kind": {
                         "const": "leader",
                         "type": "string"
                       },
-                      {
-                        "const": "program",
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "coachId": {
-                    "anyOf": [
-                      {
+                      "coachId": {
                         "type": "string"
                       },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "month": {
-                    "type": "string"
-                  },
-                  "state": {
-                    "anyOf": [
-                      {
-                        "const": "held",
-                        "type": "string"
-                      },
-                      {
-                        "const": "pending",
-                        "type": "string"
-                      },
-                      {
-                        "const": "sending",
-                        "type": "string"
-                      },
-                      {
-                        "const": "sent",
-                        "type": "string"
-                      },
-                      {
-                        "const": "parallel-run",
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "holdReason": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "skipped": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "summary": {
-                    "anyOf": [
-                      {
+                      "summary": {
                         "type": "object",
                         "properties": {
                           "month": {
@@ -7344,8 +7319,76 @@
                           "focus",
                           "sessions"
                         ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "month",
+                      "state",
+                      "holdReason",
+                      "skipped",
+                      "kind",
+                      "coachId",
+                      "summary"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
                       },
-                      {
+                      "month": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "anyOf": [
+                          {
+                            "const": "held",
+                            "type": "string"
+                          },
+                          {
+                            "const": "pending",
+                            "type": "string"
+                          },
+                          {
+                            "const": "sending",
+                            "type": "string"
+                          },
+                          {
+                            "const": "sent",
+                            "type": "string"
+                          },
+                          {
+                            "const": "parallel-run",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "holdReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "skipped": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "kind": {
+                        "const": "program",
+                        "type": "string"
+                      },
+                      "coachId": {
+                        "type": "null"
+                      },
+                      "summary": {
                         "type": "object",
                         "properties": {
                           "month": {
@@ -7653,18 +7696,18 @@
                           "executiveSummary"
                         ]
                       }
+                    },
+                    "required": [
+                      "id",
+                      "month",
+                      "state",
+                      "holdReason",
+                      "skipped",
+                      "kind",
+                      "coachId",
+                      "summary"
                     ]
                   }
-                },
-                "required": [
-                  "id",
-                  "kind",
-                  "coachId",
-                  "month",
-                  "state",
-                  "holdReason",
-                  "skipped",
-                  "summary"
                 ]
               }
             }
@@ -11849,23 +11892,13 @@
                       "type": "number"
                     },
                     "status": {
-                      "anyOf": [
-                        {
-                          "const": "open",
-                          "type": "string"
-                        },
-                        {
-                          "const": "approved",
-                          "type": "string"
-                        },
-                        {
-                          "const": "declined",
-                          "type": "string"
-                        },
-                        {
-                          "const": "already-in-program",
-                          "type": "string"
-                        }
+                      "default": "open",
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "approved",
+                        "declined",
+                        "already-in-program"
                       ]
                     },
                     "reason": {
@@ -22906,23 +22939,13 @@
                       "type": "number"
                     },
                     "status": {
-                      "anyOf": [
-                        {
-                          "const": "open",
-                          "type": "string"
-                        },
-                        {
-                          "const": "approved",
-                          "type": "string"
-                        },
-                        {
-                          "const": "declined",
-                          "type": "string"
-                        },
-                        {
-                          "const": "already-in-program",
-                          "type": "string"
-                        }
+                      "default": "open",
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "approved",
+                        "declined",
+                        "already-in-program"
                       ]
                     },
                     "reason": {
@@ -23117,23 +23140,13 @@
                       "type": "number"
                     },
                     "status": {
-                      "anyOf": [
-                        {
-                          "const": "open",
-                          "type": "string"
-                        },
-                        {
-                          "const": "approved",
-                          "type": "string"
-                        },
-                        {
-                          "const": "declined",
-                          "type": "string"
-                        },
-                        {
-                          "const": "already-in-program",
-                          "type": "string"
-                        }
+                      "default": "open",
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "approved",
+                        "declined",
+                        "already-in-program"
                       ]
                     },
                     "reason": {
@@ -23502,23 +23515,13 @@
                       "type": "number"
                     },
                     "status": {
-                      "anyOf": [
-                        {
-                          "const": "open",
-                          "type": "string"
-                        },
-                        {
-                          "const": "approved",
-                          "type": "string"
-                        },
-                        {
-                          "const": "declined",
-                          "type": "string"
-                        },
-                        {
-                          "const": "already-in-program",
-                          "type": "string"
-                        }
+                      "default": "open",
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "approved",
+                        "declined",
+                        "already-in-program"
                       ]
                     },
                     "reason": {

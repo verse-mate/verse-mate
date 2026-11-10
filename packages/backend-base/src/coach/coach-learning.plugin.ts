@@ -12,7 +12,11 @@ import {
   UnauthorizedResponse,
 } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
-import { CoachLearningService, LEARNERS_PAGE } from "./coach-learning.service";
+import {
+  CoachLearningService,
+  JOIN_REQUEST_STATUSES,
+  LEARNERS_PAGE,
+} from "./coach-learning.service";
 import { CoachService } from "./coach.service";
 
 const Nullable = <T extends Parameters<typeof t.Union>[0][number]>(s: T) =>
@@ -29,12 +33,7 @@ const ContinueSchema = Nullable(
   ]),
 );
 
-const RequestStatus = t.Union([
-  t.Literal("open"),
-  t.Literal("approved"),
-  t.Literal("declined"),
-  t.Literal("already-in-program"),
-]);
+const RequestStatus = t.UnionEnum(JOIN_REQUEST_STATUSES);
 
 const JoinRequestSchema = t.Object({
   id: t.Number(),
