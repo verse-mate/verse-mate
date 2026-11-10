@@ -35,8 +35,7 @@ isolateTable("coach_monthly_reports");
 const app = contractApp();
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const DATE_TIME =
-  /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}(:?\d{2})?)$/;
+const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const TOKEN = /^eyJ[\w-]+\.[\w-]+\.[\w-]+$/;
 const VOLATILE_KEYS = new Set([
   "auto_highlight_id",

@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
+import { isoDateOrNull } from "../common/iso-date";
 import { resolveLanguage } from "../jesus/utils/language.utils";
 import shared from "../shared/shared.plugin";
 import { parseAndInjectVerses } from "../shared/verse-parser";
@@ -43,8 +44,8 @@ const TopicSchema = t.Object({
   category: t.String(),
   sort_order: t.Union([t.Number(), t.Null()]),
   is_active: t.Union([t.Boolean(), t.Null()]),
-  created_at: t.Union([t.Date(), t.Null()]),
-  updated_at: t.Union([t.Date(), t.Null()]),
+  created_at: t.Union([t.String({ format: "date-time" }), t.Null()]),
+  updated_at: t.Union([t.String({ format: "date-time" }), t.Null()]),
   is_translated: t.Optional(t.Boolean()),
 });
 
@@ -253,7 +254,13 @@ const plugin = new Elysia()
           };
 
           return {
-            topic: topic || null,
+            topic: topic
+              ? {
+                  ...topic,
+                  created_at: isoDateOrNull(topic.created_at),
+                  updated_at: isoDateOrNull(topic.updated_at),
+                }
+              : null,
             references: references || null,
             explanation,
           };

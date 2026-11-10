@@ -11,6 +11,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { isoDate, isoDateOrNull } from "../common/iso-date";
 import { createRateLimit } from "../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../common/response-schemas";
 import { getAiProvider } from "../shared/ai";
@@ -1016,7 +1017,16 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           return {
-            revisions: await coachService.listRevisions(params.reportId),
+            revisions: (await coachService.listRevisions(params.reportId)).map(
+              (entry) =>
+                entry.kind === "revision"
+                  ? {
+                      ...entry,
+                      amendedAt: isoDate(entry.amendedAt),
+                      sentAt: isoDateOrNull(entry.sentAt),
+                    }
+                  : { ...entry, editedAt: isoDate(entry.editedAt) },
+            ),
           };
         },
         {
@@ -1684,7 +1694,15 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
-          return { requests: await coachService.listPendingReshares() };
+          return {
+            requests: (await coachService.listPendingReshares()).map(
+              (request) => ({
+                ...request,
+                sessionStartedAt: isoDateOrNull(request.sessionStartedAt),
+                requestedAt: isoDate(request.requestedAt),
+              }),
+            ),
+          };
         },
         {
           response: {
@@ -1695,8 +1713,11 @@ const plugin = new Elysia()
                   coachId: t.Union([t.String(), t.Null()]),
                   title: t.String(),
                   sessionDate: t.String(),
-                  sessionStartedAt: t.Union([t.Date(), t.Null()]),
-                  requestedAt: t.Date(),
+                  sessionStartedAt: t.Union([
+                    t.String({ format: "date-time" }),
+                    t.Null(),
+                  ]),
+                  requestedAt: t.String({ format: "date-time" }),
                   attempts: t.Number(),
                   asked: t.Boolean(),
                   parallelRun: t.Boolean(),
@@ -1720,7 +1741,16 @@ const plugin = new Elysia()
             limit,
             offset,
           });
-          return { ...page, limit, offset };
+          return {
+            ...page,
+            sessions: page.sessions.map((session) => ({
+              ...session,
+              sessionStartedAt: isoDateOrNull(session.sessionStartedAt),
+              updatedAt: isoDate(session.updatedAt),
+            })),
+            limit,
+            offset,
+          };
         },
         {
           query: t.Object({
@@ -1740,7 +1770,10 @@ const plugin = new Elysia()
                   coachId: t.Union([t.String(), t.Null()]),
                   title: t.String(),
                   sessionDate: t.String(),
-                  sessionStartedAt: t.Union([t.Date(), t.Null()]),
+                  sessionStartedAt: t.Union([
+                    t.String({ format: "date-time" }),
+                    t.Null(),
+                  ]),
                   state: t.String(),
                   attempts: t.Number(),
                   reportId: t.Union([t.String(), t.Null()]),
@@ -1754,7 +1787,7 @@ const plugin = new Elysia()
                     t.Null(),
                   ]),
                   parallelRun: t.Boolean(),
-                  updatedAt: t.Date(),
+                  updatedAt: t.String({ format: "date-time" }),
                 }),
               ),
             }),
