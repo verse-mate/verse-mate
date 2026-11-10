@@ -784,31 +784,10 @@ beforeAll(async () => {
     Promise.resolve({ delivered: true }),
   );
   await login("reader", { firstName: "Rita", lastName: "Reader" });
-  await login("unconfirmed", {
-    confirmed: false,
-    firstName: "Una",
-    lastName: "Unconfirmed",
-  });
-  await login("deleter", { firstName: "Dana", lastName: "Deleter" });
-  await login("learner", { firstName: "Lena", lastName: "Learner" });
-  await login("locked", { firstName: "Lou", lastName: "Locked" });
   await seedBible();
   await seedJesus();
   await seedCoach();
-  await login("leader", { firstName: "Avery", lastName: "Lane" });
   await login("admin", { firstName: "Ada", lastName: "Admin" });
-  await login("keeper", { firstName: "Kit", lastName: "Keeper" });
-  await db()
-    .deleteFrom("coach_monthly_narratives")
-    .where("month", "=", FIXTURE_MONTH)
-    .execute();
-  await db()
-    .deleteFrom("coach_monthly_leader_summaries")
-    .where("month", "=", FIXTURE_MONTH)
-    .execute();
-  await new CoachMonthlyService(Database, new MonthlyAi(), null).produce(
-    FIXTURE_MONTH,
-  );
   for (const table of LEARNING_TABLES) await setAside(table);
   const topic = await db()
     .selectFrom("topics")
@@ -976,6 +955,22 @@ describe("topic routes keep their payloads", () => {
 });
 
 describe("coach routes keep their payloads", () => {
+  beforeAll(async () => {
+    await login("leader", { firstName: "Avery", lastName: "Lane" });
+    await login("keeper", { firstName: "Kit", lastName: "Keeper" });
+    await db()
+      .deleteFrom("coach_monthly_narratives")
+      .where("month", "=", FIXTURE_MONTH)
+      .execute();
+    await db()
+      .deleteFrom("coach_monthly_leader_summaries")
+      .where("month", "=", FIXTURE_MONTH)
+      .execute();
+    await new CoachMonthlyService(Database, new MonthlyAi(), null).produce(
+      FIXTURE_MONTH,
+    );
+  });
+
   it("a leader's session list, trends and classes", async () => {
     matchesFixture(
       "coach-reports-summary",
@@ -1164,6 +1159,13 @@ describe("coach routes keep their payloads", () => {
       ["body.total"],
     );
   });
+});
+
+describe("learning routes keep their payloads", () => {
+  beforeAll(async () => {
+    await login("learner", { firstName: "Lena", lastName: "Learner" });
+    await login("locked", { firstName: "Lou", lastName: "Locked" });
+  });
 
   it("learners, a locked lesson and an approval refused for a changed address", async () => {
     const admin = token("admin");
@@ -1267,6 +1269,15 @@ describe("coach routes keep their payloads", () => {
 });
 
 describe("error bodies keep their fields", () => {
+  beforeAll(async () => {
+    await login("unconfirmed", {
+      confirmed: false,
+      firstName: "Una",
+      lastName: "Unconfirmed",
+    });
+    await login("deleter", { firstName: "Dana", lastName: "Deleter" });
+  });
+
   it("401 without a session", async () => {
     matchesFixture(
       "error-401",
@@ -1294,7 +1305,7 @@ describe("error bodies keep their fields", () => {
   it("422 on a malformed query", async () => {
     matchesFixture(
       "error-422",
-      await call(token("leader"), "GET", "/coach/reports/summary?limit=abc"),
+      await call(token("reader"), "GET", "/coach/reports/summary?limit=abc"),
     );
   });
 
