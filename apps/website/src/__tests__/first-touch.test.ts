@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   classifyFirstTouch,
+  onFirstTouch,
   readFirstTouch,
   recordFirstTouch,
 } from "../lib/analytics/first-touch";
@@ -186,5 +187,129 @@ describe("recordFirstTouch", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(readFirstTouch(storage)?.channel).toBe("campaign");
     expect(tabB.registered.at(-1)).toEqual({ first_touch_channel: "campaign" });
+  });
+  function sentRecord(channel: string) {
+    return JSON.stringify({ channel, at: "2026-11-11T00:00:00.000Z" });
+  }
+
+  const grantedLock = {
+    request: (_name: string, callback: () => Promise<void>) => callback(),
+  };
+
+  function firstTouchEvents(posthog: ReturnType<typeof fakePosthog>) {
+    return posthog.captured.filter((c) => c.event === "acquisition_first_touch");
+  }
+
+  it("sends once when the lock API throws", async () => {
+    const posthog = fakePosthog();
+    const locks = {
+      request: () => {
+        throw new Error("unsupported");
+      },
+    };
+    const { sent } = recordFirstTouch({ ...visit, posthog, storage: memoryStorage(), locks, returning: false });
+    await sent;
+    expect(firstTouchEvents(posthog)).toHaveLength(1);
+  });
+
+  it("sends once when the lock request is refused", async () => {
+    const posthog = fakePosthog();
+    const locks = { request: () => Promise.reject(new Error("SecurityError")) };
+    const { sent } = recordFirstTouch({ ...visit, posthog, storage: memoryStorage(), locks, returning: false });
+    await sent;
+    expect(firstTouchEvents(posthog)).toHaveLength(1);
+  });
+
+  it("does not send again when the lock fails after it sent", async () => {
+    const posthog = fakePosthog();
+    const locks = {
+      request: async (_name: string, callback: () => Promise<void>) => {
+        void callback();
+        throw new Error("lock stolen");
+      },
+    };
+    const { sent } = recordFirstTouch({ ...visit, posthog, storage: memoryStorage(), locks, returning: false });
+    await sent;
+    expect(firstTouchEvents(posthog)).toHaveLength(1);
+  });
+
+  it("sends once when the sent record cannot be written", async () => {
+    const posthog = fakePosthog();
+    const base = memoryStorage();
+    const storage = {
+      ...base,
+      setItem: (k: string, v: string) => {
+        if (k === "vm_first_touch_sent") throw new Error("quota");
+        base.setItem(k, v);
+      },
+    };
+    const { sent } = recordFirstTouch({ ...visit, posthog, storage, locks: grantedLock, returning: false });
+    await sent;
+    expect(firstTouchEvents(posthog)).toHaveLength(1);
+  });
+
+  it("settles without rejecting when the capture throws", async () => {
+    const posthog = {
+      ...fakePosthog(),
+      capture: () => {
+        throw new Error("capture failed");
+      },
+    };
+    const locks = { request: () => Promise.reject(new Error("SecurityError")) };
+    const { sent } = recordFirstTouch({ ...visit, posthog, storage: memoryStorage(), locks, returning: false });
+    await expect(sent).resolves.toBeUndefined();
+  });
+
+  it("adopts a first touch another tab sent, even when a listener throws", async () => {
+    const posthog = fakePosthog();
+    const storage = memoryStorage({ vm_first_touch_sent: sentRecord("search") });
+    const seen: string[] = [];
+    const stop = onFirstTouch((touch) => {
+      seen.push(touch.channel);
+      throw new Error("listener failed");
+    });
+    const { sent } = recordFirstTouch({ ...visit, posthog, storage, locks: grantedLock, returning: false });
+    await sent;
+    stop();
+    expect(firstTouchEvents(posthog)).toHaveLength(0);
+    expect(seen.at(-1)).toBe("search");
+    expect(posthog.registered.at(-1)).toEqual({ first_touch_channel: "search" });
+    expect(readFirstTouch(storage)?.channel).toBe("search");
+  });
+
+  it("ignores a sent record it did not write", async () => {
+    const posthog = fakePosthog();
+    const storage = memoryStorage({ vm_first_touch_sent: JSON.stringify({ channel: "<script>" }) });
+    const { sent } = recordFirstTouch({ ...visit, posthog, storage, locks: grantedLock, returning: false });
+    await sent;
+    expect(firstTouchEvents(posthog)).toHaveLength(1);
+    expect(firstTouchEvents(posthog)[0].props.channel).toBe("campaign");
+  });
+
+  it("a tab that started during another tab’s send ends on that tab’s first touch", async () => {
+    const storage = memoryStorage();
+    const locks = serialLocks();
+    const tabA = fakePosthog();
+    const tabB = fakePosthog();
+    const a = recordFirstTouch({ ...visit, posthog: tabA, storage: tabStorage(storage), locks, returning: false });
+    await Promise.resolve();
+    const seen: string[] = [];
+    const stop = onFirstTouch((touch) => seen.push(touch.channel));
+    const b = recordFirstTouch({
+      ...visit,
+      url: "https://versemate.org/",
+      referrer: "https://www.google.com/",
+      posthog: tabB,
+      storage: tabStorage(storage),
+      locks,
+      returning: false,
+    });
+    await Promise.all([a.sent, b.sent]);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    stop();
+
+    expect([...firstTouchEvents(tabA), ...firstTouchEvents(tabB)]).toHaveLength(1);
+    expect(seen).toEqual(["search", "campaign"]);
+    expect(readFirstTouch(storage)?.channel).toBe("campaign");
   });
 });

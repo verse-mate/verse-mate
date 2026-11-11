@@ -71,28 +71,33 @@ const SOCIAL_DOMAINS = [
 ];
 
 const MAX_CAMPAIGN_LENGTH = 100;
-const EMAIL = /[^\s@]+@[^\s@]+\.[^\s@]+/;
-
 const MAX_DECODE_PASSES = 5;
 const PERCENT_ESCAPE = /%([0-9a-f]{2})/gi;
+const AT_SIGN_FORMS = /&#0*64;|&#x0*40;|&commat;|\\u0040|%u0040/gi;
+const EMAIL_LIKE = /[^\s@]@[^\s@]/;
 
 function decodeEscape(_: string, hex: string): string {
   return String.fromCharCode(Number.parseInt(hex, 16));
 }
 
-function percentDecoded(value: string): string | undefined {
-  let current = value;
+function percentLayers(value: string): string[] | undefined {
+  const layers = [value];
   for (let pass = 0; pass <= MAX_DECODE_PASSES; pass++) {
-    const next = current.replace(PERCENT_ESCAPE, decodeEscape);
-    if (next === current) return current;
-    current = next;
+    const last = layers[layers.length - 1];
+    const next = last.replace(PERCENT_ESCAPE, decodeEscape);
+    if (next === last) return layers;
+    layers.push(next);
   }
   return undefined;
 }
 
+function looksLikeEmail(layer: string): boolean {
+  return EMAIL_LIKE.test(layer.normalize("NFKC").replace(AT_SIGN_FORMS, "@"));
+}
+
 export function boundCampaignValue(value: string): string {
-  const decoded = percentDecoded(value);
-  return decoded === undefined || EMAIL.test(decoded)
+  const layers = percentLayers(value);
+  return layers === undefined || layers.some(looksLikeEmail)
     ? "[redacted]"
     : value.slice(0, MAX_CAMPAIGN_LENGTH);
 }
@@ -222,8 +227,24 @@ type LocksLike = {
   request: (name: string, callback: () => Promise<void>) => Promise<unknown>;
 };
 
+function attempt(step: () => unknown): void {
+  try {
+    step();
+  } catch {
+    return;
+  }
+}
+
 function notify(touch: StoredFirstTouch) {
-  for (const listener of listeners) listener(touch);
+  for (const listener of listeners) attempt(() => listener(touch));
+}
+
+function cleanTouch(touch: StoredFirstTouch): StoredFirstTouch {
+  return {
+    channel: touch.channel,
+    ...(touch.ai_source ? { ai_source: touch.ai_source } : {}),
+    at: typeof touch.at === "string" ? touch.at : new Date().toISOString(),
+  };
 }
 
 function sendOnce({
@@ -239,34 +260,39 @@ function sendOnce({
   touch: StoredFirstTouch;
   send: () => void;
 }): Promise<void> {
-  let sent = false;
-  const sendNow = () => {
-    if (sent) return;
-    sent = true;
-    send();
-  };
+  let lockGranted = false;
+  const sendNow = () => attempt(send);
   if (!locks) {
     sendNow();
     return Promise.resolve();
   }
   const underLock = async () => {
-    const earlier = parseFirstTouch(storage.getItem(FIRST_TOUCH_SENT_KEY));
+    lockGranted = true;
+    let earlier: StoredFirstTouch | undefined;
+    attempt(() => {
+      earlier = parseFirstTouch(storage.getItem(FIRST_TOUCH_SENT_KEY));
+    });
     if (earlier) {
-      storage.setItem(FIRST_TOUCH_KEY, JSON.stringify(earlier));
-      registerFirstTouch(posthog, earlier);
-      notify(earlier);
+      const adopted = cleanTouch(earlier);
+      attempt(() => storage.setItem(FIRST_TOUCH_KEY, JSON.stringify(adopted)));
+      attempt(() => registerFirstTouch(posthog, adopted));
+      notify(adopted);
       return;
     }
-    const record = JSON.stringify(touch);
-    storage.setItem(FIRST_TOUCH_SENT_KEY, record);
-    storage.setItem(FIRST_TOUCH_KEY, record);
+    attempt(() => {
+      const record = JSON.stringify(touch);
+      storage.setItem(FIRST_TOUCH_SENT_KEY, record);
+      storage.setItem(FIRST_TOUCH_KEY, record);
+    });
     sendNow();
     await new Promise((resolve) => setTimeout(resolve, SENT_HOLD_MS));
   };
   try {
     return locks.request(FIRST_TOUCH_SENT_KEY, underLock).then(
       () => undefined,
-      sendNow,
+      () => {
+        if (!lockGranted) sendNow();
+      },
     );
   } catch {
     sendNow();
