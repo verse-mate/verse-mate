@@ -6,6 +6,8 @@ export const APP_STORE_URL =
 export const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=org.versemate.app";
 export const APP_STORE_ID = "6756897180";
+// TODO: VerseMate's App Store Connect provider token, supplied by the owner.
+export const APP_STORE_PROVIDER_TOKEN = "";
 
 export const STRUCTURED_DATA = {
   "@context": "https://schema.org",
