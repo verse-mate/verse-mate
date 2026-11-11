@@ -87,6 +87,27 @@ describe("the published document", () => {
     ).not.toHaveProperty("content");
   });
 
+  it("is the same document after the routes have served requests", async () => {
+    const served = contractApp().use(openapiDocs());
+    await served.handle(new Request("http://localhost/bible/books"));
+    await served.handle(
+      new Request("http://localhost/auth/login", {
+        method: "POST",
+        body: "{}",
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const after: Json = await (
+      await served.handle(new Request(`http://localhost${OPENAPI_SPEC_PATH}`))
+    ).json();
+    expect(after).toEqual(document);
+    const loginErrors =
+      document.paths["/auth/login"].post.responses["422"].content[
+        "application/json"
+      ].schema;
+    expect(loginErrors.additionalProperties).toBe(false);
+  });
+
   it("declares the query the SSO redirects read", () => {
     for (const provider of ["google", "apple"]) {
       const parameters =
