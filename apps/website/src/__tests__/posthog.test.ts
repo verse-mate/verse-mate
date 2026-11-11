@@ -76,7 +76,7 @@ describe("starting analytics on the website", () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = KEY;
   });
   afterEach(() => {
-    process.env.NEXT_PUBLIC_POSTHOG_KEY = undefined;
+    delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
   });
 
   it("loads nothing without a key", async () => {
@@ -124,6 +124,24 @@ describe("starting analytics on the website", () => {
     expect(posthog.calls[2].args[1]).toMatchObject({ surface: "website", channel: "ai", returning: false });
   });
 
+  it("classifies the landing page even when the visitor moves on before PostHog loads", async () => {
+    instance += 1;
+    const module = await import(`../lib/analytics/posthog?instance=${instance}`);
+    const win = fakeWindow({ url: "https://versemate.org/coach/?utm_source=newsletter", referrer: "" });
+    const posthog = fakePosthog(win);
+    await module.startAnalytics(win as unknown as Window, async () => {
+      win.location.href = "https://versemate.org/download-app/";
+      return posthog as never;
+    });
+    const touch = posthog.calls.find((c) => c.args[0] === "acquisition_first_touch");
+    expect(touch?.args[1]).toMatchObject({ channel: "campaign", landing_path: "/coach/", utm_source: "newsletter" });
+    const pageview = posthog.calls.find((c) => c.args[0] === "$pageview");
+    expect(pageview?.args[1]).toEqual({
+      $current_url: "https://versemate.org/coach/?utm_source=newsletter",
+      $pathname: "/coach/",
+    });
+  });
+
   it("marks a browser that held PostHog state before as returning", async () => {
     const win = fakeWindow({ storage: new Map([[`ph_${KEY}_posthog`, "{}"]]) });
     const { posthog } = await start(win);
@@ -134,9 +152,7 @@ describe("starting analytics on the website", () => {
   it("sends a store click at once with the stored channel", async () => {
     const win = fakeWindow();
     const { posthog, trackStoreLink } = await start(win);
-    (globalThis as any).window = win;
     trackStoreLink("app_store", "download-app");
-    delete (globalThis as any).window;
     expect(posthog.calls.at(-1)?.args).toEqual([
       "store_link_clicked",
       { store: "app_store", page: "download-app", first_touch_channel: "ai" },

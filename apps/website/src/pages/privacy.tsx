@@ -108,7 +108,7 @@ export default function Privacy() {
               <li>How you found us (referring site or campaign)</li>
             </ul>
             <p className="font-inter text-body text-brand-slate mb-2">
-              On the web, versemate.org and app.versemate.org keep an analytics identifier and a record of your first visit (the page you landed on and the site that sent you) in your browser&rsquo;s storage, for up to 12 months or until you clear it. The two sites share that identifier, so if you sign in on app.versemate.org, your visits to versemate.org are linked to your account.
+              On the web, versemate.org and app.versemate.org keep an analytics identifier and a record of your first visit (the page you landed on and the site that sent you) in your browser&rsquo;s storage until you clear it. The two sites share that identifier, so if you sign in on app.versemate.org, your visits to versemate.org are linked to your account.
             </p>
             <p className="font-inter text-body text-brand-slate">
               PostHog data is used solely for product improvement and is not sold to third parties.

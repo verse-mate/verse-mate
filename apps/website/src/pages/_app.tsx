@@ -9,7 +9,7 @@ import { capturePageview, startAnalytics } from "@/lib/analytics/posthog";
 import { smartBannerContent } from "@/lib/store-links";
 import { STRUCTURED_DATA } from "@/lib/structured-data";
 
-if (typeof window !== "undefined") void startAnalytics(window);
+if (typeof window !== "undefined") startAnalytics(window).catch(() => undefined);
 
 // Self-hosted via next/font — no render-blocking Google Fonts request, no
 // FOUT/layout shift. These set the same CSS vars the whole site already reads

@@ -5,6 +5,7 @@ import { scrubEvent } from "./privacy";
 const PROBE = "vm_storage_probe";
 
 let client: PostHog | undefined;
+let clientWindow: Window | undefined;
 
 type Loader = () => Promise<PostHog>;
 
@@ -27,6 +28,8 @@ export async function startAnalytics(win: Window, load: Loader = loadPosthog): P
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "";
   if (!key || client || !storageAvailable(win)) return;
   const returning = win.localStorage.getItem(`ph_${key}_posthog`) !== null;
+  const landingUrl = win.location.href;
+  const referrer = win.document.referrer;
   const posthog = await load();
   posthog.init(key, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
@@ -42,16 +45,20 @@ export async function startAnalytics(win: Window, load: Loader = loadPosthog): P
     persistence: "localStorage+cookie",
     loaded: (instance) => {
       client = instance;
+      clientWindow = win;
       instance.register({ surface: "website", platform: "website" });
       recordFirstTouch({
         posthog: instance,
         storage: win.localStorage,
         surface: "website",
-        url: win.location.href,
-        referrer: win.document.referrer,
+        url: landingUrl,
+        referrer,
         returning,
       });
-      instance.capture("$pageview");
+      instance.capture("$pageview", {
+        $current_url: landingUrl,
+        $pathname: new URL(landingUrl).pathname,
+      });
     },
   });
 }
@@ -61,8 +68,8 @@ export function capturePageview(): void {
 }
 
 export function trackStoreLink(store: "app_store" | "play_store", page: string): void {
-  if (!client) return;
-  const touch = readFirstTouch(window.localStorage);
+  if (!client || !clientWindow) return;
+  const touch = readFirstTouch(clientWindow.localStorage);
   client.capture(
     "store_link_clicked",
     { store, page, first_touch_channel: touch?.channel ?? "none" },
