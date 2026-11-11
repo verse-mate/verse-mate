@@ -129,7 +129,7 @@ jobs:
           bun-version: 1.4.0
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build backend
         working-directory: ./apps/backend
@@ -164,7 +164,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Run frontend linting
         working-directory: ./
@@ -200,7 +200,7 @@ jobs:
           bun-version: 1.4.0
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build website
         working-directory: ./apps/website
@@ -241,7 +241,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build frontend for deployment
         working-directory: ./apps/frontend-next
@@ -282,7 +282,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build website for deployment
         working-directory: ./apps/website
@@ -337,7 +337,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build website for deployment
         working-directory: ./apps/website
