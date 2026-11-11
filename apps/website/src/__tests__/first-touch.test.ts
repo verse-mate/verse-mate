@@ -35,6 +35,32 @@ function fakePosthog() {
   };
 }
 
+function tabStorage(shared: ReturnType<typeof memoryStorage>) {
+  const pending = new Map<string, string>();
+  return {
+    getItem: (k: string) => pending.get(k) ?? shared.getItem(k),
+    setItem: (k: string, v: string) => {
+      pending.set(k, v);
+      setTimeout(() => {
+        shared.setItem(k, v);
+        if (pending.get(k) === v) pending.delete(k);
+      }, 10);
+    },
+    removeItem: (k: string) => shared.removeItem(k),
+  };
+}
+
+function serialLocks() {
+  let tail: Promise<unknown> = Promise.resolve();
+  return {
+    request: (_name: string, callback: () => Promise<void>) => {
+      const run = tail.then(callback);
+      tail = run.catch(() => {});
+      return run;
+    },
+  };
+}
+
 describe("classifyFirstTouch", () => {
   for (const c of cases as unknown as Case[]) {
     it(c.name, () => {
@@ -134,5 +160,31 @@ describe("recordFirstTouch", () => {
     recordFirstTouch({ ...visit, posthog, storage, returning: false });
     expect(posthog.captured).toHaveLength(0);
     expect(posthog.registered).toHaveLength(0);
+  });
+  it("records one first touch when two tabs open on a first visit", async () => {
+    const storage = memoryStorage();
+    const locks = serialLocks();
+    const storageA = tabStorage(storage);
+    const storageB = tabStorage(storage);
+    const tabA = fakePosthog();
+    const tabB = fakePosthog();
+    const a = recordFirstTouch({ ...visit, posthog: tabA, storage: storageA, locks, returning: false });
+    const b = recordFirstTouch({
+      ...visit,
+      url: "https://versemate.org/",
+      referrer: "https://www.google.com/",
+      posthog: tabB,
+      storage: storageB,
+      locks,
+      returning: false,
+    });
+    await Promise.all([a.sent, b.sent]);
+
+    const events = [...tabA.captured, ...tabB.captured];
+    expect(events).toHaveLength(1);
+    expect(events[0].props.channel).toBe("campaign");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(readFirstTouch(storage)?.channel).toBe("campaign");
+    expect(tabB.registered.at(-1)).toEqual({ first_touch_channel: "campaign" });
   });
 });
