@@ -99,10 +99,12 @@ describe("recordFirstTouch", () => {
     expect(readFirstTouch(storage)?.channel).toBe("campaign");
   });
 
-  it("marks a browser that already held analytics state as returning", () => {
+  it("ignores a stored record it did not write", () => {
+    const storage = memoryStorage({ vm_first_touch: JSON.stringify({ channel: "<script>" }) });
     const posthog = fakePosthog();
-    recordFirstTouch({ ...visit, posthog, storage: memoryStorage(), returning: true });
-    expect(posthog.captured[0].props.returning).toBe(true);
+    recordFirstTouch({ ...visit, posthog, storage, returning: false });
+    expect(posthog.captured).toHaveLength(1);
+    expect(readFirstTouch(storage)?.channel).toBe("campaign");
   });
 
   it("registers the AI source with the channel", () => {

@@ -2,7 +2,8 @@ import type { CaptureResult } from "posthog-js";
 import { boundCampaignValue } from "./first-touch";
 
 const URL_KEY = /(^\$?|_)(url|referrer|href)$/i;
-const CAMPAIGN_KEY = /^(\$initial_)?utm_(source|medium|campaign|content|term)$/;
+const CAMPAIGN_KEY = /(^|_)utm_(source|medium|campaign|content|term)$/;
+const SEARCH_KEYWORD = /(^|_)ph_keyword$/;
 const QUERY_PROPERTIES = ["search", "$search"];
 const EMBEDDED_QUERY =
   /((?:https?:\/\/|href=")[^\s"'?#\\()<>[\]]*)(?:[?#][^\s"'\\()<>[\]]*)?/g;
@@ -41,10 +42,25 @@ function scrubValue(value: unknown, key = ""): unknown {
   return value;
 }
 
+function scrubHeatmap(data: Record<string, unknown[]>): Record<string, unknown[]> {
+  const out: Record<string, unknown[]> = {};
+  for (const [url, points] of Object.entries(data)) {
+    if (Array.isArray(points)) {
+      const key = stripQuery(url);
+      out[key] = [...(out[key] ?? []), ...points];
+    }
+  }
+  return out;
+}
+
 function scrubProperties<T extends Record<string, unknown> | undefined>(props: T): T {
   if (!props) return props;
   const out = scrubValue(props) as Record<string, unknown>;
   for (const key of QUERY_PROPERTIES) delete out[key];
+  for (const key of Object.keys(out)) if (SEARCH_KEYWORD.test(key)) delete out[key];
+  if (out.$heatmap_data) {
+    out.$heatmap_data = scrubHeatmap(out.$heatmap_data as Record<string, unknown[]>);
+  }
   return out as T;
 }
 

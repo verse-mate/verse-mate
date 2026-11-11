@@ -88,7 +88,7 @@ function matchesAny(host: string, domains: string[]): boolean {
 function referrerHost(referrer: string): string | undefined {
   if (!referrer) return undefined;
   try {
-    return new URL(referrer).host.toLowerCase() || undefined;
+    return new URL(referrer).hostname.toLowerCase() || undefined;
   } catch {
     return undefined;
   }
@@ -144,10 +144,29 @@ type PosthogLike = {
   register: (properties: Record<string, unknown>) => unknown;
 };
 
+const CHANNELS: Channel[] = [
+  "ai",
+  "campaign",
+  "internal",
+  "search",
+  "social",
+  "referral",
+  "direct",
+];
+const AI_SOURCES = new Set(AI_ASSISTANTS.map(([, name]) => name));
+
+function isStoredFirstTouch(value: unknown): value is StoredFirstTouch {
+  if (!value || typeof value !== "object") return false;
+  const touch = value as Record<string, unknown>;
+  if (!CHANNELS.includes(touch.channel as Channel)) return false;
+  return touch.ai_source === undefined || AI_SOURCES.has(touch.ai_source as string);
+}
+
 export function readFirstTouch(storage: StorageLike): StoredFirstTouch | undefined {
   try {
     const raw = storage.getItem(FIRST_TOUCH_KEY);
-    return raw ? (JSON.parse(raw) as StoredFirstTouch) : undefined;
+    const parsed: unknown = raw ? JSON.parse(raw) : undefined;
+    return isStoredFirstTouch(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }
