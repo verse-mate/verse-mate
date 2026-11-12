@@ -11,6 +11,7 @@ function fakeWindow({
   storage = new Map<string, string>(),
   refuseStorage = false,
   refuseCookies = false,
+  locks = undefined as unknown,
 } = {}) {
   const cookies = new Map<string, string>();
   return {
@@ -24,6 +25,7 @@ function fakeWindow({
       removeItem: (k: string) => void storage.delete(k),
     },
     location: { href: url },
+    navigator: { locks },
     document: {
       referrer,
       get cookie() {
@@ -158,5 +160,20 @@ describe("starting analytics on the website", () => {
       { store: "app_store", page: "download-app", first_touch_channel: "ai" },
       { send_instantly: true },
     ]);
+  });
+
+  it("sends no first touch when another tab of this browser already sent one", async () => {
+    const win = fakeWindow({
+      storage: new Map([
+        ["vm_first_touch_sent", JSON.stringify({ channel: "search", at: "2026-11-11T00:00:00.000Z" })],
+      ]),
+      locks: { request: (_name: string, callback: () => Promise<void>) => callback() },
+    });
+    const { posthog } = await start(win);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(posthog.calls.some((c) => c.args[0] === "acquisition_first_touch")).toBe(false);
+    expect(posthog.calls.filter((c) => c.method === "register").at(-1)?.args[0]).toEqual({
+      first_touch_channel: "search",
+    });
   });
 });

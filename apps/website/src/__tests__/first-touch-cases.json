@@ -53,5 +53,17 @@
   {"name": "utm_source claude", "url": "https://versemate.org/?utm_source=claude", "referrer": "", "expect": {"channel": "ai", "ai_source": "claude"}},
   {"name": "utm_source gemini", "url": "https://versemate.org/?utm_source=gemini", "referrer": "", "expect": {"channel": "ai", "ai_source": "gemini"}},
   {"name": "utm_source copilot", "url": "https://versemate.org/?utm_source=copilot", "referrer": "", "expect": {"channel": "ai", "ai_source": "copilot"}},
-  {"name": "utm_source mixed-case domain", "url": "https://versemate.org/?utm_source=ChatGPT.com", "referrer": "", "expect": {"channel": "ai", "ai_source": "chatgpt"}}
+  {"name": "utm_source mixed-case domain", "url": "https://versemate.org/?utm_source=ChatGPT.com", "referrer": "", "expect": {"channel": "ai", "ai_source": "chatgpt"}},
+  {"name": "Double-encoded email in a campaign value", "url": "https://versemate.org/?utm_content=jane%2540example.com", "referrer": "", "expect": {"channel": "campaign", "utm_content": "[redacted]"}},
+  {"name": "Email under four layers of encoding", "url": "https://versemate.org/?utm_term=jane%2525252540example.com", "referrer": "", "expect": {"channel": "campaign", "utm_term": "[redacted]"}},
+  {"name": "Campaign value still encoded after five decodes", "url": "https://versemate.org/?utm_campaign=spring%25252525252541", "referrer": "", "expect": {"channel": "campaign", "utm_campaign": "[redacted]"}},
+  {"name": "Encoded text that is not an email stays as received", "url": "https://versemate.org/?utm_campaign=spring%2520sale", "referrer": "", "expect": {"channel": "campaign", "utm_campaign": "spring%20sale"}},
+  {"name": "Percent sign that encodes nothing stays", "url": "https://versemate.org/?utm_campaign=50%25off", "referrer": "", "expect": {"channel": "campaign", "utm_campaign": "50%off"}},
+  {"name": "Email with an encoded space before the dot", "url": "https://versemate.org/?utm_content=john%40example%2520.com", "referrer": "", "expect": {"channel": "campaign", "utm_content": "[redacted]"}},
+  {"name": "Email with an encoded tab", "url": "https://versemate.org/?utm_content=john%40gmail%2509.com", "referrer": "", "expect": {"channel": "campaign", "utm_content": "[redacted]"}},
+  {"name": "Email with an HTML-entity at sign", "url": "https://versemate.org/?utm_content=john%26%2364%3Bexample.com", "referrer": "", "expect": {"channel": "campaign", "utm_content": "[redacted]"}},
+  {"name": "Email with a fullwidth at sign", "url": "https://versemate.org/?utm_content=john%EF%BC%A0example.com", "referrer": "", "expect": {"channel": "campaign", "utm_content": "[redacted]"}},
+  {"name": "Email with no dot in the domain", "url": "https://versemate.org/?utm_content=john%40localhost", "referrer": "", "expect": {"channel": "campaign", "utm_content": "[redacted]"}},
+  {"name": "Handle that starts with an at sign stays", "url": "https://versemate.org/?utm_source=%40versemate", "referrer": "", "expect": {"channel": "campaign", "utm_source": "@versemate"}},
+  {"name": "Non-email value needing exactly five decodes stays", "url": "https://versemate.org/?utm_campaign=spring%252525252520sale", "referrer": "", "expect": {"channel": "campaign", "utm_campaign": "spring%2525252520sale"}}
 ]

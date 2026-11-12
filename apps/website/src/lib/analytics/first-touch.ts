@@ -71,10 +71,35 @@ const SOCIAL_DOMAINS = [
 ];
 
 const MAX_CAMPAIGN_LENGTH = 100;
-const EMAIL = /[^\s@]+@[^\s@]+\.[^\s@]+/;
+const MAX_DECODE_PASSES = 5;
+const PERCENT_ESCAPE = /%([0-9a-f]{2})/gi;
+const AT_SIGN_FORMS = /&#0*64;|&#x0*40;|&commat;|\\u0040|%u0040/gi;
+const EMAIL_LIKE = /[^\s@]@[^\s@]/;
+
+function decodeEscape(_: string, hex: string): string {
+  return String.fromCharCode(Number.parseInt(hex, 16));
+}
+
+function percentLayers(value: string): string[] | undefined {
+  const layers = [value];
+  for (let pass = 0; pass <= MAX_DECODE_PASSES; pass++) {
+    const last = layers[layers.length - 1];
+    const next = last.replace(PERCENT_ESCAPE, decodeEscape);
+    if (next === last) return layers;
+    layers.push(next);
+  }
+  return undefined;
+}
+
+function looksLikeEmail(layer: string): boolean {
+  return EMAIL_LIKE.test(layer.normalize("NFKC").replace(AT_SIGN_FORMS, "@"));
+}
 
 export function boundCampaignValue(value: string): string {
-  return EMAIL.test(value) ? "[redacted]" : value.slice(0, MAX_CAMPAIGN_LENGTH);
+  const layers = percentLayers(value);
+  return layers === undefined || layers.some(looksLikeEmail)
+    ? "[redacted]"
+    : value.slice(0, MAX_CAMPAIGN_LENGTH);
 }
 
 function matches(host: string, domain: string): boolean {
@@ -162,11 +187,18 @@ function isStoredFirstTouch(value: unknown): value is StoredFirstTouch {
   return touch.ai_source === undefined || AI_SOURCES.has(touch.ai_source as string);
 }
 
-export function readFirstTouch(storage: StorageLike): StoredFirstTouch | undefined {
+function parseFirstTouch(raw: string | null): StoredFirstTouch | undefined {
   try {
-    const raw = storage.getItem(FIRST_TOUCH_KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : undefined;
     return isStoredFirstTouch(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function readFirstTouch(storage: StorageLike): StoredFirstTouch | undefined {
+  try {
+    return parseFirstTouch(storage.getItem(FIRST_TOUCH_KEY));
   } catch {
     return undefined;
   }
@@ -188,9 +220,90 @@ export function registerFirstTouch(posthog: PosthogLike, touch: StoredFirstTouch
   });
 }
 
+export const FIRST_TOUCH_SENT_KEY = "vm_first_touch_sent";
+const SENT_HOLD_MS = 500;
+
+type LocksLike = {
+  request: (name: string, callback: () => Promise<void>) => Promise<unknown>;
+};
+
+function attempt(step: () => unknown): void {
+  try {
+    step();
+  } catch {
+    return;
+  }
+}
+
+function notify(touch: StoredFirstTouch) {
+  for (const listener of listeners) attempt(() => listener(touch));
+}
+
+function cleanTouch(touch: StoredFirstTouch): StoredFirstTouch {
+  return {
+    channel: touch.channel,
+    ...(touch.ai_source ? { ai_source: touch.ai_source } : {}),
+    at: typeof touch.at === "string" ? touch.at : new Date().toISOString(),
+  };
+}
+
+function sendOnce({
+  storage,
+  locks,
+  posthog,
+  touch,
+  send,
+}: {
+  storage: StorageLike;
+  locks: LocksLike | undefined;
+  posthog: PosthogLike;
+  touch: StoredFirstTouch;
+  send: () => void;
+}): Promise<void> {
+  let lockGranted = false;
+  const sendNow = () => attempt(send);
+  if (!locks) {
+    sendNow();
+    return Promise.resolve();
+  }
+  const underLock = async () => {
+    lockGranted = true;
+    let earlier: StoredFirstTouch | undefined;
+    attempt(() => {
+      earlier = parseFirstTouch(storage.getItem(FIRST_TOUCH_SENT_KEY));
+    });
+    if (earlier) {
+      const adopted = cleanTouch(earlier);
+      attempt(() => storage.setItem(FIRST_TOUCH_KEY, JSON.stringify(adopted)));
+      attempt(() => registerFirstTouch(posthog, adopted));
+      notify(adopted);
+      return;
+    }
+    attempt(() => {
+      const record = JSON.stringify(touch);
+      storage.setItem(FIRST_TOUCH_SENT_KEY, record);
+      storage.setItem(FIRST_TOUCH_KEY, record);
+    });
+    sendNow();
+    await new Promise((resolve) => setTimeout(resolve, SENT_HOLD_MS));
+  };
+  try {
+    return locks.request(FIRST_TOUCH_SENT_KEY, underLock).then(
+      () => undefined,
+      () => {
+        if (!lockGranted) sendNow();
+      },
+    );
+  } catch {
+    sendNow();
+    return Promise.resolve();
+  }
+}
+
 export function recordFirstTouch({
   posthog,
   storage,
+  locks,
   surface,
   url,
   referrer,
@@ -198,30 +311,38 @@ export function recordFirstTouch({
 }: {
   posthog: PosthogLike;
   storage: StorageLike;
+  locks?: LocksLike;
   surface: Surface;
   url: string;
   referrer: string;
   returning: boolean;
-}): StoredFirstTouch | undefined {
-  let stored = readFirstTouch(storage);
-  if (!stored) {
-    const touch = classifyFirstTouch({ url, referrer });
-    const next: StoredFirstTouch = {
-      channel: touch.channel,
-      ...(touch.ai_source ? { ai_source: touch.ai_source } : {}),
-      at: new Date().toISOString(),
-    };
-    try {
-      storage.setItem(FIRST_TOUCH_KEY, JSON.stringify(next));
-    } catch {
-      return undefined;
-    }
-    stored = next;
+}): { touch?: StoredFirstTouch; sent: Promise<void> } {
+  const stored = readFirstTouch(storage);
+  if (stored) {
     registerFirstTouch(posthog, stored);
-    posthog.capture("acquisition_first_touch", { ...touch, surface, returning });
-  } else {
-    registerFirstTouch(posthog, stored);
+    notify(stored);
+    return { touch: stored, sent: Promise.resolve() };
   }
-  for (const listener of listeners) listener(stored);
-  return stored;
+  const touch = classifyFirstTouch({ url, referrer });
+  const next: StoredFirstTouch = {
+    channel: touch.channel,
+    ...(touch.ai_source ? { ai_source: touch.ai_source } : {}),
+    at: new Date().toISOString(),
+  };
+  try {
+    storage.setItem(FIRST_TOUCH_KEY, JSON.stringify(next));
+  } catch {
+    return { sent: Promise.resolve() };
+  }
+  registerFirstTouch(posthog, next);
+  notify(next);
+  const sent = sendOnce({
+    storage,
+    locks,
+    posthog,
+    touch: next,
+    send: () =>
+      posthog.capture("acquisition_first_touch", { ...touch, surface, returning }),
+  });
+  return { touch: next, sent };
 }

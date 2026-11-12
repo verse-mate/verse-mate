@@ -50,6 +50,7 @@ export async function startAnalytics(win: Window, load: Loader = loadPosthog): P
       recordFirstTouch({
         posthog: instance,
         storage: win.localStorage,
+        locks: win.navigator?.locks,
         surface: "website",
         url: landingUrl,
         referrer,
