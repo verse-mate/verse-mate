@@ -1,6 +1,6 @@
 import type { PostHog } from "posthog-js";
 import { readFirstTouch, recordFirstTouch } from "./first-touch";
-import { scrubEvent } from "./privacy";
+import { scrubEvent, scrubStoredInitialInfo } from "./privacy";
 
 const PROBE = "vm_storage_probe";
 
@@ -44,6 +44,7 @@ export async function startAnalytics(win: Window, load: Loader = loadPosthog): P
     capture_exceptions: false,
     persistence: "localStorage+cookie",
     loaded: (instance) => {
+      scrubStoredInitialInfo(instance.persistence, win);
       client = instance;
       clientWindow = win;
       instance.register({ surface: "website", platform: "website" });
