@@ -1,4 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Validator } from "@seriousme/openapi-schema-validator";
 import { OptionalKind, type TSchema } from "@sinclair/typebox";
 
@@ -88,21 +91,24 @@ describe("the published document", () => {
   });
 
   it("is the same document after the routes have served requests", async () => {
-    const served = contractApp().use(openapiDocs());
-    await served.handle(new Request("http://localhost/bible/books"));
-    await served.handle(
-      new Request("http://localhost/auth/login", {
-        method: "POST",
-        body: "{}",
-        headers: { "content-type": "application/json" },
-      }),
+    const output = join(
+      mkdtempSync(join(tmpdir(), "openapi-after-traffic-")),
+      "documents.json",
     );
-    const after: Json = await (
-      await served.handle(new Request(`http://localhost${OPENAPI_SPEC_PATH}`))
-    ).json();
-    expect(after).toEqual(document);
+    const run = Bun.spawnSync(
+      [
+        process.execPath,
+        join(import.meta.dir, "openapi-after-traffic.fixture.ts"),
+        output,
+      ],
+      { cwd: import.meta.dir, stdout: "ignore", stderr: "pipe" },
+    );
+    expect(run.exitCode, run.stderr.toString()).toBe(0);
+    const { before, after } = await Bun.file(output).json();
+    const fresh: Json = JSON.parse(before);
+    expect(JSON.parse(after)).toEqual(fresh);
     const loginErrors =
-      document.paths["/auth/login"].post.responses["422"].content[
+      fresh.paths["/auth/login"].post.responses["422"].content[
         "application/json"
       ].schema;
     expect(loginErrors.additionalProperties).toBe(false);
