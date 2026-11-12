@@ -1,4 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Validator } from "@seriousme/openapi-schema-validator";
 import { OptionalKind, type TSchema } from "@sinclair/typebox";
 
@@ -85,6 +88,29 @@ describe("the published document", () => {
     expect(
       document.paths["/auth/send-email-verification"].post.responses["204"],
     ).not.toHaveProperty("content");
+  });
+
+  it("is the same document after the routes have served requests", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "openapi-after-traffic-"));
+    const output = join(directory, "documents.json");
+    const run = Bun.spawnSync(
+      [
+        process.execPath,
+        join(import.meta.dir, "openapi-after-traffic.fixture.ts"),
+        output,
+      ],
+      { cwd: import.meta.dir, stdout: "ignore", stderr: "pipe" },
+    );
+    expect(run.exitCode, run.stderr.toString()).toBe(0);
+    const { before, after } = await Bun.file(output).json();
+    rmSync(directory, { recursive: true, force: true });
+    const fresh: Json = JSON.parse(before);
+    expect(JSON.parse(after)).toEqual(fresh);
+    const loginErrors =
+      fresh.paths["/auth/login"].post.responses["422"].content[
+        "application/json"
+      ].schema;
+    expect(loginErrors.additionalProperties).toBe(false);
   });
 
   it("declares the query the SSO redirects read", () => {

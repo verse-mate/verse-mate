@@ -20,7 +20,8 @@ import userPlugin from "../user/user.plugin";
 import versionPolicyPlugin from "../versionPolicy.plugin";
 
 export function contractApp() {
-  return new Elysia()
+  return new Elysia({ precompile: true })
+    .use(corsPlugin)
     .use(crawlersPlugin)
     .get("/favicon.ico", () => new Response(null, { status: 204 }))
     .use(authPlugin)
@@ -38,6 +39,5 @@ export function contractApp() {
     .use(adminPlugin)
     .use(offlinePlugin)
     .use(healthCheckPlugin)
-    .use(versionPolicyPlugin)
-    .use(corsPlugin);
+    .use(versionPolicyPlugin);
 }
