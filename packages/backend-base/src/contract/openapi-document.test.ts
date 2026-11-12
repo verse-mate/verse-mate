@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Validator } from "@seriousme/openapi-schema-validator";
@@ -91,10 +91,8 @@ describe("the published document", () => {
   });
 
   it("is the same document after the routes have served requests", async () => {
-    const output = join(
-      mkdtempSync(join(tmpdir(), "openapi-after-traffic-")),
-      "documents.json",
-    );
+    const directory = mkdtempSync(join(tmpdir(), "openapi-after-traffic-"));
+    const output = join(directory, "documents.json");
     const run = Bun.spawnSync(
       [
         process.execPath,
@@ -105,6 +103,7 @@ describe("the published document", () => {
     );
     expect(run.exitCode, run.stderr.toString()).toBe(0);
     const { before, after } = await Bun.file(output).json();
+    rmSync(directory, { recursive: true, force: true });
     const fresh: Json = JSON.parse(before);
     expect(JSON.parse(after)).toEqual(fresh);
     const loginErrors =
