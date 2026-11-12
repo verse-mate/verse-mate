@@ -89,6 +89,7 @@ const LANDING_CAMPAIGN_PARAMS = [
   "gad_source",
 ];
 const DIRECT = "$direct";
+const STORED_LIMIT = 1000;
 
 type StoredPersonInfo = { r?: string; u?: string };
 
@@ -97,25 +98,40 @@ export type InitialInfoStore = {
   register(props: Record<string, unknown>): boolean;
 };
 
-export function scrubLandingUrl(url: string): string {
+function parseUrl(url: string): URL | undefined {
   try {
-    const parsed = new URL(url);
-    const kept = new URLSearchParams();
-    for (const key of LANDING_CAMPAIGN_PARAMS) {
-      const value = parsed.searchParams.get(key);
-      if (value) kept.set(key, boundCampaignValue(value));
-    }
-    const query = kept.toString();
-    return `${parsed.origin}${parsed.pathname}${query ? `?${query}` : ""}`;
+    return new URL(url);
   } catch {
-    return stripQuery(url);
+    return undefined;
   }
 }
 
-function scrubPersonInfo(info: StoredPersonInfo): StoredPersonInfo {
+export function scrubLandingUrl(url: string, ownHost?: string): string | undefined {
+  const parsed = parseUrl(url);
+  if (!parsed) return undefined;
+  const kept = new URLSearchParams();
+  for (const key of LANDING_CAMPAIGN_PARAMS) {
+    const value = parsed.searchParams.get(key);
+    if (value) kept.set(key, boundCampaignValue(value));
+  }
+  const query = kept.toString();
+  const path = ownHost === undefined || parsed.host === ownHost ? parsed.pathname : "";
+  return `${parsed.origin}${path}${query ? `?${query}` : ""}`.slice(0, STORED_LIMIT);
+}
+
+function scrubReferrer(referrer: string, keepPath: boolean): string | undefined {
+  if (referrer === DIRECT) return referrer;
+  const parsed = parseUrl(referrer);
+  if (!parsed) return undefined;
+  return (keepPath ? `${parsed.origin}${parsed.pathname}` : parsed.origin).slice(0, STORED_LIMIT);
+}
+
+function scrubPersonInfo(info: Record<string, unknown>, ownHost: string): StoredPersonInfo {
+  const landing = typeof info.u === "string" ? parseUrl(info.u) : undefined;
+  const ownLanding = landing === undefined || landing.host === ownHost;
   return {
-    r: info.r === undefined || info.r === DIRECT ? info.r : stripQuery(info.r),
-    u: info.u === undefined ? info.u : scrubLandingUrl(info.u),
+    r: typeof info.r === "string" ? scrubReferrer(info.r, ownLanding) : undefined,
+    u: typeof info.u === "string" ? scrubLandingUrl(info.u, ownHost) : undefined,
   };
 }
 
@@ -125,19 +141,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function scrubStoredInitialInfo(store: InitialInfoStore | undefined, win: Window): void {
   if (!store) return;
-  const updates: Record<string, unknown> = {};
+  const ownHost = new URL(win.location.href).host;
+  const scrubbed: Record<string, unknown> = {};
   for (const key of LEGACY_INITIAL_INFO) {
     const value = store.props[key];
-    if (isRecord(value)) updates[key] = scrubProperties(value);
+    if (isRecord(value)) scrubbed[key] = scrubProperties(value);
   }
+  const hasLegacyRecord = Object.keys(scrubbed).length > 0;
   const stored = store.props[INITIAL_PERSON_INFO];
-  if (isRecord(stored)) {
-    updates[INITIAL_PERSON_INFO] = scrubPersonInfo(stored as StoredPersonInfo);
-  } else if (Object.keys(updates).length === 0) {
-    updates[INITIAL_PERSON_INFO] = scrubPersonInfo({
-      r: win.document.referrer || DIRECT,
-      u: win.location.href,
-    });
+  if (stored !== undefined || !hasLegacyRecord) {
+    const info = isRecord(stored)
+      ? stored
+      : { r: win.document.referrer || DIRECT, u: win.location.href };
+    scrubbed[INITIAL_PERSON_INFO] = scrubPersonInfo(info, ownHost);
   }
-  store.register(updates);
+  const changed = Object.entries(scrubbed).filter(
+    ([key, value]) => JSON.stringify(store.props[key]) !== JSON.stringify(value),
+  );
+  if (changed.length > 0) store.register(Object.fromEntries(changed));
 }
