@@ -77,3 +77,67 @@ export function scrubEvent(event: CaptureResult | null): CaptureResult | null {
     return null;
   }
 }
+
+const INITIAL_PERSON_INFO = "$initial_person_info";
+const LEGACY_INITIAL_INFO = ["$initial_campaign_params", "$initial_referrer_info"];
+const LANDING_CAMPAIGN_PARAMS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "gad_source",
+];
+const DIRECT = "$direct";
+
+type StoredPersonInfo = { r?: string; u?: string };
+
+export type InitialInfoStore = {
+  props: Record<string, unknown>;
+  register(props: Record<string, unknown>): boolean;
+};
+
+export function scrubLandingUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const kept = new URLSearchParams();
+    for (const key of LANDING_CAMPAIGN_PARAMS) {
+      const value = parsed.searchParams.get(key);
+      if (value) kept.set(key, boundCampaignValue(value));
+    }
+    const query = kept.toString();
+    return `${parsed.origin}${parsed.pathname}${query ? `?${query}` : ""}`;
+  } catch {
+    return stripQuery(url);
+  }
+}
+
+function scrubPersonInfo(info: StoredPersonInfo): StoredPersonInfo {
+  return {
+    r: info.r === undefined || info.r === DIRECT ? info.r : stripQuery(info.r),
+    u: info.u === undefined ? info.u : scrubLandingUrl(info.u),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function scrubStoredInitialInfo(store: InitialInfoStore | undefined, win: Window): void {
+  if (!store) return;
+  const updates: Record<string, unknown> = {};
+  for (const key of LEGACY_INITIAL_INFO) {
+    const value = store.props[key];
+    if (isRecord(value)) updates[key] = scrubProperties(value);
+  }
+  const stored = store.props[INITIAL_PERSON_INFO];
+  if (isRecord(stored)) {
+    updates[INITIAL_PERSON_INFO] = scrubPersonInfo(stored as StoredPersonInfo);
+  } else if (Object.keys(updates).length === 0) {
+    updates[INITIAL_PERSON_INFO] = scrubPersonInfo({
+      r: win.document.referrer || DIRECT,
+      u: win.location.href,
+    });
+  }
+  store.register(updates);
+}
