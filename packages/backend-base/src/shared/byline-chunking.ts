@@ -185,8 +185,17 @@ export function findVersesMissingSummary(
  * Consumed only by the widget path (`resolveVerseSummary` → the `explanation`
  * field on /bible/verse-of-the-day). The reader does not use it, and the daily
  * push builds its body from verse text.
+ *
+ * Raised again 800 → 2000. 800 was set against a sample of 336 *single verses*,
+ * whose longest summary was 606 — but the endpoint serves the curated
+ * `daily_verses` pool, and 23 of its 93 entries are multi-verse **ranges**,
+ * whose summaries concatenate. Measured across that pool in every language, 73
+ * of 561 verse×language combinations (13%) still exceeded 800, up to 1843:
+ * Psalm 23, Psalm 121 and 1 Corinthians 13 among them — the best-known verses,
+ * because the popular ones carry the richest bylines. 2000 clears the measured
+ * maximum with room, and the client decides what fits from its own height.
  */
-export const VERSE_SUMMARY_MAX_CHARS = 800;
+export const VERSE_SUMMARY_MAX_CHARS = 2000;
 
 /**
  * Pull the short, prose-only summary for [startVerse, endVerse] out of a byline

@@ -2762,7 +2762,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Sabbath healing controversy",
     summary:
       "They watch to accuse Him. He asks whether it is lawful to do good on the Sabbath, and heals in front of them.",
-    refs: ["Mark 3:1-6", "Luke 13:10-17", "Luke 14:1-6"],
+    refs: ["Mark 3:1-6"],
     themes: ["warnings", "love"],
     harmony: "withered-hand",
   },
