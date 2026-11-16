@@ -565,6 +565,7 @@ describe("a session's date is the America/Chicago calendar date of its start", (
   }
 
   it("a Thursday 6:30pm class after daylight saving ends is stored as Thursday, with its start", async () => {
+    await pipelineFirstPolled("2026-01-01");
     const client = new FakeFireflies([
       [transcript("ff-cst", { dateString: "2026-11-06T00:30:00.000Z" })],
     ]);
