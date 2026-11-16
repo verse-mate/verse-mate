@@ -18,6 +18,7 @@ import {
 } from "../common/response-schemas";
 import { DailyVerseService } from "../daily-verse/services/daily-verse.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
+import { replaceRetiredModel } from "../shared/ai/model-ids";
 import { assertLanguageCode } from "../shared/i18n/language-code";
 import shared from "../shared/shared.plugin";
 import { TopicService } from "../topics/services/topic.service";
@@ -66,6 +67,7 @@ import adminTopicPlugin from "./topics.plugin";
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("admin plugin"))
+  .onTransform(replaceRetiredModel)
   .state("batchProcessingQueue", batchProcessingQueue)
   .state((state) => {
     const bibleRepository = new BibleRepository(state.db);

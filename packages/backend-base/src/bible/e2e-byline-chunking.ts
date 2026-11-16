@@ -32,7 +32,7 @@ const openai = new OpenAI({ apiKey: process.env.OPEN_AI_KEY });
 // Psalms 119 is under chapter_id=1060 in the local DB (mapped to book 55 / 2 Timothy due to seed bug)
 const PSALMS_119_CHAPTER_ID = 1060;
 const EXPECTED_VERSES = 176;
-const MODEL = "gpt-5-mini";
+const MODEL = "gpt-6.1-terra";
 const LANGUAGE_CODE = "en";
 
 async function main() {

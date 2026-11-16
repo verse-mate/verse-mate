@@ -51,22 +51,22 @@ interface ModelOption {
 
 const modelOptions: ModelOption[] = [
   {
-    value: "gpt-5",
-    label: "GPT-5 ($1.25/$10.00 per 1M tokens)",
-    inputCost: 1.25,
+    value: "gpt-6.1-sol",
+    label: "GPT-6.1 Sol ($2.00/$10.00 per 1M tokens)",
+    inputCost: 2,
     outputCost: 10,
   },
   {
-    value: "gpt-5-mini",
-    label: "GPT-5 Mini ($0.25/$2.00 per 1M tokens)",
-    inputCost: 0.25,
-    outputCost: 2,
+    value: "gpt-6.1-terra",
+    label: "GPT-6.1 Terra ($1.00/$5.00 per 1M tokens)",
+    inputCost: 1,
+    outputCost: 5,
   },
   {
-    value: "gpt-5-nano",
-    label: "GPT-5 Nano ($0.05/$0.40 per 1M tokens)",
-    inputCost: 0.05,
-    outputCost: 0.4,
+    value: "gpt-6-luna",
+    label: "GPT-6 Luna ($0.10/$0.50 per 1M tokens)",
+    inputCost: 0.1,
+    outputCost: 0.5,
   },
 ];
 
@@ -378,7 +378,7 @@ export const BatchOperations = () => {
   const [monitoringId, setMonitoringId] = useState<string | null>(null);
 
   // Form state
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-5");
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-6.1-sol");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedBibleVersion, setSelectedBibleVersion] =
     useState<string>("NASB1995");

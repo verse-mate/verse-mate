@@ -45,7 +45,7 @@
 ## AI Integration
 
 ### AI Services
-- **OpenAI GPT-5 Nano**: AI model for Bible explanations and interactive Q&A
+- **OpenAI GPT-6 Luna**: AI model for Bible explanations and interactive Q&A
 - **Multi-Format Generation**: Summary, detailed, and verse-by-verse explanation formats
 
 ### Processing

@@ -51,7 +51,7 @@ export const Playground = () => {
   const [bookName, setBookName] = useState("Hebrews");
   const [chapterNumber, setChapterNumber] = useState(1);
   const [bibleVersion, setBibleVersion] = useState("NASB1995");
-  const [model, setModel] = useState("gpt-5");
+  const [model, setModel] = useState("gpt-6.1-sol");
   const [effort, setEffort] = useState<"low" | "medium" | "high">("medium");
   const [sendChapterContext, setSendChapterContext] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -596,9 +596,9 @@ export const Playground = () => {
             onChange={(e) => setModel(e.target.value)}
             className={styles.select}
           >
-            <option value="gpt-5">GPT-5</option>
-            <option value="gpt-5-mini">GPT-5 Mini</option>
-            <option value="gpt-5-nano">GPT-5 Nano</option>
+            <option value="gpt-6.1-sol">GPT-6.1 Sol</option>
+            <option value="gpt-6.1-terra">GPT-6.1 Terra</option>
+            <option value="gpt-6-luna">GPT-6 Luna</option>
           </select>
         </div>
         <div className={`${styles.formGroup} ${styles.maxTokens}`}>

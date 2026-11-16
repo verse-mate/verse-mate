@@ -180,7 +180,7 @@ async function submit(argv: string[]) {
         method: "POST",
         url: "/v1/responses",
         body: {
-          model: opts.model ?? "gpt-5",
+          model: opts.model ?? "gpt-6.1-sol",
           reasoning: { effort: GENERATION_REASONING_EFFORT },
           instructions: ENRICH_INSTRUCTIONS,
           input: `Event: ${full.title}\nSummary: ${full.summary ?? ""}\nGospel accounts: ${(full.passages ?? []).map((x) => x.display).join(" · ")}\n\nPassages:\n${passageBlock}`,
@@ -601,7 +601,7 @@ async function collect(batchId: string, argv: string[]) {
       slug,
       type,
       outputText,
-      line.response?.body?.model ?? "gpt-5",
+      line.response?.body?.model ?? "gpt-6.1-sol",
       { languageCode: opts.languageCode, bibleVersion: opts.bibleVersion },
     );
     tally[result.status]++;

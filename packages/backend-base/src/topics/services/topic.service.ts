@@ -381,9 +381,8 @@ export class TopicService {
         )
         .join("\n");
 
-      // Call GPT-5 via the AiProvider abstraction (D-001)
       const response = await this.ai.responsesCreate({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         reasoningEffort: "medium",
         instructions: "", // We leave instructions empty as requested
         input: prompt.prompt

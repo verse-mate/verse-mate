@@ -20,7 +20,7 @@ import { batchProcessingQueue } from "../queue/batch-processing.queue";
 const BOOK_NAME = "Psalms";
 const CHAPTER_NUMBER = 119;
 const EXPLANATION_TYPE = "byline";
-const MODEL = "gpt-5-mini";
+const MODEL = "gpt-6.1-terra";
 const BIBLE_VERSION = "NASB1995";
 const ADMIN_USER_ID = "fa248264-3aee-4c87-b0b5-a3508b1fd9b6";
 

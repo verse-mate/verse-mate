@@ -5,6 +5,7 @@ import { db } from "database";
 import { BatchOperationService } from "../../admin/services/batch-operations.service";
 import { replaceExplanationWithAudioHook } from "../../bible/audio/audio-regen-hook";
 import { type AiProvider, getAiProvider } from "../../shared/ai";
+import { batchCostUsd } from "../../shared/ai/model-pricing";
 import { stitchBylineChunks } from "../../shared/byline-chunking";
 import {
   BATCH_MONITORING_QUEUE,
@@ -18,39 +19,6 @@ let _ai: AiProvider | null = null;
 function ai(): AiProvider {
   if (!_ai) _ai = getAiProvider();
   return _ai;
-}
-
-async function calculateActualCost(
-  promptTokens: number,
-  completionTokens: number,
-  model: string,
-): Promise<number> {
-  let inputCostPerMillion = 0;
-  let outputCostPerMillion = 0;
-
-  // Match tolerant of date suffixes ("gpt-5.4-nano-2026-03-17") and version
-  // variants — an exact switch silently fell through to the flagship gpt-5
-  // default and over-billed nano ~20x. Check nano/mini before "gpt-5".
-  const m = model.toLowerCase();
-  if (m.includes("nano")) {
-    inputCostPerMillion = m.includes("5.4") ? 0.2 : 0.05;
-    outputCostPerMillion = m.includes("5.4") ? 1.25 : 0.4;
-  } else if (m.includes("mini")) {
-    inputCostPerMillion = 0.25;
-    outputCostPerMillion = 2;
-  } else {
-    // gpt-5 / gpt-5-chat-latest / unknown → flagship rate
-    inputCostPerMillion = 1.25;
-    outputCostPerMillion = 10;
-  }
-
-  const inputCost = (promptTokens / 1_000_000) * inputCostPerMillion;
-  const outputCost = (completionTokens / 1_000_000) * outputCostPerMillion;
-
-  const totalCost = inputCost + outputCost;
-  const batchDiscount = 0.5;
-
-  return totalCost * batchDiscount;
 }
 
 async function cleanupBatchFiles(batchId: string): Promise<void> {
@@ -660,7 +628,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
           }
         }
 
-        const actualCost = await calculateActualCost(
+        const actualCost = batchCostUsd(
           totalPromptTokens,
           totalCompletionTokens,
           model,

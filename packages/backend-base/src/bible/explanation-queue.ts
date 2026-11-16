@@ -91,7 +91,7 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
-async function gpt5Text({
+async function generateText({
   system,
   user,
   maxTokens = 16000,
@@ -107,7 +107,7 @@ async function gpt5Text({
   messages.push({ role: "user", content: user });
 
   const response = await ai.chatComplete({
-    model: "gpt-5",
+    model: "gpt-6.1-sol",
     messages,
     maxTokens,
   });
@@ -185,7 +185,7 @@ explanationQueue.process("generate-explanation", 1, async (job: any) => {
         bylineTemplate: explanationConfig.prompt,
         logPrefix: "[QUEUE_BYLINE]",
         generateChunk: async ({ prompt }) =>
-          gpt5Text({
+          generateText({
             system: systemPrompt,
             user: prompt,
             maxTokens: 16000,
@@ -208,7 +208,7 @@ CRITICAL: Your response will be evaluated on:
 
 The response should be in Markdown format only.`;
 
-      text = await gpt5Text({
+      text = await generateText({
         system: systemPrompt,
         user: userPrompt,
       });

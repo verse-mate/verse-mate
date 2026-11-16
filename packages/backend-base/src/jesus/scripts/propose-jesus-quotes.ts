@@ -44,7 +44,7 @@ const ACTION_KINDS = new Set([
   "CONFRONTATION",
 ]);
 
-const DEFAULT_MODEL = "gpt-5";
+const DEFAULT_MODEL = "gpt-6.1-sol";
 const BIBLE_VERSION = "NASB1995";
 
 interface Proposal {

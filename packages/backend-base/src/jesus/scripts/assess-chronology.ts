@@ -50,7 +50,7 @@ async function main() {
   const apply = has("apply");
   const limit =
     Number.parseInt(get("limit") ?? "0", 10) || Number.POSITIVE_INFINITY;
-  const model = get("model") ?? "gpt-5";
+  const model = get("model") ?? "gpt-6.1-sol";
   const slugs = get("slugs")
     ?.split(",")
     .map((s) => s.trim());

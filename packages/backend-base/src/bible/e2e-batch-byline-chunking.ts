@@ -19,7 +19,7 @@ import {
 const openai = new OpenAI({ apiKey: process.env.OPEN_AI_KEY });
 
 const PSALMS_119_CHAPTER_ID = 1060;
-const MODEL = "gpt-5-mini";
+const MODEL = "gpt-6.1-terra";
 const LANGUAGE_CODE = "en";
 const MAX_OUTPUT_TOKENS = 16000;
 const EFFORT = "medium";
