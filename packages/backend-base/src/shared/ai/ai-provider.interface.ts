@@ -29,7 +29,6 @@ export interface AiChatMessage {
 }
 
 export interface AiChatOptions {
-  /** Model identifier, provider-specific. e.g. "gpt-5", "gpt-5-nano", "stub". */
   model: string;
   /** Conversation messages in order. */
   messages: AiChatMessage[];
@@ -65,7 +64,6 @@ export interface AiChatResponse {
  * translation where instruction-style input is preferred over messages.
  */
 export interface AiResponseOptions {
-  /** Model identifier (e.g. "gpt-5", "gpt-5-nano"). */
   model: string;
   /** Free-form instruction string (system role equivalent). */
   instructions?: string;

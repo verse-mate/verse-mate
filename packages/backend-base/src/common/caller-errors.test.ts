@@ -131,7 +131,7 @@ describe("errors about the caller's request keep their message and a 4xx status"
       "/admin/batch-topic-explanations",
       admin.accessToken,
       {
-        model: "gpt-5-nano",
+        model: "gpt-6-luna",
         languageCode: "en",
         explanationTypes: ["summary"],
         topicId: randomUUID(),
@@ -157,7 +157,7 @@ describe("errors about the caller's request keep their message and a 4xx status"
       .values({
         batch_type: "book",
         status: "pending",
-        model: "gpt-5-nano",
+        model: "gpt-6-luna",
         bible_version: "NASB1995",
         explanation_types: ["summary"],
         created_by: admin.userId,

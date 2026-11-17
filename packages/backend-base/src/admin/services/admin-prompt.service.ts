@@ -295,7 +295,7 @@ export class AdminPromptService {
                 .replaceAll("{chapterNumber}", chapter_number.toString()),
               logPrefix: "[PLAYGROUND_BYLINE]",
               generateChunk: async ({ prompt }) =>
-                this.gpt5Text({
+                this.generateText({
                   instructions: system_prompt,
                   input: prompt,
                   model,
@@ -312,7 +312,7 @@ export class AdminPromptService {
 
     const fullPrompt = `${finalUserPrompt}${contextText}`;
 
-    const aiResponse = await this.gpt5Text({
+    const aiResponse = await this.generateText({
       instructions: system_prompt,
       input: fullPrompt,
       model,
@@ -325,7 +325,7 @@ export class AdminPromptService {
 
   // --- Private Helpers ---
 
-  private async gpt5Text({
+  private async generateText({
     instructions,
     input,
     model,

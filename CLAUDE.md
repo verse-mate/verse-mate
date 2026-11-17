@@ -90,7 +90,7 @@ If you're unsure, the rule is: "Would this URL make sense on versemate.org?" If 
 - **Queue**: BullMQ with Valkey for background job processing
 - **Auth**: Custom implementation with bearer token sessions
 - **API Client**: Eden Treaty for type-safe client-server communication
-- **AI**: OpenAI GPT-5 Nano for Bible explanations and chat
+- **AI**: OpenAI GPT-6 Luna for Bible explanations and chat
 - **CI/CD**: Drone CI for automated testing and deployment
 
 ### API Communication

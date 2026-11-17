@@ -56,21 +56,21 @@ describe("StubAiProvider", () => {
 
   it("returns deterministic response keyed on user message", async () => {
     const response = await provider.chatComplete({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [
         { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: "What is the meaning of life?" },
       ],
     });
 
-    expect(response.content).toContain("[stub:gpt-5]");
+    expect(response.content).toContain("[stub:gpt-6.1-sol]");
     expect(response.content).toContain("What is the meaning of life?");
-    expect(response.model).toBe("stub-gpt-5");
+    expect(response.model).toBe("stub-gpt-6.1-sol");
   });
 
   it("reports token usage estimate", async () => {
     const response = await provider.chatComplete({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [{ role: "user", content: "hello world" }],
     });
 
@@ -81,17 +81,17 @@ describe("StubAiProvider", () => {
 
   it("handles empty messages array", async () => {
     const response = await provider.chatComplete({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [],
     });
 
-    expect(response.content).toContain("[stub:gpt-5]");
+    expect(response.content).toContain("[stub:gpt-6.1-sol]");
     expect(response.usage?.promptTokens).toBe(0);
   });
 
   it("identical input produces identical output (deterministic)", async () => {
     const opts = {
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [{ role: "user" as const, content: "test prompt" }],
     };
     const a = await provider.chatComplete(opts);
@@ -106,18 +106,18 @@ describe("StubAiProvider responsesCreate", () => {
 
   it("returns deterministic output for given input", async () => {
     const response = await provider.responsesCreate({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       input: "Tell me about Genesis 1.",
     });
 
-    expect(response.outputText).toContain("[stub-responses:gpt-5]");
+    expect(response.outputText).toContain("[stub-responses:gpt-6.1-sol]");
     expect(response.outputText).toContain("Tell me about Genesis 1.");
-    expect(response.model).toBe("stub-gpt-5");
+    expect(response.model).toBe("stub-gpt-6.1-sol");
   });
 
   it("identical input produces identical output", async () => {
     const opts = {
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       input: "test input",
       instructions: "follow these instructions",
       reasoningEffort: "medium" as const,
@@ -131,11 +131,11 @@ describe("StubAiProvider responsesCreate", () => {
 
   it("ignores instructions/reasoningEffort/maxOutputTokens for output (deterministic)", async () => {
     const a = await provider.responsesCreate({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       input: "same input",
     });
     const b = await provider.responsesCreate({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       input: "same input",
       instructions: "different",
       reasoningEffort: "high",
@@ -151,13 +151,13 @@ function* eventsOf(
   parts: string[],
   usage = { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
 ): Generator<StreamEvent> {
-  yield { type: "response.created", response: { model: "gpt-5-served" } };
+  yield { type: "response.created", response: { model: "gpt-6.1-sol-served" } };
   yield { type: "response.reasoning_summary_text.delta", delta: "thinking" };
   for (const part of parts)
     yield { type: "response.output_text.delta", delta: part };
   yield {
     type: "response.completed",
-    response: { model: "gpt-5-served", usage },
+    response: { model: "gpt-6.1-sol-served", usage },
   };
 }
 
@@ -186,7 +186,7 @@ describe("OpenAiProvider chatComplete", () => {
   async function sentFor(opts: Partial<AiChatOptions>) {
     const sent: Record<string, unknown>[] = [];
     await providerSending(sent).chatComplete({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [{ role: "user", content: "hi" }],
       ...opts,
     });
@@ -195,7 +195,7 @@ describe("OpenAiProvider chatComplete", () => {
 
   it("streams through the Responses API with reasoning summaries, so a long reasoning phase keeps sending data, and stores nothing", async () => {
     expect(await sentFor({})).toMatchObject({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       stream: true,
       store: false,
       reasoning: { summary: "auto" },
@@ -216,12 +216,12 @@ describe("OpenAiProvider chatComplete", () => {
         total_tokens: 14,
       }),
     ).chatComplete({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(response).toEqual({
       content: '{"a":1}',
-      model: "gpt-5-served",
+      model: "gpt-6.1-sol-served",
       usage: { promptTokens: 10, completionTokens: 4, totalTokens: 14 },
     });
   });
@@ -293,10 +293,10 @@ describe("OpenAiProvider chatComplete", () => {
     const sent: Record<string, unknown>[] = [];
     await expect(
       providerSending(sent, () => eventsOf([])).chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [{ role: "user", content: "hi" }],
       }),
-    ).rejects.toThrow("OpenAI returned no content for model=gpt-5");
+    ).rejects.toThrow("OpenAI returned no content for model=gpt-6.1-sol");
   });
 
   it("a failed or incomplete response is an error, not a partial answer", async () => {
@@ -309,7 +309,7 @@ describe("OpenAiProvider chatComplete", () => {
           response: { incomplete_details: { reason: "max_output_tokens" } },
         };
       }).chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("max_output_tokens");
@@ -321,7 +321,7 @@ describe("OpenAiProvider chatComplete", () => {
       providerSending(sent, function* () {
         yield { type: "response.output_text.delta", delta: '{"strengths":[' };
       }).chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("ended before completing");
@@ -340,7 +340,7 @@ describe("OpenAiProvider chatComplete", () => {
         providerSending(sent, function* () {
           yield event;
         }).chatComplete({
-          model: "gpt-5",
+          model: "gpt-6.1-sol",
           messages: [{ role: "user", content: "hi" }],
         }),
       ).rejects.toThrow("did not complete");
@@ -362,10 +362,15 @@ describe("OpenAiProvider chatComplete", () => {
     };
     await expect(
       provider.chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("no data for 50 ms");
+  });
+
+  it("a retired model id, from a server setting or an older batch, is sent as its replacement", async () => {
+    expect((await sentFor({ model: "gpt-5-nano" })).model).toBe("gpt-6-luna");
+    expect((await sentFor({ model: "gpt-5" })).model).toBe("gpt-6.1-sol");
   });
 
   it("gpt-5-chat models get no reasoning request, since they do not reason", async () => {
@@ -393,7 +398,7 @@ describe("OpenAiProvider chatComplete", () => {
       },
     };
     const response = await provider.chatComplete({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(response.content).toBe('{"ok":true}');
@@ -417,7 +422,7 @@ describe("OpenAiProvider chatComplete", () => {
     };
     await expect(
       provider.chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("ran past the 60 ms limit");
@@ -437,7 +442,7 @@ describe("OpenAiProvider chatComplete", () => {
     };
     await expect(
       provider.chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("401 invalid key");
@@ -457,7 +462,7 @@ describe("OpenAiProvider chatComplete", () => {
     };
     await expect(
       provider.chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("ran past the 30 ms limit");
@@ -466,7 +471,7 @@ describe("OpenAiProvider chatComplete", () => {
 
 describe("OpenAiProvider chatComplete limits and reasons", () => {
   const ask = {
-    model: "gpt-5",
+    model: "gpt-6.1-sol",
     messages: [{ role: "user" as const, content: "hi" }],
   };
 
@@ -477,7 +482,7 @@ describe("OpenAiProvider chatComplete limits and reasons", () => {
         if (signal.aborted) return;
         yield { type: "response.output_text.delta", delta: "x" };
       }
-      yield { type: "response.completed", response: { model: "gpt-5" } };
+      yield { type: "response.completed", response: { model: "gpt-6.1-sol" } };
     }
     const provider = new OpenAiProvider("test-key", {
       idleMs: 40,
@@ -497,7 +502,7 @@ describe("OpenAiProvider chatComplete limits and reasons", () => {
     const sent: Record<string, unknown>[] = [];
     await expect(
       providerSending(sent).chatComplete({
-        model: "gpt-5",
+        model: "gpt-6.1-sol",
         messages: [
           {
             role: "user",
@@ -513,7 +518,7 @@ describe("OpenAiProvider chatComplete limits and reasons", () => {
   it("an inline image is sent", async () => {
     const sent: Record<string, unknown>[] = [];
     await providerSending(sent).chatComplete({
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [
         {
           role: "user",
@@ -543,7 +548,7 @@ describe("OpenAiProvider chatComplete limits and reasons", () => {
       { type: "response.completed", response: {} },
     ]);
     const result = await provider.chatComplete(ask);
-    expect(result).toEqual({ content: "ok", model: "gpt-5" });
+    expect(result).toEqual({ content: "ok", model: "gpt-6.1-sol" });
   });
 });
 
@@ -647,7 +652,7 @@ describe("OpenAiProvider chat batches", () => {
   it("submits one Responses API request per chat, the body a direct call would send without streaming, and returns the batch id", async () => {
     const sent: Record<string, unknown>[] = [];
     const options: AiChatOptions = {
-      model: "gpt-5",
+      model: "gpt-6.1-sol",
       messages: [
         { role: "system", content: "Return JSON." },
         {
@@ -694,7 +699,7 @@ describe("OpenAiProvider chat batches", () => {
   it("the uploaded requests and the answers expire at OpenAI after three days, and an upload the batch never used is deleted", async () => {
     const { provider, fileParams } = batchProvider({});
     await provider.submitChatBatch(
-      [{ id: "text", options: { model: "gpt-5", messages: [] } }],
+      [{ id: "text", options: { model: "gpt-6.1-sol", messages: [] } }],
       {},
     );
     expect(fileParams[0]).toEqual({
@@ -705,7 +710,7 @@ describe("OpenAiProvider chat batches", () => {
     const refused = batchProvider({}, {}, true);
     await expect(
       refused.provider.submitChatBatch(
-        [{ id: "text", options: { model: "gpt-5", messages: [] } }],
+        [{ id: "text", options: { model: "gpt-6.1-sol", messages: [] } }],
         {},
       ),
     ).rejects.toThrow("batch quota reached");
@@ -720,7 +725,7 @@ describe("OpenAiProvider chat batches", () => {
           {
             id: "vision",
             options: {
-              model: "gpt-5",
+              model: "gpt-6.1-sol",
               messages: [
                 { role: "user", content: "x", images: ["https://x/y.jpg"] },
               ],
@@ -820,7 +825,7 @@ describe("OpenAiProvider chat batches", () => {
         "file-out": [
           answerLine("text", {
             status: "completed",
-            model: "gpt-5-served",
+            model: "gpt-6.1-sol-served",
             output: [
               { type: "reasoning", summary: [] },
               {
@@ -858,7 +863,7 @@ describe("OpenAiProvider chat batches", () => {
       results: {
         text: {
           content: '{"a":1}',
-          model: "gpt-5-served",
+          model: "gpt-6.1-sol-served",
           usage: { promptTokens: 10, completionTokens: 4, totalTokens: 14 },
         },
         cut: { error: "the response did not complete: max_output_tokens" },

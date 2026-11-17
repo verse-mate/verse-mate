@@ -14,6 +14,7 @@ import type {
   AiResponseResult,
   AiTranscription,
 } from "./ai-provider.interface";
+import { currentModel } from "./model-ids";
 
 const REASONING_MODEL = /^(?!.*-chat)(gpt-([5-9]|[1-9]\d)|o\d)/;
 const STREAM_IDLE_MS = 90_000;
@@ -39,8 +40,6 @@ interface OpenAiStreamEvent {
 /**
  * OpenAI implementation of AiProvider. Uses the `openai` SDK; chat requests go
  * through the Responses API, streamed.
- *
- * Apikey from `OPEN_AI_KEY` env. Models passed through as-is.
  */
 export class OpenAiProvider implements AiProvider {
   readonly name = "openai";
@@ -184,7 +183,7 @@ export class OpenAiProvider implements AiProvider {
 
   async responsesCreate(opts: AiResponseOptions): Promise<AiResponseResult> {
     const response = await (this.client as any).responses.create({
-      model: opts.model,
+      model: currentModel(opts.model),
       ...(opts.instructions !== undefined && {
         instructions: opts.instructions,
       }),
@@ -389,9 +388,10 @@ function responsesBody(opts: AiChatOptions): Record<string, unknown> {
     throw new Error(
       `OpenAI images must be inline data: image URLs for model=${opts.model}`,
     );
-  const reasons = REASONING_MODEL.test(opts.model);
+  const model = currentModel(opts.model);
+  const reasons = REASONING_MODEL.test(model);
   return {
-    model: opts.model,
+    model,
     input: opts.messages.map((m) =>
       m.role === "user" && m.images?.length
         ? {

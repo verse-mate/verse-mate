@@ -5,8 +5,7 @@
  *   bun run src/bible/e2e-study-translate.ts
  *
  * Steps:
- *   1. Trigger generateStudyTranslateBatch for ONE chapter (James 1 → ro-RO)
- *      with gpt-5-nano.
+ *   1. Trigger generateStudyTranslateBatch for ONE chapter (James 1 → ro-RO).
  *   2. Verify a batch_jobs row was created with an openai_batch_id +
  *      total_requests = 1 (i.e. JSONL built + uploaded + batch created).
  *   3. Confirm the batch exists on OpenAI's side (batchesRetrieve).
@@ -24,7 +23,7 @@ import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { getAiProvider } from "../shared/ai";
 
-const MODEL = "gpt-5-mini";
+const MODEL = "gpt-6.1-terra";
 const TARGET_LANG = "ro-RO";
 const BOOK_NAME = "James";
 const BOOK_ID = 59;
@@ -43,7 +42,7 @@ async function main() {
   const conn = db.getOrCreateConnection();
   const ai = getAiProvider();
 
-  console.log("=== E2E Study Translate (James 1 → ro-RO, gpt-5-nano) ===\n");
+  console.log(`=== E2E Study Translate (James 1 → ro-RO, ${MODEL}) ===\n`);
 
   // study_id for assertions later
   const study = await conn

@@ -443,6 +443,38 @@ describe("Admin Plugin", () => {
     });
   });
 
+  describe("Retired OpenAI models", () => {
+    it("an admin request naming a retired model reaches the service as its replacement, so a page loaded before the switch still works", async () => {
+      const aiProvider = process.env.AI_PROVIDER;
+      process.env.AI_PROVIDER = "stub";
+      resetAiProviderCache();
+      try {
+        const { data, error } = await testClient.admin.prompts.playground.post(
+          {
+            system_prompt: "",
+            user_prompt: "Explain {bookName} {chapterNumber}",
+            prompt_type: "summary",
+            book_name: "Genesis",
+            chapter_number: 1,
+            bible_version: "NASB1995",
+            model: "gpt-5-nano",
+            effort: "low",
+            send_chapter_context: false,
+          },
+          { headers: { authorization: `Bearer ${adminUser.accessToken}` } },
+        );
+
+        expect(error).toBeFalsy();
+        expect(data?.result).toStartWith("[stub-responses:gpt-6-luna]");
+      } finally {
+        if (aiProvider === undefined)
+          Reflect.deleteProperty(process.env, "AI_PROVIDER");
+        else process.env.AI_PROVIDER = aiProvider;
+        resetAiProviderCache();
+      }
+    });
+  });
+
   describe("User preferences", () => {
     const storedLanguage = async (userId: string) =>
       (

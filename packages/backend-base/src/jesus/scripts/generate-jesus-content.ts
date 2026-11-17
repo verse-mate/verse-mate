@@ -105,7 +105,7 @@ async function main() {
     `${options.dryRun ? "[dry run] " : ""}${selected.length} event(s) × ${options.types.length} type(s) = ${selected.length * options.types.length} generation(s)`,
   );
   console.log(
-    `provider=${process.env.AI_PROVIDER ?? "openai"} model=${options.model ?? "gpt-5"} version=${options.bibleVersion}\n`,
+    `provider=${process.env.AI_PROVIDER ?? "openai"} model=${options.model ?? "gpt-6.1-sol"} version=${options.bibleVersion}\n`,
   );
 
   const tally = { saved: 0, skipped: 0, rejected: 0 };

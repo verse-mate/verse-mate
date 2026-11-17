@@ -64,7 +64,7 @@ async function main() {
   // Call the private method via auto-translate trigger path
   await service.triggerAutoTranslations(
     [{ bookId: 19, chapterNumber: 119, type: "byline" }],
-    "gpt-5-mini",
+    "gpt-6.1-terra",
     ADMIN_USER_ID,
     16000,
   );

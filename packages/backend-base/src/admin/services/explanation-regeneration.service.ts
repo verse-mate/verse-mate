@@ -20,7 +20,7 @@ export class ExplanationRegenerationService {
     this.promptRepository = new PromptRepository(this.db);
   }
 
-  private async gpt5Text({
+  private async generateText({
     instructions,
     input,
     model,
@@ -160,7 +160,7 @@ export class ExplanationRegenerationService {
           bylineTemplate: explanationConfig.prompt,
           logPrefix: "[REGENERATION_BYLINE]",
           generateChunk: async ({ prompt }) =>
-            this.gpt5Text({
+            this.generateText({
               instructions: systemPrompt.prompt,
               input: prompt,
               model,
@@ -187,7 +187,7 @@ export class ExplanationRegenerationService {
           });
         }
 
-        newExplanationContent = await this.gpt5Text({
+        newExplanationContent = await this.generateText({
           instructions: systemPrompt.prompt,
           input: userPrompt,
           model,

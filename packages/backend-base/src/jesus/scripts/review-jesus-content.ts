@@ -67,7 +67,7 @@ async function main() {
   const dryRun = has("dry-run");
   const limit =
     Number.parseInt(get("limit") ?? "0", 10) || Number.POSITIVE_INFINITY;
-  const model = get("model") ?? "gpt-5";
+  const model = get("model") ?? "gpt-6.1-sol";
   const kind = get("kind");
   const outPath = get("out") ?? "jesus-review.json";
 

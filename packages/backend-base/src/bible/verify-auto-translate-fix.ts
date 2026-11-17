@@ -33,7 +33,7 @@ async function main() {
   console.log("Calling triggerAutoTranslations for Psalms 119 byline...\n");
   await batchService.triggerAutoTranslations(
     [{ bookId: 19, chapterNumber: 119, type: "byline" }],
-    "gpt-5-mini",
+    "gpt-6.1-terra",
     ADMIN_USER_ID,
     16000,
   );

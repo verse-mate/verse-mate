@@ -18,6 +18,8 @@ import {
 } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
 import { type AiProvider, getAiProvider } from "../../shared/ai";
+import { currentModel } from "../../shared/ai/model-ids";
+import { batchCostUsd } from "../../shared/ai/model-pricing";
 import {
   buildBylineChunkPrompts,
   findVersesMissingSummary,
@@ -51,43 +53,6 @@ interface BatchJobRequest {
 // truncated: high-effort reasoning tokens count toward this limit, so big
 // documents hit 50k and returned incomplete JSON. 90k lands them.
 export const DEFAULT_MAX_OUTPUT_TOKENS = 90000;
-
-async function calculateActualCost(
-  promptTokens: number,
-  completionTokens: number,
-  model: string,
-): Promise<number> {
-  let inputCostPerMillion = 0;
-  let outputCostPerMillion = 0;
-
-  // Match tolerant of date suffixes ("gpt-5.4-nano-2026-03-17") and version
-  // variants — OpenAI model ids carry a trailing date, so an exact switch
-  // silently fell through to the flagship gpt-5 default and over-billed nano
-  // ~20x. Check nano/mini before the generic "gpt-5" substring.
-  // (Cached-input tier — gpt-5.4-nano $0.02/M — isn't separately tracked here;
-  // it only applies to the small repeated prompt prefix, ~0.3% of cost since
-  // these batches are output-dominated.)
-  const m = model.toLowerCase();
-  if (m.includes("nano")) {
-    inputCostPerMillion = m.includes("5.4") ? 0.2 : 0.05;
-    outputCostPerMillion = m.includes("5.4") ? 1.25 : 0.4;
-  } else if (m.includes("mini")) {
-    inputCostPerMillion = 0.25;
-    outputCostPerMillion = 2;
-  } else {
-    // gpt-5 / gpt-5-chat-latest / unknown → flagship rate
-    inputCostPerMillion = 1.25;
-    outputCostPerMillion = 10;
-  }
-
-  const inputCost = (promptTokens / 1_000_000) * inputCostPerMillion;
-  const outputCost = (completionTokens / 1_000_000) * outputCostPerMillion;
-
-  const totalCost = inputCost + outputCost;
-  const batchDiscount = 0.5;
-
-  return totalCost * batchDiscount;
-}
 
 function getLanguageName(code: string, locale = "en"): string {
   const display = new Intl.DisplayNames([locale], { type: "language" });
@@ -2967,7 +2932,7 @@ export class BatchOperationService {
         }
       }
 
-      const actualCost = await calculateActualCost(
+      const actualCost = batchCostUsd(
         totalPromptTokens,
         totalCompletionTokens,
         batchJob.model,
@@ -3271,7 +3236,7 @@ export class BatchOperationService {
       }
     }
 
-    const actualCost = await calculateActualCost(
+    const actualCost = batchCostUsd(
       totalPromptTokens,
       totalCompletionTokens,
       batchJob.model,
@@ -3644,7 +3609,7 @@ export class BatchOperationService {
       }
     }
 
-    const actualCost = await calculateActualCost(
+    const actualCost = batchCostUsd(
       totalPromptTokens,
       totalCompletionTokens,
       batchJob.model,
@@ -3724,7 +3689,7 @@ export class BatchOperationService {
         }
       }
 
-      const actualCost = await calculateActualCost(
+      const actualCost = batchCostUsd(
         totalPromptTokens,
         totalCompletionTokens,
         batchJob.model,
@@ -3896,7 +3861,7 @@ export class BatchOperationService {
         }
       }
 
-      const actualCost = await calculateActualCost(
+      const actualCost = batchCostUsd(
         totalPromptTokens,
         totalCompletionTokens,
         batchJob.model,
@@ -4036,7 +4001,7 @@ export class BatchOperationService {
         }
       }
 
-      const actualCost = await calculateActualCost(
+      const actualCost = batchCostUsd(
         totalPromptTokens,
         totalCompletionTokens,
         batchJob.model,
@@ -4259,7 +4224,7 @@ export class BatchOperationService {
       }
     }
 
-    const actualCost = await calculateActualCost(
+    const actualCost = batchCostUsd(
       totalPromptTokens,
       totalCompletionTokens,
       batchJob.model,
@@ -4475,7 +4440,7 @@ export class BatchOperationService {
       }
     }
 
-    const actualCost = await calculateActualCost(
+    const actualCost = batchCostUsd(
       totalPromptTokens,
       totalCompletionTokens,
       batchJob.model,
@@ -4639,7 +4604,7 @@ export class BatchOperationService {
         }
       }
 
-      const actualCost = await calculateActualCost(
+      const actualCost = batchCostUsd(
         totalPromptTokens,
         totalCompletionTokens,
         batchJob.model,
@@ -4768,7 +4733,7 @@ export class BatchOperationService {
 
         try {
           await this.createBookTranslateBatch(
-            model,
+            currentModel(model),
             adminUserId,
             "medium",
             book.name,
@@ -6386,7 +6351,7 @@ export class BatchOperationService {
       }
     }
 
-    const actualCost = await calculateActualCost(
+    const actualCost = batchCostUsd(
       totalPromptTokens,
       totalCompletionTokens,
       batchJob.model,

@@ -63,7 +63,7 @@ import { AutoHighlightService } from "./services/auto-highlight.service";
 import { BibleService } from "./services/bible.service";
 import { PromptService } from "./services/prompt.service";
 
-const model = "gpt-5-nano";
+const model = "gpt-6-luna";
 const NOTE_CONTENT_MAX_LENGTH = 20_000;
 
 // Search-as-you-type sends a request per typing pause; 120/min per client
@@ -78,7 +78,7 @@ function ai(): AiProvider {
   return _ai;
 }
 
-async function gpt5Text({
+async function generateText({
   system,
   user,
 }: {

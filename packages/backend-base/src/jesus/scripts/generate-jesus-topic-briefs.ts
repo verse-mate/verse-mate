@@ -100,7 +100,7 @@ async function main() {
     `${options.dryRun ? "[dry run] " : ""}${targets.length} topic brief(s)`,
   );
   console.log(
-    `provider=${process.env.AI_PROVIDER ?? "openai"} model=${options.model ?? "gpt-5"} language=${options.languageCode}\n`,
+    `provider=${process.env.AI_PROVIDER ?? "openai"} model=${options.model ?? "gpt-6.1-sol"} language=${options.languageCode}\n`,
   );
 
   // A prompt you cannot read is a prompt you cannot review. --print renders

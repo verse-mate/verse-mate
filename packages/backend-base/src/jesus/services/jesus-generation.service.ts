@@ -24,7 +24,7 @@ import {
 import { fillTemplate } from "../utils/template.utils";
 import { JesusEventService } from "./jesus-event.service";
 
-const DEFAULT_MODEL = "gpt-5";
+const DEFAULT_MODEL = "gpt-6.1-sol";
 
 /**
  * Shared by the synchronous and batched paths so a batched record is generated

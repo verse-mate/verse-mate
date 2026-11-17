@@ -582,7 +582,7 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
 });
 
 describe("token budget on a reasoning model", () => {
-  it("the body call has a budget a 90-minute session's reasoning fits in, since gpt-5 counts reasoning against the limit", async () => {
+  it("the body call has a budget a 90-minute session's reasoning fits in, since gpt-6.1-sol counts reasoning against the limit", async () => {
     const { ai } = await generate();
     expect(ai.sent[0].maxTokens).toBe(BODY_MAX_TOKENS);
     expect(BODY_MAX_TOKENS).toBeGreaterThanOrEqual(64000);

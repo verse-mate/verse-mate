@@ -91,7 +91,7 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
-async function gpt5Text({
+async function generateText({
   system,
   user,
   maxTokens = 16000,
@@ -107,7 +107,7 @@ async function gpt5Text({
   messages.push({ role: "user", content: user });
 
   const options: any = {
-    model: "gpt-5",
+    model: "gpt-6.1-sol",
     messages,
     max_completion_tokens: maxTokens,
   };
@@ -240,7 +240,7 @@ async function pregenerateHebrewsChapters() {
             bylineTemplate: explanationConfig.prompt,
             logPrefix: "[PREGENERATE_HEBREWS_BYLINE]",
             generateChunk: async ({ prompt }) =>
-              gpt5Text({
+              generateText({
                 system: activePrompt.prompt,
                 user: prompt,
                 maxTokens: 16000,
@@ -263,7 +263,7 @@ CRITICAL: Your response will be evaluated on:
 
 The response should be in Markdown format only.`;
 
-          text = await gpt5Text({
+          text = await generateText({
             system: activePrompt.prompt,
             user: userPrompt,
           });
