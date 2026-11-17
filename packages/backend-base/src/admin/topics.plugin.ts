@@ -1,12 +1,10 @@
 import { Elysia, t } from "elysia";
-import { replaceRetiredModel } from "../shared/ai/model-ids";
 import { TopicDto, UpdateTopicDto } from "../topics/dto/topic.dto";
 
 // This is now a simple Elysia instance that defines a group of routes.
 // It will inherit its context (like the store and guards) from whatever plugin uses it.
 const adminTopicPlugin = new Elysia().group("/topics", (app) =>
   app
-    .onTransform(replaceRetiredModel)
     .get("/", async ({ store }: any) => {
       const topics = await store.topicService.getAllTopics();
       return { topics };

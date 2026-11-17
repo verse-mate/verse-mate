@@ -40,8 +40,6 @@ interface OpenAiStreamEvent {
 /**
  * OpenAI implementation of AiProvider. Uses the `openai` SDK; chat requests go
  * through the Responses API, streamed.
- *
- * Apikey from `OPEN_AI_KEY` env. Models passed through as-is.
  */
 export class OpenAiProvider implements AiProvider {
   readonly name = "openai";
