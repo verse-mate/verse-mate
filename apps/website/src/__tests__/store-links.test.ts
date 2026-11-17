@@ -7,6 +7,7 @@ describe("store links", () => {
     expect(url.origin + url.pathname).toBe(
       "https://apps.apple.com/app/apple-store/id6756897180",
     );
+    expect(url.searchParams.get("pt")).toBe("128394884");
     expect(url.searchParams.get("ct")).toBe("web-download-app-ai");
     expect(url.searchParams.get("mt")).toBe("8");
   });
@@ -24,6 +25,7 @@ describe("store links", () => {
   it("names channel none when no first touch is known", () => {
     const app = new URL(appStoreLink({ page: "download-app", channel: "none" }));
     const play = new URL(playStoreLink({ page: "download-app", channel: "none" }));
+    expect(app.searchParams.get("pt")).toBe("128394884");
     expect(app.searchParams.get("ct")).toBe("web-download-app-none");
     expect(play.searchParams.get("referrer")).toBe(
       "utm_source=versemate.org&utm_medium=download-app&utm_campaign=none",
@@ -46,7 +48,7 @@ describe("store links", () => {
 
   it("gives the banner a fixed campaign token", () => {
     expect(smartBannerContent()).toBe(
-      "app-id=6756897180, affiliate-data=ct=web-banner&mt=8",
+      "app-id=6756897180, affiliate-data=pt=128394884&ct=web-banner&mt=8",
     );
   });
 });
