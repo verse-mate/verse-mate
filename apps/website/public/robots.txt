@@ -1,4 +1,38 @@
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: Claude-Web
+User-agent: CCBot
+User-agent: Applebot-Extended
+User-agent: cohere-ai
+User-agent: MistralAI-Training
+User-agent: meta-externalagent
+User-agent: GoogleOther
+User-agent: Google-CloudVertexBot
+User-agent: Bytespider
+User-agent: Diffbot
+User-agent: omgili
+User-agent: Baiduspider
+User-agent: PetalBot
+User-agent: AwarioSmartBot
+User-agent: AwarioRssBot
+User-agent: QualifiedBot
+User-agent: Cotoyogi
+User-agent: ICC-Crawler
+User-agent: atlassian-bot
+User-agent: FishBot
+User-agent: BorderxBot
+User-agent: NavuBot
+User-agent: SemrushBot-SWA
+User-agent: WARDBot
+User-agent: magpie-crawler
+User-agent: KimiBot
+User-agent: CitibotSiteCrawler
+Disallow: /
+
 Sitemap: https://versemate.org/sitemap.xml
+Sitemap: https://app.versemate.org/sitemap.xml
