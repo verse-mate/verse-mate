@@ -21,6 +21,11 @@ export const NOTETAKER_TOKEN = "NOTETAKER_VERSEMATE_TOKEN";
 export const NOTETAKER_CONNECT_URL =
   "https://notetaker.thorsp.net/zoom/install?from=versemate";
 
+/** The same, started in the coach portal: Zoom returns the coach to
+ *  app.versemate.org/coach/sessions?zoom=connected. */
+export const NOTETAKER_PORTAL_CONNECT_URL =
+  "https://notetaker.thorsp.net/zoom/install?from=portal";
+
 const TIMEOUT_MS = 8000;
 
 function config(): { url: string; token: string } | null {
@@ -140,6 +145,96 @@ export async function notetakerZoom(
 export function zoomMeetingId(link: string): string | null {
   const m = /zoom\.us\/(?:j|w|s)\/(\d+)/i.exec(link);
   return m?.[1] ?? null;
+}
+
+/** One run of the bot for a class: its start, how far it got (starting,
+ *  joining, waiting_room, in_meeting, recording, recording_denied, processing,
+ *  recorded, failed) and, when it failed, why (not_admitted, recording_denied,
+ *  meeting_not_started, bot_error). */
+export interface NotetakerRun {
+  start: string | null;
+  status: string;
+  reason: string | null;
+  updatedAt: string | null;
+}
+
+/** Per class id: its next start on the bot's calendar and its latest runs. */
+export type NotetakerActivity = Record<
+  string,
+  { next: string | null; recent: NotetakerRun[] }
+>;
+
+/** What the bot did for each class; null when the notetaker is not
+ *  configured or does not answer. */
+export async function notetakerActivity(
+  fetchImpl: Fetch = fetch,
+): Promise<NotetakerActivity | null> {
+  const cfg = config();
+  if (!cfg) return null;
+  try {
+    const res = await fetchImpl(`${cfg.url}/versemate/activity`, {
+      headers: { authorization: `Bearer ${cfg.token}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      await res.body?.cancel();
+      console.error(`[COACH-NOTETAKER] activity answered ${res.status}`);
+      return null;
+    }
+    const body = (await res.json()) as {
+      classes?: Record<
+        string,
+        { next?: unknown; recent?: Record<string, unknown>[] }
+      >;
+    };
+    const out: NotetakerActivity = {};
+    for (const [id, c] of Object.entries(body.classes ?? {}))
+      out[id] = {
+        next: strOrNull(c.next),
+        recent: (c.recent ?? []).map((r) => ({
+          start: strOrNull(r.start),
+          status: str(r.status) || "starting",
+          reason: strOrNull(r.reason),
+          updatedAt: strOrNull(r.updated_at),
+        })),
+      };
+    return out;
+  } catch (err) {
+    console.error("[COACH-NOTETAKER] activity not available:", err);
+    return null;
+  }
+}
+
+/** Disconnect the Zoom accounts on these addresses (a coach's own, checked by
+ *  the caller): revoked at Zoom and deleted by the notetaker. Returns the
+ *  addresses it disconnected, or null when the notetaker did not answer. */
+export async function notetakerDisconnect(
+  emails: string[],
+  fetchImpl: Fetch = fetch,
+): Promise<string[] | null> {
+  const cfg = config();
+  if (!cfg) return null;
+  try {
+    const res = await fetchImpl(`${cfg.url}/versemate/disconnect`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${cfg.token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ emails }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      await res.body?.cancel();
+      console.error(`[COACH-NOTETAKER] disconnect answered ${res.status}`);
+      return null;
+    }
+    const body = (await res.json()) as { disconnected?: unknown[] };
+    return (body.disconnected ?? []).map((e) => str(e).toLowerCase());
+  } catch (err) {
+    console.error("[COACH-NOTETAKER] disconnect not delivered:", err);
+    return null;
+  }
 }
 
 /** True when `zone` is an IANA time zone this runtime knows. */

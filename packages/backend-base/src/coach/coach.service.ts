@@ -35,8 +35,11 @@ import {
 } from "./coach-governance.service";
 import type { ProgramReport } from "./coach-monthly.service";
 import {
+  type NotetakerActivity,
   type NotetakerConnection,
   type NotetakerMeeting,
+  notetakerActivity,
+  notetakerDisconnect,
   notetakerZoom,
   pingNotetaker,
   zoomMeetingId,
@@ -2824,17 +2827,104 @@ export class CoachService {
     if (!record) return null;
     const zoom = await notetakerZoom();
     if (!zoom) return { known: false, connected: false, zoomEmail: null };
-    const mine = new Set(
-      [await this.emailFor(userId), record.email]
-        .filter((e): e is string => Boolean(e))
-        .map((e) => e.trim().toLowerCase()),
-    );
+    const mine = await this.coachAddresses(userId, record);
     const hit = zoom.connections.find((c) => mine.has(c.email));
     return {
       known: true,
       connected: Boolean(hit),
       zoomEmail: hit?.email ?? null,
     };
+  }
+
+  /** The addresses a leader's Zoom account may be on: their account's and
+   *  their roster address, lowercased. */
+  private async coachAddresses(
+    userId: string,
+    record: CoachRecord,
+  ): Promise<Set<string>> {
+    return new Set(
+      [await this.emailFor(userId), record.email]
+        .filter((e): e is string => Boolean(e))
+        .map((e) => e.trim().toLowerCase()),
+    );
+  }
+
+  /** The signed-in leader's own scheduled Zoom meetings (their connected
+   *  account), in Class Setup's terms, each marked with the class of theirs
+   *  that already records it. null → not a coach; `available` false → the
+   *  notetaker did not answer. */
+  async notetakerMeetings(userId: string): Promise<{
+    available: boolean;
+    meetings: Array<NotetakerMeeting & { classId: string | null }>;
+  } | null> {
+    const record = await this.recordFor(userId);
+    if (!record) return null;
+    const zoom = await notetakerZoom();
+    if (!zoom) return { available: false, meetings: [] };
+    const mine = await this.coachAddresses(userId, record);
+    const classes = await this.coachRepository.listClasses(
+      CoachService.ownerOf(userId, record),
+    );
+    const classFor = (meetingId: string) =>
+      classes.find((c) => zoomMeetingId(c.zoomLink) === meetingId)?.id ?? null;
+    return {
+      available: true,
+      meetings: zoom.meetings
+        .filter((m) => mine.has(m.hostEmail))
+        .map((m) => ({ ...m, classId: classFor(m.meetingId) })),
+    };
+  }
+
+  /** What the bot did for the signed-in leader's classes: each class's next
+   *  start and latest runs. null → not a coach; `available` false → the
+   *  notetaker did not answer. */
+  async notetakerActivityFor(userId: string): Promise<{
+    available: boolean;
+    classes: NotetakerActivity;
+  } | null> {
+    const record = await this.recordFor(userId);
+    if (!record) return null;
+    const ids = new Set(
+      (
+        await this.coachRepository.listClasses(
+          CoachService.ownerOf(userId, record),
+        )
+      ).map((c) => c.id),
+    );
+    const activity = await notetakerActivity();
+    if (!activity) return { available: false, classes: {} };
+    return {
+      available: true,
+      classes: Object.fromEntries(
+        Object.entries(activity).filter(([id]) => ids.has(id)),
+      ),
+    };
+  }
+
+  /** The admin's view of what the bot did, for every class. */
+  async notetakerActivityAll(): Promise<{
+    available: boolean;
+    classes: NotetakerActivity;
+  }> {
+    const activity = await notetakerActivity();
+    return { available: activity !== null, classes: activity ?? {} };
+  }
+
+  /** The signed-in leader disconnects their Zoom account from the notetaker:
+   *  only the accounts on their own addresses. null → not a coach;
+   *  `disconnected` false → nothing was connected on those addresses;
+   *  `available` false → the notetaker did not answer. */
+  async notetakerDisconnectFor(userId: string): Promise<{
+    available: boolean;
+    disconnected: boolean;
+  } | null> {
+    const record = await this.recordFor(userId);
+    if (!record) return null;
+    const gone = await notetakerDisconnect([
+      ...(await this.coachAddresses(userId, record)),
+    ]);
+    if (gone === null) return { available: false, disconnected: false };
+    return { available: true, disconnected: gone.length > 0 };
   }
 
   /** The admin's view of the notetaker: who connected Zoom, each matched to a

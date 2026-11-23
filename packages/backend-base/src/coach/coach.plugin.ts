@@ -29,6 +29,7 @@ import coachLearningPlugin from "./coach-learning.plugin";
 import { CoachMonthlyService } from "./coach-monthly.service";
 import {
   NOTETAKER_CONNECT_URL,
+  NOTETAKER_PORTAL_CONNECT_URL,
   isTimeZone,
   notetakerTokenOk,
 } from "./coach-notetaker";
@@ -53,6 +54,9 @@ import {
   MonthlyReportRowSchema,
   MonthlySchema,
   NoteSchema,
+  NotetakerActivitySchema,
+  NotetakerDisconnectSchema,
+  NotetakerMeetingsSchema,
   NotetakerStatusSchema,
   NotetakerZoomSchema,
   ParallelRunComparisonSchema,
@@ -918,11 +922,77 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           const status = await coachService.notetakerStatus(currentUserId);
           if (!status) throw new ForbiddenError("Not a coaching account");
-          return { ...status, connectUrl: NOTETAKER_CONNECT_URL };
+          return {
+            ...status,
+            connectUrl: NOTETAKER_CONNECT_URL,
+            portalConnectUrl: NOTETAKER_PORTAL_CONNECT_URL,
+          };
         },
         {
           response: {
             200: NotetakerStatusSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
+      )
+      // The leader's own scheduled Zoom meetings, so they can pick the ones
+      // the bot records without retyping the link and times.
+      .get(
+        "/notetaker/meetings",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const meetings = await coachService.notetakerMeetings(currentUserId);
+          if (!meetings) throw new ForbiddenError("Not a coaching account");
+          return meetings;
+        },
+        {
+          response: {
+            200: NotetakerMeetingsSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
+      )
+      // What the bot did for each of the leader's classes: next start, latest
+      // runs, and why one failed.
+      .get(
+        "/notetaker/activity",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const activity =
+            await coachService.notetakerActivityFor(currentUserId);
+          if (!activity) throw new ForbiddenError("Not a coaching account");
+          return activity;
+        },
+        {
+          response: {
+            200: NotetakerActivitySchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
+      )
+      // The leader disconnects their Zoom account from the notetaker, without
+      // going to Zoom's settings. Only accounts on their own addresses.
+      .post(
+        "/notetaker/disconnect",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const result =
+            await coachService.notetakerDisconnectFor(currentUserId);
+          if (!result) throw new ForbiddenError("Not a coaching account");
+          return result;
+        },
+        {
+          response: {
+            200: NotetakerDisconnectSchema,
             ...StandardErrorResponses,
             ...UnauthorizedResponse,
             ...ForbiddenResponse,
@@ -2371,6 +2441,25 @@ const plugin = new Elysia()
         {
           response: {
             200: NotetakerZoomSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
+      )
+      // What the bot did for every class, for the admin's class schedule.
+      .get(
+        "/admin/notetaker/activity",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return coachService.notetakerActivityAll();
+        },
+        {
+          response: {
+            200: NotetakerActivitySchema,
             ...StandardErrorResponses,
             ...UnauthorizedResponse,
             ...ForbiddenResponse,

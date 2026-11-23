@@ -8026,6 +8026,209 @@
       }
     },
     {
+      "route": "GET /coach/admin/notetaker/activity",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "classes": {
+              "type": "object",
+              "patternProperties": {
+                "^(.*)$": {
+                  "type": "object",
+                  "properties": {
+                    "next": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recent": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["start", "status", "reason", "updatedAt"]
+                      }
+                    }
+                  },
+                  "required": ["next", "recent"]
+                }
+              }
+            }
+          },
+          "required": ["available", "classes"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "422": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/admin/notetaker/zoom",
       "response": {
         "200": {
@@ -8134,6 +8337,16 @@
                   "invited": {
                     "type": "boolean"
                   },
+                  "classId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "leader": {
                     "anyOf": [
                       {
@@ -8152,16 +8365,6 @@
                         "type": "null"
                       }
                     ]
-                  },
-                  "classId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
                   }
                 },
                 "required": [
@@ -8174,8 +8377,8 @@
                   "timeZone",
                   "recurrence",
                   "invited",
-                  "leader",
-                  "classId"
+                  "classId",
+                  "leader"
                 ]
               }
             }
@@ -13898,6 +14101,209 @@
       }
     },
     {
+      "route": "GET /coach/notetaker/activity",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "classes": {
+              "type": "object",
+              "patternProperties": {
+                "^(.*)$": {
+                  "type": "object",
+                  "properties": {
+                    "next": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recent": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["start", "status", "reason", "updatedAt"]
+                      }
+                    }
+                  },
+                  "required": ["next", "recent"]
+                }
+              }
+            }
+          },
+          "required": ["available", "classes"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "422": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/notetaker/classes",
       "response": {
         "200": {
@@ -14102,6 +14508,224 @@
       }
     },
     {
+      "route": "GET /coach/notetaker/meetings",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "meetings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "meetingId": {
+                    "type": "string"
+                  },
+                  "topic": {
+                    "type": "string"
+                  },
+                  "joinUrl": {
+                    "type": "string"
+                  },
+                  "hostEmail": {
+                    "type": "string"
+                  },
+                  "classDate": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "startTime": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "timeZone": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "recurrence": {
+                    "type": "string"
+                  },
+                  "invited": {
+                    "type": "boolean"
+                  },
+                  "classId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "meetingId",
+                  "topic",
+                  "joinUrl",
+                  "hostEmail",
+                  "classDate",
+                  "startTime",
+                  "timeZone",
+                  "recurrence",
+                  "invited",
+                  "classId"
+                ]
+              }
+            }
+          },
+          "required": ["available", "meetings"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "422": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/notetaker/status",
       "response": {
         "200": {
@@ -14125,9 +14749,18 @@
             },
             "connectUrl": {
               "type": "string"
+            },
+            "portalConnectUrl": {
+              "type": "string"
             }
           },
-          "required": ["known", "connected", "zoomEmail", "connectUrl"]
+          "required": [
+            "known",
+            "connected",
+            "zoomEmail",
+            "connectUrl",
+            "portalConnectUrl"
+          ]
         },
         "400": {
           "type": "object",
@@ -24560,6 +25193,149 @@
           "required": ["error", "message"]
         },
         "409": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "422": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/notetaker/disconnect",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "disconnected": {
+              "type": "boolean"
+            }
+          },
+          "required": ["available", "disconnected"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
           "type": "object",
           "properties": {
             "error": {
