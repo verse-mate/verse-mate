@@ -1,0 +1,24 @@
+# VerseMate
+
+> VerseMate is a free Bible reading companion from VerseMate, a 501(c)(3) nonprofit. Every chapter of the Bible comes with its text, a summary and a verse-by-verse explanation. The life of Jesus and Bible topics are explained the same way. It is available on the web, on iOS and on Android.
+
+The content lives on the web reader at https://app.versemate.org. This site, versemate.org, is about the nonprofit and its apps.
+
+## Full index
+
+- [VerseMate reader llms.txt](https://app.versemate.org/llms.txt): every book, Jesus event and topic, each linked to its Markdown version.
+
+## URL patterns
+
+- A Bible chapter: `https://app.versemate.org/bible/{book}/{chapter}`, for example [Matthew 5](https://app.versemate.org/bible/matthew/5) or [John 3](https://app.versemate.org/bible/john/3). The book is its English name in lowercase with hyphens (`1-corinthians`, `song-of-solomon`).
+- An event in the life of Jesus: `https://app.versemate.org/jesus/event/{event}`, for example [The baptism of Jesus](https://app.versemate.org/jesus/event/event-baptism).
+- A topic: `https://app.versemate.org/topic/{category}/{topic}`, for example [The Creation of the World](https://app.versemate.org/topic/events/the-creation-of-the-world).
+
+## Markdown versions
+
+Every page above has a Markdown version at the same address with `.md` appended, for example https://app.versemate.org/bible/matthew/5.md. The page's own address also answers with Markdown when the request sends `Accept: text/markdown`. Each page names its Markdown version in a `<link rel="alternate" type="text/markdown">` tag.
+
+## Sitemaps
+
+- https://app.versemate.org/sitemap.xml
+- https://versemate.org/sitemap.xml
