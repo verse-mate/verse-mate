@@ -1,14 +1,23 @@
 import { describe, expect, it } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { BooksOfTheBible } from "../components/sections/bible/BooksOfTheBible";
-import ReadTheBible from "../components/sections/home/ReadTheBible";
+import { RouterContext } from "next/dist/shared/lib/router-context.shared-runtime";
+import type { NextRouter } from "next/router";
+import Home from "../pages/index";
 
 const links = (html: string) =>
   [...html.matchAll(/<a [^>]*href="([^"]+)"/g)].map((match) => match[1]);
 
-describe("the home page's Read the Bible section", () => {
+describe("the home page", () => {
   it("links the popular chapters on the reader and the books page, as plain links", () => {
-    const hrefs = links(renderToStaticMarkup(<ReadTheBible />));
+    const router = { asPath: "/", pathname: "/", query: {}, route: "/" } as unknown as NextRouter;
+    const hrefs = links(
+      renderToStaticMarkup(
+        <RouterContext.Provider value={router}>
+          <Home />
+        </RouterContext.Provider>,
+      ),
+    );
 
     for (const chapter of [
       "genesis/1",
