@@ -21,7 +21,16 @@ export const STRUCTURED_DATA = {
       email: "info@versemate.org",
       description:
         "VerseMate is a 501(c)(3) nonprofit making the Bible easier to understand, for everyone, everywhere.",
+      nonprofitStatus: "Nonprofit501c3",
       sameAs: [APP_STORE_URL, PLAY_STORE_URL, "https://github.com/verse-mate"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: `${SITE_URL}/`,
+      name: "VerseMate",
+      alternateName: ["Versemate", "Verse-Mate"],
+      publisher: { "@id": ORG_ID },
     },
     {
       "@type": "MobileApplication",
