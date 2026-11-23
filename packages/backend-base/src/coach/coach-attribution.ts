@@ -8,7 +8,7 @@ import {
   type RotatingClass,
   loadRotatingClasses,
 } from "./coach-rotating.service";
-import { rescorable } from "./coach-session-state";
+import { NOTETAKER_SOURCE, rescorable } from "./coach-session-state";
 import { botClassKey, markLikelyDuplicate } from "./coach-upload.service";
 import type { FirefliesTranscript } from "./fireflies.client";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
@@ -434,7 +434,11 @@ export async function reattributeSession(
           matched_by: "admin",
           release_required: true,
           state,
-          ...(session.source === "bot" ? { class_key: classKey } : {}),
+          // A notetaker shadow session keys its class like the bot's, so the
+          // comparison still pairs it with the bot's copy after a move.
+          ...(session.source === "bot" || session.source === NOTETAKER_SOURCE
+            ? { class_key: classKey }
+            : {}),
           ...(rescore
             ? {
                 retry_count: 0,

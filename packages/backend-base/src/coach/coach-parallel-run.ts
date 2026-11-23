@@ -1,6 +1,7 @@
 import { type QueryExecutorProvider, sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 import { DIMENSIONS, composeBaseScore, composeComposite } from "./rubric";
 
 export const FLAG_COMPOSITE_DIFFERENCE = 5;
@@ -148,6 +149,7 @@ export async function parallelRunComparison(
       ),
     )
     .where("coach_intake_sessions.parallel_run", "=", true)
+    .where("coach_intake_sessions.source", "<>", NOTETAKER_SOURCE)
     .where("coach_intake_sessions.coach_id", "is not", null)
     .orderBy("coach_intake_sessions.session_date")
     .orderBy("coach_intake_sessions.source_session_id")
@@ -166,6 +168,7 @@ export async function parallelRunComparison(
       "coach_report_dimension_scores.machine_score as machine_score",
     ])
     .where("coach_intake_sessions.parallel_run", "=", true)
+    .where("coach_intake_sessions.source", "<>", NOTETAKER_SOURCE)
     .where("coach_intake_sessions.coach_id", "is not", null)
     .execute();
   const machineByReport = new Map<string, Map<number, number | null>>();
@@ -184,6 +187,7 @@ export async function parallelRunComparison(
         ),
       )
       .where("parallel_run", "=", true)
+      .where("source", "<>", NOTETAKER_SOURCE)
       .executeTakeFirst()
   )?.first;
   const hostRows = since
@@ -316,6 +320,9 @@ export async function endParallelRun(
     UPDATE coach_intake_sessions s
     SET parallel_run = false, updated_at = now()
     WHERE s.parallel_run
+      -- A notetaker shadow session stays a parallel run for good: neither the
+      -- cutover nor a re-attribution may make it sendable.
+      AND s.source <> ${NOTETAKER_SOURCE}
       AND (s.coach_id IS NOT NULL OR s.rotating_class_id IS NOT NULL)
       ${only ? sql`AND s.source_session_id IN (${sql.join(only)})` : sql``}
       AND NOT EXISTS (

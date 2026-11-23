@@ -5,6 +5,7 @@ import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
 import { headerText, isPlaceholderAddress } from "./coach-delivery.service";
 import { isGroupAddress } from "./coach-rotating.service";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
 /**
@@ -63,12 +64,15 @@ export class CoachReshareService {
         "reshare_resolved_at",
         "reshare_sent_at",
         "parallel_run",
+        "source",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("source_session_id", "=", sourceSessionId)
       .executeTakeFirst();
     if (!session) return { sent: false, refusal: "unknown-session" };
-    if (session.parallel_run)
+    // A notetaker shadow session's recording is ours to fetch again, never
+    // the leader's to re-share.
+    if (session.parallel_run || session.source === NOTETAKER_SOURCE)
       return { sent: false, refusal: "parallel-run-session" };
 
     // Only a session that actually ran out of retries. Sending on any other

@@ -48,6 +48,22 @@ export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
 
 type Sessions = ExpressionBuilder<Database, "coach_intake_sessions">;
 
+/**
+ * The notetaker shadow (COACH_NOTETAKER_SHADOW): sessions the VerseMate
+ * notetaker recorded, scored only to compare with the Fireflies recording of
+ * the same class. Their ids carry the prefix, so a report row says where it
+ * came from without a join.
+ *
+ * NEVER SENT. Every predicate below that leads to a leader's inbox excludes
+ * them on `source`, not on `parallel_run` alone: the cutover clears
+ * `parallel_run`, and a shadow session must stay unsendable after it too.
+ */
+export const NOTETAKER_SOURCE = "notetaker";
+export const NOTETAKER_SESSION_PREFIX = "notetaker:";
+
+export const notNotetaker = (eb: Sessions) =>
+  eb("source", "<>", NOTETAKER_SOURCE);
+
 const CORRECTABLE_STATES: readonly string[] = [
   "scored",
   "delivery_pending",
@@ -113,6 +129,7 @@ export const claimable = (eb: Sessions) =>
   eb.and([
     eb("release_required", "=", false),
     eb("parallel_run", "=", false),
+    notNotetaker(eb),
     notHeldForItsVersion(eb),
     eb.or([
       eb("state", "in", ["scored", "delivery_pending"]),
@@ -124,6 +141,7 @@ export const redeliverable = (eb: Sessions) =>
   eb.and([
     eb("report_id", "is not", null),
     eb("parallel_run", "=", false),
+    notNotetaker(eb),
     notHeldForItsVersion(eb),
     eb.or([eb("state", "=", "delivery_pending"), abandonedClaim(eb)]),
   ]);
@@ -138,20 +156,26 @@ export const unsentAfterPublish = (eb: Sessions) =>
   ]);
 
 export const releasable = (eb: Sessions) =>
-  eb.or([
-    eb("state", "=", "scored"),
-    eb.and([
-      eb("release_required", "=", true),
-      eb("state", "in", ["delivery_pending", "delivery_failed"]),
+  eb.and([
+    notNotetaker(eb),
+    eb.or([
+      eb("state", "=", "scored"),
+      eb.and([
+        eb("release_required", "=", true),
+        eb("state", "in", ["delivery_pending", "delivery_failed"]),
+      ]),
     ]),
   ]);
 
 export const requeuable = (eb: Sessions) =>
-  eb.or([
-    eb("state", "=", "scoring_failed"),
-    eb.and([
-      eb("state", "=", "delivery_failed"),
-      eb("parallel_run", "=", false),
+  eb.and([
+    notNotetaker(eb),
+    eb.or([
+      eb("state", "=", "scoring_failed"),
+      eb.and([
+        eb("state", "=", "delivery_failed"),
+        eb("parallel_run", "=", false),
+      ]),
     ]),
   ]);
 
@@ -172,26 +196,31 @@ export const COLD_RECALL_FEEDBACK = sql<unknown>`(
     AND coach_intake_sessions.hold_kind = 'cold-recall'
 )`;
 
+// The shadow's sessions are read through its own comparison, never here: an
+// admin acting on one from this list could only be refused.
 export const stuck = (eb: Sessions) =>
-  eb.or([
-    eb("state", "in", [
-      "scoring_failed",
-      "delivery_pending",
-      "delivery_failed",
-      "upload_failed",
-    ]),
-    eb.and([
-      eb("state", "=", "scored"),
-      eb.or([
-        eb("hold_kind", "is not", null),
-        eb("release_required", "=", true),
-        eb("parallel_run", "=", false),
+  eb.and([
+    notNotetaker(eb),
+    eb.or([
+      eb("state", "in", [
+        "scoring_failed",
+        "delivery_pending",
+        "delivery_failed",
+        "upload_failed",
       ]),
-    ]),
-    eb.and([eb("coach_id", "is", null), eb.not(awaitingLeaderCue(eb))]),
-    eb.and([
-      eb("state", "=", "delivered"),
-      eb(SKIPPED_LEADER_ADDRESS, "is not", null),
+      eb.and([
+        eb("state", "=", "scored"),
+        eb.or([
+          eb("hold_kind", "is not", null),
+          eb("release_required", "=", true),
+          eb("parallel_run", "=", false),
+        ]),
+      ]),
+      eb.and([eb("coach_id", "is", null), eb.not(awaitingLeaderCue(eb))]),
+      eb.and([
+        eb("state", "=", "delivered"),
+        eb(SKIPPED_LEADER_ADDRESS, "is not", null),
+      ]),
     ]),
   ]);
 

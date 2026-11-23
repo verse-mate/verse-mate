@@ -5,6 +5,7 @@ import type {
   CoachArchiveService,
   RetainResult,
 } from "./coach-archive.service";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 
 /**
  * Holding, retrying and giving up on a session's recording (change:
@@ -58,9 +59,17 @@ export interface SweepResult {
 }
 
 export class CoachRetrievalService {
+  /**
+   * @param source whose sessions this sweep fetches. The archive's client
+   *        reads one provider, so a sweep must never hand it another's ids: a
+   *        notetaker id sent to Fireflies fails every attempt and ends as a
+   *        re-share request to a leader about a recording they never made.
+   */
   constructor(
     private readonly db: db,
     private readonly archive: Pick<CoachArchiveService, "retain">,
+    private readonly source: "bot" | typeof NOTETAKER_SOURCE = "bot",
+    private readonly limit: number = SWEEP_BATCH_LIMIT,
   ) {}
 
   /**
@@ -75,6 +84,7 @@ export class CoachRetrievalService {
     const due = await conn
       .selectFrom("coach_intake_sessions")
       .select(["source_session_id", "retry_count"])
+      .where("source", "=", this.source)
       .where("state", "in", ["observed", "held"])
       .where((eb) =>
         eb.or([
@@ -86,7 +96,7 @@ export class CoachRetrievalService {
       // A bounded budget per tick. Without it one slow morning of sessions
       // starves everything behind them, and the tick runs every 30 minutes
       // anyway so the backlog still drains.
-      .limit(SWEEP_BATCH_LIMIT)
+      .limit(this.limit)
       .execute();
 
     const result: SweepResult = {
@@ -124,6 +134,9 @@ export class CoachRetrievalService {
 
       const attempts = session.retry_count + 1;
       const exhausted = attempts >= RETRIEVAL_ATTEMPT_LIMIT;
+      // No leader is asked about a notetaker shadow session: the gateway is
+      // ours, and the leader's own copy is the bot's.
+      const askLeader = exhausted && this.source !== NOTETAKER_SOURCE;
       await conn
         .updateTable("coach_intake_sessions")
         .set({
@@ -132,7 +145,7 @@ export class CoachRetrievalService {
           // The pending re-share request is persisted at the moment the budget
           // runs out, so the admin surface has something to show and the
           // operator has something to send (task 6.3b).
-          ...(exhausted
+          ...(askLeader
             ? { reshare_requested_at: sql`NOW()`, reshare_sent_at: null }
             : {}),
           updated_at: sql`NOW()`,
@@ -162,6 +175,7 @@ export class CoachRetrievalService {
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("state", "=", "retrieval_failed")
+      .where("source", "<>", NOTETAKER_SOURCE)
       .where("reshare_requested_at", "is not", null)
       .where("reshare_resolved_at", "is", null)
       .orderBy("reshare_requested_at")

@@ -6,6 +6,7 @@ import {
   CoachRetrievalService,
   RETRIEVAL_ATTEMPT_LIMIT,
 } from "./coach-retrieval.service";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "retrieval-coach";
@@ -214,5 +215,64 @@ describe("a pending re-share is visible, and there is a way back in", () => {
   it("resolving an unknown session changes nothing", async () => {
     const { svc } = service([]);
     expect(await svc.resolveReshare("nope")).toBe(false);
+  });
+});
+
+describe("the notetaker shadow is swept apart from the bot", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  class Recording {
+    ids: string[] = [];
+    async retain(id: string): Promise<RetainResult> {
+      this.ids.push(id);
+      return { retained: false, reason: "retrieval-failed" };
+    }
+  }
+  const shadow = (id: string, over: Record<string, unknown> = {}) =>
+    seed(id, { source: "notetaker", parallel_run: true, ...over });
+
+  it("the bot's sweep never hands a notetaker id to the Fireflies archive, and the shadow's sweep takes only its own", async () => {
+    await seed("ff-1");
+    await shadow("notetaker:bot_ret1");
+
+    const bot = new Recording();
+    await new CoachRetrievalService(Database, bot).sweep();
+    expect(bot.ids).toContain("ff-1");
+    expect(bot.ids.filter((id) => id.startsWith("notetaker:"))).toEqual([]);
+
+    const notetaker = new Recording();
+    await new CoachRetrievalService(
+      Database,
+      notetaker,
+      NOTETAKER_SOURCE,
+    ).sweep();
+    expect(notetaker.ids).toEqual(["notetaker:bot_ret1"]);
+  });
+
+  it("a shadow session out of attempts fails without asking the leader to re-share anything", async () => {
+    await shadow("notetaker:bot_ret2", {
+      state: "held",
+      retry_count: RETRIEVAL_ATTEMPT_LIMIT - 1,
+    });
+    const svc = new CoachRetrievalService(
+      Database,
+      new Recording(),
+      NOTETAKER_SOURCE,
+    );
+    expect((await svc.sweep()).failed).toBe(1);
+    const failed = await row("notetaker:bot_ret2");
+    expect(failed.state).toBe("retrieval_failed");
+    expect(failed.reshare_requested_at).toBeNull();
+
+    // Even a request set by hand is not one an admin is offered to send.
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ reshare_requested_at: new Date() })
+      .where("source_session_id", "=", "notetaker:bot_ret2")
+      .execute();
+    expect(
+      (await svc.pendingReshares()).map((r) => r.sourceSessionId),
+    ).not.toContain("notetaker:bot_ret2");
   });
 });

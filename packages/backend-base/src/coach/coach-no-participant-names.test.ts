@@ -71,6 +71,22 @@ describe("no participant name is captured anywhere", () => {
     expect(detail).not.toMatch(/speaker_name/);
   });
 
+  it("the notetaker shadow's client reads no participant list and passes on only the same pseudonymous detail", async () => {
+    // Its exports carry `participants`, `speakers` and each utterance's
+    // speaker name. The client may read a speaker's name to mark the leader,
+    // and nothing else: no participant or speaker list is read at all, and
+    // what it returns is the Fireflies detail type, which has no name field.
+    // The behaviour (no name in anything it returns) is tested beside it.
+    const source = await Bun.file(
+      new URL("./notetaker-exports.client.ts", import.meta.url).pathname,
+    ).text();
+    const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+    expect(code).not.toMatch(/\.participants\b|\.speakers\b|attendee/);
+    expect(code).toMatch(
+      /getTranscript\([\s\S]*?\): Promise<FirefliesTranscriptDetail \| null>/,
+    );
+  });
+
   it("the report contract carries attendees as a number, or null when no count was recorded", async () => {
     const schema = await Bun.file(
       new URL("./coach.schema.ts", import.meta.url).pathname,

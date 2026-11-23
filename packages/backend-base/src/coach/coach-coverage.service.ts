@@ -2,6 +2,7 @@ import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import { loadRotatingClasses } from "./coach-rotating.service";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 
 /**
  * Recording-bot coverage (change: port-coach-pipeline, task 4.7, design D6).
@@ -130,6 +131,9 @@ export class CoachCoverageService {
         eb.fn.max("observed_at").as("last"),
       ])
       .where("coach_id", "is not", null)
+      // Coverage is the Fireflies bot's. A notetaker shadow session says
+      // nothing about whether the recording that reaches leaders came in.
+      .where("source", "<>", NOTETAKER_SOURCE)
       .groupBy("coach_id")
       .execute();
     const observedByCoach = new Map(
@@ -146,6 +150,7 @@ export class CoachCoverageService {
           .selectFrom("coach_intake_sessions")
           .select("rotating_class_id")
           .where("rotating_class_id", "is not", null)
+          .where("source", "<>", NOTETAKER_SOURCE)
           .where("observed_at", ">=", since)
           .execute()
       ).map((r) => r.rotating_class_id as number),

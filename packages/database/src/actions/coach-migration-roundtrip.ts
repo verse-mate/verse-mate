@@ -85,6 +85,15 @@ type Refusal = {
 
 const REFUSALS: [string, Refusal][] = [
   [
+    "coach-notetaker-shadow-source",
+    {
+      seed: session("source = 'notetaker'"),
+      tables: ["coach_intake_sessions"],
+      names: "the older code cannot hold",
+      hard: true,
+    },
+  ],
+  [
     "coach-clear-unproven-confirmations",
     row(
       "coach_confirmation_clears",

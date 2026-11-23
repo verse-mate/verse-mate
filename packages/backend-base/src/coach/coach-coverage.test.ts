@@ -143,6 +143,30 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
     expect(row?.basis).toBe("observed");
   });
 
+  it("a notetaker shadow session is not coverage: only the bot's recording reaches the leader", async () => {
+    await leader("cov-silent", "cov-silent@example.test");
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "notetaker:bot_cov-silent",
+        source: "notetaker",
+        coach_id: "cov-silent",
+        matched_by: "title_match",
+        title: "s",
+        session_date: new Date().toISOString().slice(0, 10),
+        parallel_run: true,
+      })
+      .execute();
+
+    const report = await new CoachCoverageService(Database).assess({
+      windowDays: 30,
+    });
+    const row = report.leaders.find((l) => l.coachId === "cov-silent");
+    expect(row?.covered).toBe(false);
+    expect(row?.observedSessions).toBe(0);
+    expect(row?.basis).toBe("no-observation");
+  });
+
   it("a session OLDER than the window does not count as coverage", async () => {
     await leader("cov-silent", "cov-silent@example.test");
     await observed("cov-silent", 90);
