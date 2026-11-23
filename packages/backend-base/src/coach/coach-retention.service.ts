@@ -2,6 +2,7 @@ import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import { ObjectStorageService } from "../shared/storage/storage.service";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 
 /**
  * Bounded retention of session material (change: port-coach-pipeline,
@@ -45,11 +46,15 @@ export class CoachRetentionService {
     // bound. Ranked in SQL rather than by loading every asset and sorting in
     // memory, this runs against the whole corpus. Raw, because this kysely
     // version has no window-function builder.
+    //
+    // The notetaker shadow's recordings are ranked on their own, under the
+    // same bound: counted with the leader's, a shadow copy of a class would
+    // push one of the recordings their reports point to out of storage.
     const doomed = await sql<{ id: string; storage_key: string }>`
       SELECT id, storage_key FROM (
         SELECT a.id, a.storage_key, s.report_id, s.state,
                row_number() OVER (
-                 PARTITION BY a.coach_id
+                 PARTITION BY a.coach_id, s.source = ${NOTETAKER_SOURCE}
                  ORDER BY s.session_date DESC, a.created_at DESC
                ) AS rank
         FROM coach_session_assets a

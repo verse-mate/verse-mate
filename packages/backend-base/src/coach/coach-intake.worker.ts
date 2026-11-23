@@ -13,16 +13,29 @@ import {
   coachIntakeQueue,
 } from "./coach-intake.queue";
 import { CoachIntakeService } from "./coach-intake.service";
+import { CoachNotetakerIntakeService } from "./coach-notetaker-intake.service";
 import {
   CoachPipelineService,
   type PipelineResult,
 } from "./coach-pipeline.service";
 import { CoachRetentionService } from "./coach-retention.service";
 import { CoachRetrievalService } from "./coach-retrieval.service";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 import { speechToText } from "./coach-transcribe.service";
 import { CoachUploadMediaService, ffprobe } from "./coach-upload-media.service";
 import { HttpFirefliesClient } from "./fireflies.client";
 import { firefliesConfigured } from "./fireflies.config";
+import {
+  NotetakerExportsClient,
+  notetakerArchiveDeps,
+  notetakerShadowConfig,
+} from "./notetaker-exports.client";
+
+/**
+ * Recordings the shadow fetches per tick, against the bot's 20. Each can take
+ * minutes from the gateway, and one tick runs at a time.
+ */
+export const NOTETAKER_SWEEP_LIMIT = 3;
 
 /**
  * The coaching pipeline's clock (change: port-coach-pipeline, task 4.3).
@@ -45,6 +58,13 @@ import { firefliesConfigured } from "./fireflies.config";
  * 1 and 2 and stopped, so scoring, publishing, delivery and frame extraction
  * were unreachable code and recordings were retrieved, stored and paid for
  * without a report ever being produced.
+ *
+ * With COACH_NOTETAKER_SHADOW on, phases 1 to 3 run once more for the
+ * notetaker's exports, AFTER the leaders' phase 3: the shadow's downloads and
+ * scoring never stand between a leader and their report. A few recordings per
+ * tick at most, so a slow gateway cannot hold the next tick up for long.
+ * They are counted apart under `notetaker`, so the counts above stay the
+ * leaders' own, and nothing of theirs is ever delivered.
  */
 
 export interface CoachIntakeRunResult {
@@ -65,6 +85,21 @@ export interface CoachIntakeRunResult {
   pipelineFailed: number;
   /** Phase 4: recordings pruned past the per-leader bound. */
   pruned: number;
+  /** The notetaker shadow, present only while it is on. */
+  notetaker?: {
+    observed: number;
+    alreadySeen: number;
+    unresolved: number;
+    beforeSince: number;
+    retrievalAttempted: number;
+    retained: number;
+    held: number;
+    retrievalFailed: number;
+    /** Scored and kept for the comparison; never sent. */
+    scored: number;
+    scoringInBatch: number;
+    scoringFailed: number;
+  };
 }
 
 /**
@@ -124,6 +159,52 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
     console.error("[COACH-INTAKE] pipeline phase failed:", error);
   }
 
+  const shadow = notetakerShadowConfig();
+  let shadowPoll = {
+    observed: 0,
+    alreadySeen: 0,
+    unresolved: 0,
+    beforeSince: 0,
+  };
+  let shadowSweep = { attempted: 0, retained: 0, held: 0, failed: 0 };
+  let shadowScored: PipelineResult[] = [];
+  if (shadow) {
+    const exportsClient = new NotetakerExportsClient(shadow);
+    try {
+      shadowPoll = await new CoachNotetakerIntakeService(
+        Database,
+        exportsClient,
+        shadow.since,
+      ).poll();
+    } catch (error) {
+      console.error("[COACH-NOTETAKER-SHADOW] poll phase failed:", error);
+    }
+    try {
+      shadowSweep = await new CoachRetrievalService(
+        Database,
+        new CoachArchiveService(
+          Database,
+          exportsClient,
+          notetakerArchiveDeps(shadow),
+        ),
+        NOTETAKER_SOURCE,
+        NOTETAKER_SWEEP_LIMIT,
+      ).sweep();
+    } catch (error) {
+      console.error("[COACH-NOTETAKER-SHADOW] retrieval phase failed:", error);
+    }
+    try {
+      // No mailer: this run sends nothing whatever it scores.
+      shadowScored = await new CoachPipelineService(
+        Database,
+        exportsClient,
+        null,
+      ).run({ notetaker: "only" });
+    } catch (error) {
+      console.error("[COACH-NOTETAKER-SHADOW] pipeline phase failed:", error);
+    }
+  }
+
   let pruned = 0;
   try {
     pruned = (await new CoachRetentionService(Database).prune()).deleted;
@@ -155,6 +236,26 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
       ),
     ).length,
     pruned,
+    ...(shadow
+      ? {
+          notetaker: {
+            ...shadowPoll,
+            retrievalAttempted: shadowSweep.attempted,
+            retained: shadowSweep.retained,
+            held: shadowSweep.held,
+            retrievalFailed: shadowSweep.failed,
+            scored: shadowScored.filter(
+              (p) => p.outcome === "scored-awaiting-review",
+            ).length,
+            scoringInBatch: shadowScored.filter(
+              (p) => p.outcome === "scoring-in-batch",
+            ).length,
+            scoringFailed: shadowScored.filter(
+              (p) => p.outcome === "scoring-failed",
+            ).length,
+          },
+        }
+      : {}),
   };
 }
 
@@ -181,8 +282,13 @@ export const coachIntakeWorker = new Worker<
 
 coachIntakeWorker.on("completed", (job) => {
   const r = job?.returnvalue;
+  const shadow = r?.notetaker
+    ? ` notetaker: observed=${r.notetaker.observed} retained=${r.notetaker.retained} failed=${r.notetaker.retrievalFailed} scored=${r.notetaker.scored} scoringFailed=${r.notetaker.scoringFailed}`
+    : "";
   if (r?.skipped) {
-    console.error(`[COACH-INTAKE] job ${job?.id} skipped: ${r.skipped}`);
+    console.error(
+      `[COACH-INTAKE] job ${job?.id} skipped: ${r.skipped}${shadow}`,
+    );
     return;
   }
   console.log(
@@ -192,7 +298,7 @@ coachIntakeWorker.on("completed", (job) => {
       `retained=${r?.retained} held=${r?.held} failed=${r?.retrievalFailed} ` +
       `delivered=${r?.delivered} awaitingReview=${r?.awaitingReview} ` +
       `scoringInBatch=${r?.scoringInBatch} ` +
-      `pipelineFailed=${r?.pipelineFailed} pruned=${r?.pruned}`,
+      `pipelineFailed=${r?.pipelineFailed} pruned=${r?.pruned}${shadow}`,
   );
 });
 

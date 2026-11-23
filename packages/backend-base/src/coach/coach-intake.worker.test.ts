@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it } from "bun:test";
+import { db as Database } from "database";
 
 import {
   COACH_INTAKE_DEFAULT_CRON,
@@ -10,6 +11,11 @@ import {
   coachIntakeWorker,
   runCoachIntakeTick,
 } from "./coach-intake.worker";
+import { NOTETAKER_URL } from "./coach-notetaker";
+import {
+  COACH_NOTETAKER_SHADOW,
+  NOTETAKER_EXPORT_TOKEN,
+} from "./notetaker-exports.client";
 
 /**
  * Task 4.3's scenario is "No operator host is involved". What makes that true
@@ -64,6 +70,47 @@ describe("the pipeline's clock lives inside VerseMate", () => {
       expect(result.delivered).toBe(0);
     } finally {
       if (key !== undefined) process.env.FIREFLIES_API_KEY = key;
+    }
+  });
+
+  it("the notetaker shadow runs only when switched on, and is counted apart from the leaders' sessions", async () => {
+    const names = [
+      "FIREFLIES_API_KEY",
+      COACH_NOTETAKER_SHADOW,
+      NOTETAKER_URL,
+      NOTETAKER_EXPORT_TOKEN,
+    ];
+    const saved = Object.fromEntries(names.map((n) => [n, process.env[n]]));
+    for (const n of names) Reflect.deleteProperty(process.env, n);
+    // Nothing of the shadow's is waiting, so no tick below scores anything.
+    const waiting = await Database.getOrCreateConnection()
+      .selectFrom("coach_intake_sessions")
+      .select("source_session_id")
+      .where("source", "=", "notetaker")
+      .where("state", "in", ["observed", "held", "retained"])
+      .execute();
+    expect(waiting).toEqual([]);
+    try {
+      const off = await runCoachIntakeTick();
+      expect(off.notetaker).toBeUndefined();
+
+      // On, against a gateway that cannot answer (.invalid never resolves):
+      // the poll fails loudly, the tick still completes and reports it.
+      process.env[COACH_NOTETAKER_SHADOW] = "true";
+      process.env[NOTETAKER_URL] = "https://notetaker.invalid";
+      process.env[NOTETAKER_EXPORT_TOKEN] = "export-token";
+      const on = await runCoachIntakeTick();
+      expect(on.skipped).toBe("no-credential");
+      expect(on.notetaker).toMatchObject({
+        observed: 0,
+        retrievalAttempted: 0,
+        scored: 0,
+      });
+      expect(on.delivered).toBe(0);
+    } finally {
+      for (const n of names)
+        if (saved[n] === undefined) Reflect.deleteProperty(process.env, n);
+        else process.env[n] = saved[n];
     }
   });
 });

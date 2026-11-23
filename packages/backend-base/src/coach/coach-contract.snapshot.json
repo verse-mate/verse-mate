@@ -8026,6 +8026,702 @@
       }
     },
     {
+      "route": "GET /coach/admin/notetaker/comparison",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "since": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "pairs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "coachId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rotatingClassId": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "classKey": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fireflies": {
+                    "type": "object",
+                    "properties": {
+                      "sourceSessionId": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "reportId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "composite": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "sourceSessionId",
+                      "state",
+                      "reportId",
+                      "composite"
+                    ]
+                  },
+                  "notetaker": {
+                    "type": "object",
+                    "properties": {
+                      "sourceSessionId": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "reportId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "composite": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "sourceSessionId",
+                      "state",
+                      "reportId",
+                      "composite"
+                    ]
+                  },
+                  "comparison": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "compositeDifference": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "dimensions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "n": {
+                                  "type": "number"
+                                },
+                                "fireflies": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "notetaker": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "difference": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "n",
+                                "fireflies",
+                                "notetaker",
+                                "difference"
+                              ]
+                            }
+                          },
+                          "withinOne": {
+                            "type": "number"
+                          },
+                          "comparable": {
+                            "type": "number"
+                          },
+                          "flagged": {
+                            "type": "boolean"
+                          },
+                          "flagReasons": {
+                            "type": "array",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "const": "composite",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "dimension",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "one-sided-not-applicable",
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "compositeDifference",
+                          "dimensions",
+                          "withinOne",
+                          "comparable",
+                          "flagged",
+                          "flagReasons"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "coachId",
+                  "rotatingClassId",
+                  "date",
+                  "classKey",
+                  "fireflies",
+                  "notetaker",
+                  "comparison"
+                ]
+              }
+            },
+            "needsPairing": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "coachId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rotatingClassId": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "fireflies": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sourceSessionId": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        },
+                        "reportId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "composite": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "sourceSessionId",
+                        "state",
+                        "reportId",
+                        "composite"
+                      ]
+                    }
+                  },
+                  "notetaker": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sourceSessionId": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        },
+                        "reportId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "composite": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "sourceSessionId",
+                        "state",
+                        "reportId",
+                        "composite"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "coachId",
+                  "rotatingClassId",
+                  "date",
+                  "fireflies",
+                  "notetaker"
+                ]
+              }
+            },
+            "unmatched": {
+              "type": "object",
+              "properties": {
+                "fireflies": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "coachId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "rotatingClassId": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "sourceSessionId": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "reportId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "composite": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "coachId",
+                      "rotatingClassId",
+                      "date",
+                      "sourceSessionId",
+                      "state",
+                      "reportId",
+                      "composite"
+                    ]
+                  }
+                },
+                "notetaker": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "coachId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "rotatingClassId": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "sourceSessionId": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "reportId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "composite": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "coachId",
+                      "rotatingClassId",
+                      "date",
+                      "sourceSessionId",
+                      "state",
+                      "reportId",
+                      "composite"
+                    ]
+                  }
+                }
+              },
+              "required": ["fireflies", "notetaker"]
+            },
+            "share": {
+              "type": "object",
+              "properties": {
+                "withinOne": {
+                  "type": "number"
+                },
+                "comparable": {
+                  "type": "number"
+                },
+                "ratio": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["withinOne", "comparable", "ratio"]
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "pairs": {
+                  "type": "number"
+                },
+                "compared": {
+                  "type": "number"
+                },
+                "flagged": {
+                  "type": "number"
+                },
+                "needsPairing": {
+                  "type": "number"
+                },
+                "unmatchedFireflies": {
+                  "type": "number"
+                },
+                "unmatchedNotetaker": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "pairs",
+                "compared",
+                "flagged",
+                "needsPairing",
+                "unmatchedFireflies",
+                "unmatchedNotetaker"
+              ]
+            }
+          },
+          "required": [
+            "enabled",
+            "since",
+            "pairs",
+            "needsPairing",
+            "unmatched",
+            "share",
+            "counts"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "401": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "403": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "422": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {},
+            "details": {
+              "additionalProperties": true,
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/admin/notetaker/zoom",
       "response": {
         "200": {

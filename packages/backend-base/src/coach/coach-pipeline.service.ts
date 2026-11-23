@@ -31,6 +31,8 @@ import {
   authenticityBaseline,
 } from "./coach-scoring.service";
 import {
+  NOTETAKER_SOURCE,
+  notNotetaker,
   redeliverable,
   scorable,
   scoringVersionLiteral,
@@ -100,11 +102,15 @@ export function monthEnding(sessionDate: string, now: Date): boolean {
 const PARALLEL_RUN_HOLD =
   "parallel run: kept for admin comparison, nothing is sent until cutover";
 
+const NOTETAKER_SHADOW_HOLD =
+  "notetaker shadow: kept to compare with the Fireflies recording, never sent";
+
 const NO_MAILER_HOLD = "held until delivered: no mailer is configured";
 
 const NOT_A_PARALLEL_RUN_COPY = sql<boolean>`NOT EXISTS (
   SELECT 1 FROM coach_intake_sessions s
-  WHERE s.report_id = coach_reports.id AND s.parallel_run
+  WHERE s.report_id = coach_reports.id
+    AND (s.parallel_run OR s.source = ${NOTETAKER_SOURCE})
 )`;
 
 function newVersionHold(version: ScoringVersion | undefined): string {
@@ -144,8 +150,20 @@ export class CoachPipelineService {
       deps.delivery ?? (mailer ? new CoachDeliveryService(db, mailer) : null);
   }
 
-  /** Carry every session whose material is retained through to a report. */
-  async run(opts: { uploadsOnly?: boolean } = {}): Promise<PipelineResult[]> {
+  /**
+   * Carry every session whose material is retained through to a report.
+   *
+   * The notetaker shadow's sessions are never in the leaders' run: they have
+   * their own (`notetaker: "only"`), which the worker makes after the leaders'
+   * run has scored and delivered, so the shadow can neither take a leader's
+   * place in the batch nor hold their reports up. That run redelivers nothing.
+   * With the shadow off nobody asks for it, and its retained sessions wait:
+   * turning the shadow off stops its scoring spend at once.
+   */
+  async run(
+    opts: { uploadsOnly?: boolean; notetaker?: "exclude" | "only" } = {},
+  ): Promise<PipelineResult[]> {
+    const shadowOnly = opts.notetaker === "only";
     const sessions = this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
@@ -162,7 +180,11 @@ export class CoachPipelineService {
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where(scorable)
-      .$if(opts.uploadsOnly === true, (q) => q.where("source", "=", "upload"))
+      .$if(shadowOnly, (q) => q.where("source", "=", NOTETAKER_SOURCE))
+      .$if(!shadowOnly, (q) => q.where(notNotetaker))
+      .$if(!shadowOnly && opts.uploadsOnly === true, (q) =>
+        q.where("source", "=", "upload"),
+      )
       .orderBy("retry_count")
       .orderBy("observed_at");
     const due = [
@@ -173,7 +195,7 @@ export class CoachPipelineService {
         .execute()),
     ];
 
-    const out: PipelineResult[] = await this.redeliver();
+    const out: PipelineResult[] = shadowOnly ? [] : await this.redeliver();
     let published = 0;
     const mayPublishBatch = () => published++ < PIPELINE_BATCH_LIMIT;
     for (const session of due) {
@@ -401,7 +423,11 @@ export class CoachPipelineService {
     sentences: FirefliesTranscriptDetail["sentences"];
     duration: number | null;
   } | null> {
-    if (session.source !== "upload")
+    // Only the Fireflies bot's sessions are read from the provider. An upload's
+    // transcript and a notetaker session's are read from what the archive
+    // stored (pseudonymised either way); a notetaker id sent to Fireflies
+    // would only come back unknown.
+    if (session.source === "bot")
       return this.fireflies.getTranscript(
         session.source_session_id,
         leaderName,
@@ -670,7 +696,8 @@ export class CoachPipelineService {
         session.source_session_id,
       ),
     });
-    const delivering = !session.parallel_run && coachPipelineLive();
+    const shadow = session.source === NOTETAKER_SOURCE;
+    const delivering = !session.parallel_run && !shadow && coachPipelineLive();
     const holdReason =
       [
         scored.reviewReason,
@@ -755,12 +782,12 @@ export class CoachPipelineService {
       };
     }
 
-    if (session.parallel_run || !coachPipelineLive()) {
+    if (session.parallel_run || shadow || !coachPipelineLive()) {
       return {
         sourceSessionId: session.source_session_id,
         outcome: "scored-awaiting-review",
         reportId: published.reportId,
-        detail: PARALLEL_RUN_HOLD,
+        detail: shadow ? NOTETAKER_SHADOW_HOLD : PARALLEL_RUN_HOLD,
       };
     }
 

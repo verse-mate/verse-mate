@@ -23,6 +23,10 @@ async function clear() {
     .where("source_session_id", "like", "ff-parallel-%")
     .execute();
   await conn
+    .deleteFrom("coach_intake_sessions")
+    .where("source_session_id", "like", "notetaker:bot_parallel%")
+    .execute();
+  await conn
     .deleteFrom("coach_reports")
     .where("coach_id", "in", LEADERS)
     .execute();
@@ -442,6 +446,23 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
     );
   });
 
+  it("a notetaker shadow session is not the backend's side of this comparison: it has its own", async () => {
+    await backend("ff-parallel-1", A, "2026-10-01", twelve([4]));
+    await backend("notetaker:bot_parallel1", A, "2026-10-01", twelve([2]));
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ source: "notetaker" })
+      .where("source_session_id", "=", "notetaker:bot_parallel1")
+      .execute();
+    await host(A, "2026-10-01", 78, twelve([4]));
+    const { sessions, needsPairing, unmatched } = await read();
+    expect(needsPairing).toEqual([]);
+    expect(unmatched.backend).toEqual([]);
+    expect(sessions.map((s) => s.backend.sourceSessionId)).toEqual([
+      "ff-parallel-1",
+    ]);
+  });
+
   it("a session the backend scored while live is not part of the comparison", async () => {
     await backend("ff-parallel-1", A, "2026-10-01", twelve([]));
     await conn
@@ -489,6 +510,35 @@ describe("ending the parallel run at cutover", () => {
       { source_session_id: "ff-parallel-unattributed", parallel_run: true },
       { source_session_id: "ff-parallel-unreported", parallel_run: false },
     ]);
+  });
+
+  it("a notetaker shadow session stays in the parallel run at cutover, whether or not the host reported its class", async () => {
+    for (const [id, date] of [
+      ["notetaker:bot_parallelA", "2026-10-08"],
+      ["notetaker:bot_parallelB", "2026-10-01"],
+    ]) {
+      await backend(id, A, date, twelve([4]));
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ source: "notetaker" })
+        .where("source_session_id", "=", id)
+        .execute();
+    }
+    await host(A, "2026-10-01", 78, twelve([4]));
+
+    expect(await endParallelRun(Database)).toBe(0);
+    expect(
+      await endParallelRun(Database, [
+        "notetaker:bot_parallelA",
+        "notetaker:bot_parallelB",
+      ]),
+    ).toBe(0);
+    const rows = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("parallel_run")
+      .where("source_session_id", "like", "notetaker:bot_parallel%")
+      .execute();
+    expect(rows).toEqual([{ parallel_run: true }, { parallel_run: true }]);
   });
 });
 
@@ -552,6 +602,38 @@ describe("a parallel-run session attributed after cutover leaves the parallel ru
       await reattributeSession(Database, "ff-parallel-late", A, null),
     ).toMatchObject({ ok: true });
     expect(await parallelRun("ff-parallel-late")).toBe(false);
+  });
+
+  it("a notetaker shadow session attributed after cutover, by keywords or by an admin, stays in it", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await unattributed("notetaker:bot_parallelK");
+    await unattributed("notetaker:bot_parallelM");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ source: "notetaker" })
+      .where("source_session_id", "like", "notetaker:bot_parallel%")
+      .execute();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ title: "untitled" })
+      .where("source_session_id", "=", "notetaker:bot_parallelM")
+      .execute();
+    await reattributeUnresolved(Database);
+    expect(
+      await reattributeSession(Database, "notetaker:bot_parallelM", A, null),
+    ).toMatchObject({ ok: true });
+    for (const id of ["notetaker:bot_parallelK", "notetaker:bot_parallelM"]) {
+      const row = await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["coach_id", "parallel_run", "class_key"])
+        .where("source_session_id", "=", id)
+        .executeTakeFirstOrThrow();
+      expect(row.coach_id).toBe(A);
+      expect(row.parallel_run).toBe(true);
+      // Moved by an admin, it is keyed to the new leader's class like the
+      // bot's copy, so the comparison still pairs the two.
+      if (id.endsWith("M")) expect(row.class_key).toBe(`group:${A}`);
+    }
   });
 
   it("attributed during the parallel run, it stays in it", async () => {

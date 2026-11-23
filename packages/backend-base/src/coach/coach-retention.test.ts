@@ -115,6 +115,38 @@ describe("recordings are bounded per leader", () => {
     expect(storage.deleted).toEqual([`coach/sessions/ff-${A}-1/recording`]);
   });
 
+  it("the notetaker shadow's recordings never count against the leader's four: each is bounded on its own", async () => {
+    const shadow = async (n: number) => {
+      await seed(A, n);
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ source: "notetaker", parallel_run: true, state: "scored" })
+        .where("source_session_id", "=", `ff-${A}-${n}`)
+        .execute();
+    };
+    for (const n of [1, 2, 3, 4]) await seed(A, n);
+    for (const n of [10, 11, 12]) await shadow(n);
+    const { svc, storage } = service();
+
+    expect((await svc.prune()).deleted).toBe(0);
+    expect(storage.deleted).toEqual([]);
+
+    for (const n of [13, 14]) await shadow(n);
+    expect((await svc.prune()).deleted).toBe(1);
+    // The oldest SHADOW recording goes; every one of the leader's stays.
+    expect(storage.deleted).toEqual([`coach/sessions/ff-${A}-10/recording`]);
+    expect(await keysFor(A)).toEqual([
+      `ff-${A}-1`,
+      `ff-${A}-2`,
+      `ff-${A}-3`,
+      `ff-${A}-4`,
+      `ff-${A}-11`,
+      `ff-${A}-12`,
+      `ff-${A}-13`,
+      `ff-${A}-14`,
+    ]);
+  });
+
   it("a recording whose session is not scored yet is kept, however far past the bound", async () => {
     await seed(A, 1, "recording", { scored: false });
     for (const n of [2, 3, 4, 5, 6]) await seed(A, n);

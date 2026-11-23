@@ -150,7 +150,10 @@ function allowedVideoHosts(): string[] {
 }
 
 /** True when the URL is https and its host is on the allowlist. */
-export function isAllowedVideoUrl(raw: string): boolean {
+export function isAllowedVideoUrl(
+  raw: string,
+  hosts: string[] = allowedVideoHosts(),
+): boolean {
   let url: URL;
   try {
     url = new URL(raw);
@@ -159,7 +162,7 @@ export function isAllowedVideoUrl(raw: string): boolean {
   }
   if (url.protocol !== "https:" || url.port !== "") return false;
   const host = url.hostname.toLowerCase();
-  return allowedVideoHosts().some(
+  return hosts.some(
     (allowed) => host === allowed || host.endsWith(`.${allowed}`),
   );
 }
@@ -201,6 +204,13 @@ export interface ArchiveDeps {
   ) => Promise<Response>;
   resolve?: (hostname: string) => Promise<string[]>;
   maxRecordingBytes?: number;
+  /**
+   * The hosts THIS archive fetches recordings from, in place of
+   * COACH_VIDEO_HOST_ALLOWLIST. The notetaker shadow's archive names only the
+   * notetaker's gateway, so allowing it never widens what the Fireflies
+   * archive accepts. The https and public-address checks apply either way.
+   */
+  videoHosts?: string[];
 }
 
 export class CoachArchiveService {
@@ -208,6 +218,7 @@ export class CoachArchiveService {
   private readonly fetchImpl: NonNullable<ArchiveDeps["fetch"]>;
   private readonly resolve: NonNullable<ArchiveDeps["resolve"]>;
   private readonly maxRecordingBytes: number;
+  private readonly videoHosts: string[] | undefined;
 
   constructor(
     private readonly db: db,
@@ -218,6 +229,11 @@ export class CoachArchiveService {
     this.fetchImpl = deps.fetch ?? pinnedFetch;
     this.resolve = deps.resolve ?? systemResolve;
     this.maxRecordingBytes = deps.maxRecordingBytes ?? MAX_RECORDING_BYTES;
+    this.videoHosts = deps.videoHosts?.map((h) => h.trim().toLowerCase());
+  }
+
+  private allowed(url: string): boolean {
+    return isAllowedVideoUrl(url, this.videoHosts ?? allowedVideoHosts());
   }
 
   /** Where a session's material lives. Our key, never the provider's URL. */
@@ -261,7 +277,7 @@ export class CoachArchiveService {
     if (!detail.video_url) return { retained: false, reason: "no-video" };
 
     // The provider hands us this URL; it is not ours to trust.
-    if (!isAllowedVideoUrl(detail.video_url)) {
+    if (!this.allowed(detail.video_url)) {
       console.error(
         `[COACH-ARCHIVE] refusing ${sourceSessionId}: video host not allowed`,
       );
@@ -396,7 +412,7 @@ export class CoachArchiveService {
       }
       await response.body?.cancel();
       url = new URL(location, url).toString();
-      if (!isAllowedVideoUrl(url)) {
+      if (!this.allowed(url)) {
         console.error("[COACH-ARCHIVE] refusing a redirect off the allowlist");
         return "untrusted-video-host";
       }

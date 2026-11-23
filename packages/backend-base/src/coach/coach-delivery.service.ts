@@ -13,9 +13,11 @@ import {
 } from "./coach-governance.service";
 import { groupAddresses } from "./coach-rotating.service";
 import {
+  NOTETAKER_SOURCE,
   STALE_DELIVERY_CLAIM,
   VERSION_DELIVERED_TO_LEADER,
   claimable,
+  notNotetaker,
   shownToAnyone,
 } from "./coach-session-state";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
@@ -182,6 +184,7 @@ export async function releaseDeliveredVersions(
     .where("hold_kind", "=", "scoring-version")
     .where("state", "in", ["scored", "delivery_pending"])
     .where("parallel_run", "=", false)
+    .where(notNotetaker)
     .where("release_required", "=", false)
     .$if(coachId !== undefined, (q) =>
       q.where("coach_id", "=", coachId as string),
@@ -267,11 +270,18 @@ export class CoachDeliveryService {
     }
     const session = await conn
       .selectFrom("coach_intake_sessions")
-      .select(["state", "release_required", "parallel_run", "hold_kind"])
+      .select([
+        "state",
+        "release_required",
+        "parallel_run",
+        "hold_kind",
+        "source",
+      ])
       .where("report_id", "=", reportId)
       .executeTakeFirst();
     if (!session) return { status: "unknown-report" };
-    if (session.parallel_run) return { status: "parallel-run-session" };
+    if (session.parallel_run || session.source === NOTETAKER_SOURCE)
+      return { status: "parallel-run-session" };
     if (session.state === "delivered") return { status: "already-delivered" };
     return {
       status:

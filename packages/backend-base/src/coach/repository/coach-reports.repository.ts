@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import type Database from "../../../../database/src/models/Database";
 
 import type { db } from "../../shared/shared.plugin";
+import { NOTETAKER_SESSION_PREFIX } from "../coach-session-state";
 import type { CoachReportRow } from "../coach-store.transform";
 
 /** A report's list-view row: the summary jsonb plus its identity. */
@@ -71,6 +72,13 @@ function clampInt(
   return Math.min(Math.max(Math.trunc(n), min), max);
 }
 
+/**
+ * The notetaker shadow's reports stay out of every list and count here. They
+ * are read through its own comparison; listed with the leader's, each class
+ * it recorded would appear twice. A report by id is still readable.
+ */
+const NOT_SHADOW = `${NOTETAKER_SESSION_PREFIX}%`;
+
 /** Select `session_date` as a yyyy-mm-dd string, never as a Date. */
 const DATE_COL = sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as(
   "session_date",
@@ -118,6 +126,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select(["id", "coach_id", "summary", "held"])
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
@@ -142,6 +151,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select("id")
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
@@ -159,6 +169,7 @@ export class CoachReportsRepository {
     const row = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select((eb) => eb.fn.countAll<string>().as("n"))
       .where("coach_id", "=", coachId)
       .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
@@ -173,6 +184,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select(["id", "coach_id", "summary"])
       .select(DATE_COL)
       .orderBy("coach_id")
@@ -295,6 +307,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select(["id", "summary", "metrics"])
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
@@ -321,6 +334,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select(["id", "coach_id", "summary", "metrics", "body", "held"])
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
@@ -342,6 +356,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select("coach_id")
       .distinct()
       .orderBy("coach_id")
@@ -362,6 +377,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
+      .where("source_session_id", "not like", NOT_SHADOW)
       .select(["id", "coach_id", "summary", "metrics"])
       .select(DATE_COL)
       .orderBy("session_date", "asc")

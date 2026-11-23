@@ -53,6 +53,7 @@ import {
   MonthlyReportRowSchema,
   MonthlySchema,
   NoteSchema,
+  NotetakerComparisonSchema,
   NotetakerStatusSchema,
   NotetakerZoomSchema,
   ParallelRunComparisonSchema,
@@ -1239,6 +1240,27 @@ const plugin = new Elysia()
         {
           response: {
             200: ParallelRunComparisonSchema,
+            ...StandardErrorResponses,
+            ...UnauthorizedResponse,
+            ...ForbiddenResponse,
+          },
+        },
+      )
+      // The notetaker shadow beside the Fireflies bot, class by class. Answers
+      // with the shadow off too: `enabled` says so, and what it recorded
+      // before stays readable.
+      .get(
+        "/admin/notetaker/comparison",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return coachService.notetakerComparison();
+        },
+        {
+          response: {
+            200: NotetakerComparisonSchema,
             ...StandardErrorResponses,
             ...UnauthorizedResponse,
             ...ForbiddenResponse,

@@ -349,6 +349,15 @@ describe("every admin route answers through the real service within its response
     expect(typeof comparison.body?.counts.compared).toBe("number");
   });
 
+  it("the notetaker comparison, readable with the shadow off", async () => {
+    const comparison = await call("GET", "notetaker/comparison");
+    expect(comparison.status).toBe(200);
+    expect(comparison.body?.enabled).toBe(false);
+    expect(Array.isArray(comparison.body?.pairs)).toBe(true);
+    expect(comparison.body?.unmatched).toBeDefined();
+    expect(typeof comparison.body?.counts.compared).toBe("number");
+  });
+
   it("re-share listing, send and resolve", async () => {
     const listed = await call("GET", "reshares");
     expect(listed.status).toBe(200);
@@ -1059,6 +1068,17 @@ describe("the parallel-run comparison route", () => {
   it("an anonymous caller gets 401 and a signed-in leader who is not an admin 403", async () => {
     expect((await comparisonAs(null)).status).toBe(401);
     expect((await comparisonAs(memberToken)).status).toBe(403);
+  });
+
+  it("the notetaker comparison refuses the same callers", async () => {
+    const notetakerAs = (bearer: string | null) =>
+      app.handle(
+        new Request("http://localhost/coach/admin/notetaker/comparison", {
+          headers: bearer ? { authorization: `Bearer ${bearer}` } : {},
+        }),
+      );
+    expect((await notetakerAs(null)).status).toBe(401);
+    expect((await notetakerAs(memberToken)).status).toBe(403);
   });
 
   it("an admin gets one compared session, one pair to make and one unmatched session, within the response schema", async () => {

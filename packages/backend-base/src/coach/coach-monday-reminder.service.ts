@@ -11,6 +11,7 @@ import {
 } from "./coach-delivery.service";
 import { REMINDER_TIME_ZONE, calendarDate } from "./coach-reminder.service";
 import { loadRotatingClasses } from "./coach-rotating.service";
+import { NOTETAKER_SOURCE } from "./coach-session-state";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
 export const MONDAY_REMINDER_DEFAULT_CRON = "0 15 * * 1";
@@ -79,6 +80,9 @@ export class CoachMondayReminderService {
     const arrived = await conn
       .selectFrom("coach_intake_sessions")
       .select(["coach_id", "rotating_class_id"])
+      // A notetaker shadow session is no sign the session reached the
+      // pipeline that reports to the leader.
+      .where("source", "<>", NOTETAKER_SOURCE)
       .where("observed_at", ">=", utc(from))
       .where("observed_at", "<", utc(to))
       .execute();
@@ -100,7 +104,7 @@ export class CoachMondayReminderService {
         "not_teaching_attested_at",
       ])
       .select(
-        sql<Date | null>`(SELECT max(s.observed_at) FROM coach_intake_sessions s WHERE s.coach_id = coach_leaders.slug)`.as(
+        sql<Date | null>`(SELECT max(s.observed_at) FROM coach_intake_sessions s WHERE s.coach_id = coach_leaders.slug AND s.source <> ${NOTETAKER_SOURCE})`.as(
           "last_observed",
         ),
       )

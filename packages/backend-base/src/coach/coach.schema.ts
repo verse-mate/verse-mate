@@ -864,6 +864,85 @@ export const ParallelRunComparisonSchema = t.Object({
   }),
 });
 
+const NotetakerSideSchema = t.Object({
+  sourceSessionId: t.String(),
+  state: t.String(),
+  reportId: t.Union([t.String(), t.Null()]),
+  composite: t.Union([t.Number(), t.Null()]),
+});
+
+const NotetakerPlaceSchema = {
+  coachId: t.Union([t.String(), t.Null()]),
+  rotatingClassId: t.Union([t.Number(), t.Null()]),
+  date: t.String(),
+};
+
+/** The notetaker shadow beside the Fireflies bot (COACH_NOTETAKER_SHADOW). */
+export const NotetakerComparisonSchema = t.Object({
+  enabled: t.Boolean(),
+  since: t.Union([t.String(), t.Null()]),
+  pairs: t.Array(
+    t.Object({
+      ...NotetakerPlaceSchema,
+      classKey: t.Union([t.String(), t.Null()]),
+      fireflies: NotetakerSideSchema,
+      notetaker: NotetakerSideSchema,
+      comparison: t.Union([
+        t.Object({
+          compositeDifference: t.Union([t.Number(), t.Null()]),
+          dimensions: t.Array(
+            t.Object({
+              n: t.Number(),
+              fireflies: t.Union([t.Number(), t.Null()]),
+              notetaker: t.Union([t.Number(), t.Null()]),
+              difference: t.Union([t.Number(), t.Null()]),
+            }),
+          ),
+          withinOne: t.Number(),
+          comparable: t.Number(),
+          flagged: t.Boolean(),
+          flagReasons: t.Array(
+            t.Union([
+              t.Literal("composite"),
+              t.Literal("dimension"),
+              t.Literal("one-sided-not-applicable"),
+            ]),
+          ),
+        }),
+        t.Null(),
+      ]),
+    }),
+  ),
+  needsPairing: t.Array(
+    t.Object({
+      ...NotetakerPlaceSchema,
+      fireflies: t.Array(NotetakerSideSchema),
+      notetaker: t.Array(NotetakerSideSchema),
+    }),
+  ),
+  unmatched: t.Object({
+    fireflies: t.Array(
+      t.Object({ ...NotetakerPlaceSchema, ...NotetakerSideSchema.properties }),
+    ),
+    notetaker: t.Array(
+      t.Object({ ...NotetakerPlaceSchema, ...NotetakerSideSchema.properties }),
+    ),
+  }),
+  share: t.Object({
+    withinOne: t.Number(),
+    comparable: t.Number(),
+    ratio: t.Union([t.Number(), t.Null()]),
+  }),
+  counts: t.Object({
+    pairs: t.Number(),
+    compared: t.Number(),
+    flagged: t.Number(),
+    needsPairing: t.Number(),
+    unmatchedFireflies: t.Number(),
+    unmatchedNotetaker: t.Number(),
+  }),
+});
+
 export const AddressChangeDescriptionSchema = t.Union([
   t.Object({
     leaderName: t.String(),

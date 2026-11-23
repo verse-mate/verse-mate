@@ -150,6 +150,19 @@ describe("Leaders Without A Session In The Past Week Are Reminded To Upload (tas
     });
   });
 
+  it("A notetaker shadow session is no sign the leader's session came in: the leader is still reminded", async () => {
+    await session("mr-notetaker-1", "mr-ana", "2031-03-08T16:00:00Z", {
+      source: "notetaker",
+      parallel_run: true,
+    });
+    const mailer = new Mailer();
+    await run(mailer);
+    expect(mailer.to(EMAIL("mr-ana"))).toHaveLength(1);
+    expect(
+      (await records()).find((r) => r.coach_id === "mr-ana"),
+    ).toMatchObject({ found: false, outcome: "sent" });
+  });
+
   it("On Monday a leader uploads a session dated nine days earlier: it arrived in the window, so no reminder", async () => {
     await session("mr-upload-late", "mr-ben", "2031-03-10T14:00:00Z", {
       source: "upload",

@@ -55,6 +55,7 @@ import type { ScorecardRating } from "./coach-scorecard";
 import {
   COLD_RECALL_FEEDBACK,
   type HoldKind,
+  NOTETAKER_SOURCE,
   SKIPPED_LEADER_ADDRESS,
   SKIPPED_LEADER_IS_GROUP,
   STALE_DELIVERY_CLAIM,
@@ -610,6 +611,8 @@ export class CoachService {
     coldRecall?: string[];
     skipped?: string[];
   }> {
+    if (await this.notetakerShadowReport(reportId))
+      return { delivered: false, refusal: "parallel-run-session" };
     const held = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
@@ -652,17 +655,35 @@ export class CoachService {
     };
   }
 
+  /** A notetaker shadow session's report: kept for comparison, never sent. */
+  private async notetakerShadowReport(reportId: string): Promise<boolean> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_intake_sessions")
+      .select("source")
+      .where("report_id", "=", reportId)
+      .where("source", "=", NOTETAKER_SOURCE)
+      .executeTakeFirst();
+    return row !== undefined;
+  }
+
   async requeuePipelineFailure(
     sourceSessionId: string,
   ): Promise<boolean | "parallel-run-session"> {
     const conn = this.db.getOrCreateConnection();
     const parked = await conn
       .selectFrom("coach_intake_sessions")
-      .select("parallel_run")
+      .select(["parallel_run", "source"])
       .where("source_session_id", "=", sourceSessionId)
-      .where("state", "=", "delivery_failed")
+      .where((eb) =>
+        eb.or([
+          eb("state", "=", "delivery_failed"),
+          eb("source", "=", NOTETAKER_SOURCE),
+        ]),
+      )
       .executeTakeFirst();
-    if (parked?.parallel_run) return "parallel-run-session";
+    if (parked?.parallel_run || parked?.source === NOTETAKER_SOURCE)
+      return "parallel-run-session";
     const requeued = await conn
       .updateTable("coach_intake_sessions")
       .set({
@@ -904,6 +925,19 @@ export class CoachService {
   async parallelRunComparison() {
     const { parallelRunComparison } = await import("./coach-parallel-run");
     return parallelRunComparison(this.db);
+  }
+
+  async notetakerComparison() {
+    const { notetakerComparison } = await import(
+      "./coach-notetaker-comparison"
+    );
+    const { notetakerShadowConfig, notetakerSinceSetting } = await import(
+      "./notetaker-exports.client"
+    );
+    return notetakerComparison(this.db, {
+      enabled: notetakerShadowConfig() !== null,
+      since: notetakerSinceSetting(),
+    });
   }
 
   async setNotTeaching(
