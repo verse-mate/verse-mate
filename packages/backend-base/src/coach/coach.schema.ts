@@ -91,12 +91,28 @@ export const NotetakerStatusSchema = t.Object({
   connected: t.Boolean(),
   zoomEmail: t.Union([t.String(), t.Null()]),
   connectUrl: t.String(),
+  // The same, started in the portal: Zoom brings the coach back to it.
+  portalConnectUrl: t.String(),
 });
 
 const LeaderRefSchema = t.Union([
   t.Object({ id: t.String(), name: t.String() }),
   t.Null(),
 ]);
+
+// A connected coach's scheduled Zoom meeting, in Class Setup's terms.
+const MEETING_FIELDS = {
+  meetingId: t.String(),
+  topic: t.String(),
+  joinUrl: t.String(),
+  hostEmail: t.String(),
+  classDate: t.Union([t.String(), t.Null()]),
+  startTime: t.Union([t.String(), t.Null()]),
+  timeZone: t.Union([t.String(), t.Null()]),
+  recurrence: t.String(),
+  invited: t.Boolean(),
+  classId: t.Union([t.String(), t.Null()]),
+};
 
 // The admin's view of the notetaker: connected Zoom accounts and their
 // scheduled meetings, in Class Setup's terms. `classId` names the class that
@@ -114,19 +130,48 @@ export const NotetakerZoomSchema = t.Object({
   ),
   meetings: t.Array(
     t.Object({
-      meetingId: t.String(),
-      topic: t.String(),
-      joinUrl: t.String(),
-      hostEmail: t.String(),
-      classDate: t.Union([t.String(), t.Null()]),
-      startTime: t.Union([t.String(), t.Null()]),
-      timeZone: t.Union([t.String(), t.Null()]),
-      recurrence: t.String(),
-      invited: t.Boolean(),
+      ...MEETING_FIELDS,
       leader: LeaderRefSchema,
-      classId: t.Union([t.String(), t.Null()]),
     }),
   ),
+});
+
+// The signed-in leader's own scheduled Zoom meetings (their connected
+// account), to pick the ones the bot records. `classId` names their class
+// that already records a meeting.
+export const NotetakerMeetingsSchema = t.Object({
+  available: t.Boolean(),
+  meetings: t.Array(t.Object(MEETING_FIELDS)),
+});
+
+// What the bot did, per class id: its next start on the bot's calendar and
+// its latest runs. `status`: starting, joining, waiting_room, in_meeting,
+// recording, recording_denied, processing, recorded, failed. `reason` (a
+// failure): not_admitted, recording_denied, meeting_not_started, bot_error.
+// `available` false: the notetaker did not answer.
+export const NotetakerActivitySchema = t.Object({
+  available: t.Boolean(),
+  classes: t.Record(
+    t.String(),
+    t.Object({
+      next: t.Union([t.String(), t.Null()]),
+      recent: t.Array(
+        t.Object({
+          start: t.Union([t.String(), t.Null()]),
+          status: t.String(),
+          reason: t.Union([t.String(), t.Null()]),
+          updatedAt: t.Union([t.String(), t.Null()]),
+        }),
+      ),
+    }),
+  ),
+});
+
+// A leader disconnected their Zoom account from the notetaker. `disconnected`
+// false: nothing was connected on their addresses.
+export const NotetakerDisconnectSchema = t.Object({
+  available: t.Boolean(),
+  disconnected: t.Boolean(),
 });
 
 // A coaching note as returned to the portal. Declared so Elysia passes

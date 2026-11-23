@@ -733,16 +733,26 @@ export function uploadTitle(title: string | null | undefined): string | null {
   );
 }
 
+// A leader's classes: made from their account (found by account, or by
+// address before the account is bound to the roster), or scheduled for their
+// roster id by an admin, possibly before they signed up (no account at all).
 function leaderClasses(
   conn: CoachReportsWriter | ReturnType<db["getOrCreateConnection"]>,
-  leader: { email: string; user_id: string | null },
+  leader: { slug: string | null; email: string; user_id: string | null },
 ) {
-  const base = (conn as CoachReportsWriter)
+  return (conn as CoachReportsWriter)
     .selectFrom("coach_classes")
-    .innerJoin("user", "user.id", "coach_classes.user_id");
-  return leader.user_id
-    ? base.where("coach_classes.user_id", "=", leader.user_id as never)
-    : base.where(sql`lower("user".email)`, "=", leader.email.toLowerCase());
+    .leftJoin("user", "user.id", "coach_classes.user_id")
+    .where((eb) =>
+      eb.or([
+        ...(leader.slug
+          ? [eb("coach_classes.coach_id", "=", leader.slug)]
+          : []),
+        leader.user_id
+          ? eb("coach_classes.user_id", "=", leader.user_id as never)
+          : eb(sql`lower("user".email)`, "=", leader.email.toLowerCase()),
+      ]),
+    );
 }
 
 async function botRecorded(
@@ -830,7 +840,7 @@ export async function botClassKey(
   if (!session.coachId) return null;
   const leader = await conn
     .selectFrom("coach_leaders")
-    .select(["email", "user_id"])
+    .select(["slug", "email", "user_id"])
     .where("slug", "=", session.coachId)
     .executeTakeFirst();
   if (!leader) return `group:${session.coachId}`;
