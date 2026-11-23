@@ -631,6 +631,33 @@ describe("A Leader Can Upload A Session Video (task 4.13)", () => {
     ).toBe("rotating:7");
   });
 
+  it("a class an admin scheduled for a leader with no account is found by the leader's roster id", async () => {
+    const writer = conn as CoachReportsWriter;
+    const scheduled = await conn
+      .insertInto("coach_classes")
+      .values({
+        coach_id: SOLO,
+        name: "Admin-scheduled",
+        zoom_link: "https://zoom.us/j/987654321?pwd=a",
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    try {
+      expect(
+        await botClassKey(writer, {
+          coachId: SOLO,
+          rotatingClassId: null,
+          meetingLink: "https://us02web.zoom.us/j/987654321?pwd=b",
+        }),
+      ).toBe(`class:${scheduled.id}`);
+    } finally {
+      await conn
+        .deleteFrom("coach_classes")
+        .where("id", "=", scheduled.id)
+        .execute();
+    }
+  });
+
   it("A leader who uploads is covered: the received upload counts as an observed session", async () => {
     await uploadComplete();
     const observed = await conn
