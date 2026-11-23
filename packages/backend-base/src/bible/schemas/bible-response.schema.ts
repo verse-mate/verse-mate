@@ -121,6 +121,23 @@ export const ExplanationCoverageSchema = t.Object({
   ),
 });
 
+const LastModified = t.String({ format: "date-time" });
+
+export const ExplanationLastModifiedSchema = t.Object({
+  language: t.String(),
+  chapters: t.Array(
+    t.Object({
+      bookId: t.Number(),
+      chapter: t.Number(),
+      lastModified: LastModified,
+    }),
+  ),
+  events: t.Array(t.Object({ slug: t.String(), lastModified: LastModified })),
+  topics: t.Array(
+    t.Object({ topicId: t.String(), lastModified: LastModified }),
+  ),
+});
+
 // Bible versions response - available translations with license/attribution
 export const BibleVersionsSchema = t.Object({
   versions: t.Array(

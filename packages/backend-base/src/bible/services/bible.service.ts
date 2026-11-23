@@ -2,6 +2,7 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { VerseToken } from "database/src/models/public/Verses";
+import { sql } from "kysely";
 import { NotFoundError, ValidationError } from "../../common/errors";
 import { resolveLanguageCode, withEnglishFallback } from "../../shared/i18n";
 import type { db } from "../../shared/shared.plugin";
@@ -53,6 +54,20 @@ let coverageMemo:
       expiresAt: number;
     }
   | undefined;
+
+type ExplanationLastModified = {
+  language: string;
+  chapters: { bookId: number; chapter: number; lastModified: string }[];
+  events: { slug: string; lastModified: string }[];
+  topics: { topicId: string; lastModified: string }[];
+};
+
+const lastModifiedMemo = new Map<
+  string,
+  { value: ExplanationLastModified; expiresAt: number }
+>();
+
+const isoDate = (value: Date | string) => new Date(value).toISOString();
 
 export class BibleService {
   constructor(
@@ -1266,6 +1281,102 @@ export class BibleService {
     const value = await this.readExplanationCoverage();
     coverageMemo = { value, expiresAt: Date.now() + COVERAGE_MEMO_MS };
     return value;
+  }
+
+  async getExplanationLastModified(language: string) {
+    const memo = lastModifiedMemo.get(language);
+    if (memo && memo.expiresAt > Date.now()) return memo.value;
+    const value = await this.readExplanationLastModified(language);
+    lastModifiedMemo.set(language, {
+      value,
+      expiresAt: Date.now() + COVERAGE_MEMO_MS,
+    });
+    return value;
+  }
+
+  private async readExplanationLastModified(
+    language: string,
+  ): Promise<ExplanationLastModified> {
+    const connection = this.db.getOrCreateConnection();
+    const setting = await connection
+      .selectFrom("explanation_languages")
+      .select("is_enabled")
+      .where("language_code", "=", language)
+      .executeTakeFirst();
+    if (setting && !setting.is_enabled)
+      return { language, chapters: [], events: [], topics: [] };
+
+    const [chapters, events, topics] = await Promise.all([
+      connection
+        .selectFrom("explanations")
+        .innerJoin("chapters", "chapters.chapter_id", "explanations.chapter_id")
+        .select((eb) => [
+          "chapters.book_id",
+          "chapters.chapter_number",
+          eb.fn.max("explanations.created_at").as("last_modified"),
+        ])
+        .where("explanations.language_code", "=", language)
+        .where("explanations.is_active", "=", true)
+        .groupBy(["chapters.book_id", "chapters.chapter_number"])
+        .orderBy("chapters.book_id")
+        .orderBy("chapters.chapter_number")
+        .execute(),
+      connection
+        .selectFrom("jesus_event_explanations")
+        .innerJoin(
+          "jesus_events",
+          "jesus_events.event_id",
+          "jesus_event_explanations.event_id",
+        )
+        .select([
+          "jesus_events.slug",
+          sql<Date | null>`max(greatest(jesus_event_explanations.updated_at, jesus_event_explanations.created_at))`.as(
+            "last_modified",
+          ),
+        ])
+        .where("jesus_event_explanations.language_code", "=", language)
+        .where("jesus_event_explanations.is_active", "=", true)
+        .groupBy("jesus_events.slug")
+        .orderBy("jesus_events.slug")
+        .execute(),
+      connection
+        .selectFrom("topic_explanations")
+        .select([
+          "topic_explanations.topic_id",
+          sql<Date | null>`max(greatest(topic_explanations.updated_at, topic_explanations.created_at))`.as(
+            "last_modified",
+          ),
+        ])
+        .where("topic_explanations.language_code", "=", language)
+        .where("topic_explanations.is_active", "=", true)
+        .groupBy("topic_explanations.topic_id")
+        .orderBy("topic_explanations.topic_id")
+        .execute(),
+    ]);
+
+    return {
+      language,
+      chapters: chapters.map((row) => ({
+        bookId: row.book_id,
+        chapter: row.chapter_number,
+        lastModified: isoDate(row.last_modified),
+      })),
+      events: events.flatMap((row) =>
+        row.last_modified
+          ? [{ slug: row.slug, lastModified: isoDate(row.last_modified) }]
+          : [],
+      ),
+      topics: topics.flatMap((row) =>
+        row.last_modified
+          ? [
+              {
+                topicId: row.topic_id,
+                lastModified: isoDate(row.last_modified),
+              },
+            ]
+          : [],
+      ),
+    };
   }
 
   private async readExplanationCoverage() {
