@@ -180,7 +180,12 @@ export class CoachRepository {
    *  driver). Normalize either to ISO yyyy-mm-dd, or null. */
   private static toIsoDate(value: Date | string | null): string | null {
     if (value == null) return null;
-    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    // node-postgres parses a DATE as local midnight: read it back in local time.
+    // toISOString() (UTC) gave the day before on any server east of UTC.
+    if (value instanceof Date) {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+    }
     // Already a string like "2026-07-21" (or an ISO timestamp), keep the day.
     return String(value).slice(0, 10);
   }

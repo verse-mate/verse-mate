@@ -265,6 +265,22 @@ describe("a leader manages the notetaker from the portal", () => {
     ).toBe(403);
   });
 
+  it("reads a class's date back as saved on a server east of UTC", async () => {
+    const tz = process.env.TZ;
+    process.env.TZ = "Europe/Bucharest"; // CI runs in UTC, where the old read-back was right by luck
+    try {
+      const { body } = await call(EMAIL(LEADER_A), "GET", "classes");
+      expect(
+        body?.classes.find(
+          (c: { id: string }) => c.id === classIds.get(LEADER_A),
+        )?.classDate,
+      ).toBe("2026-12-03");
+    } finally {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
+  });
+
   it("says the notetaker is unavailable instead of failing when it does not answer", async () => {
     gatewayDown = true;
     try {
