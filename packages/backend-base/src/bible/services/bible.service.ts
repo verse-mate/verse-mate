@@ -55,19 +55,21 @@ let coverageMemo:
     }
   | undefined;
 
-type ExplanationLastModified = {
-  language: string;
+type LastModifiedLists = {
   chapters: { bookId: number; chapter: number; lastModified: string }[];
   events: { slug: string; lastModified: string }[];
   topics: { topicId: string; lastModified: string }[];
 };
 
-const lastModifiedMemo = new Map<
-  string,
-  { value: ExplanationLastModified; expiresAt: number }
->();
+let lastModifiedMemo:
+  | { value: Promise<Map<string, LastModifiedLists>>; expiresAt: number }
+  | undefined;
 
-const isoDate = (value: Date | string) => new Date(value).toISOString();
+const emptyLists = (): LastModifiedLists => ({
+  chapters: [],
+  events: [],
+  topics: [],
+});
 
 export class BibleService {
   constructor(
@@ -1284,40 +1286,43 @@ export class BibleService {
   }
 
   async getExplanationLastModified(language: string) {
-    const memo = lastModifiedMemo.get(language);
-    if (memo && memo.expiresAt > Date.now()) return memo.value;
-    const value = await this.readExplanationLastModified(language);
-    lastModifiedMemo.set(language, {
-      value,
-      expiresAt: Date.now() + COVERAGE_MEMO_MS,
-    });
-    return value;
+    if (!lastModifiedMemo || lastModifiedMemo.expiresAt <= Date.now()) {
+      const value = this.readExplanationLastModified();
+      lastModifiedMemo = { value, expiresAt: Date.now() + COVERAGE_MEMO_MS };
+      value.catch(() => {
+        if (lastModifiedMemo?.value === value) lastModifiedMemo = undefined;
+      });
+    }
+    const byLanguage = await lastModifiedMemo.value;
+    return { language, ...(byLanguage.get(language) ?? emptyLists()) };
   }
 
-  private async readExplanationLastModified(
-    language: string,
-  ): Promise<ExplanationLastModified> {
+  private async readExplanationLastModified() {
     const connection = this.db.getOrCreateConnection();
-    const setting = await connection
-      .selectFrom("explanation_languages")
-      .select("is_enabled")
-      .where("language_code", "=", language)
-      .executeTakeFirst();
-    if (setting && !setting.is_enabled)
-      return { language, chapters: [], events: [], topics: [] };
+    const day = (column: string) =>
+      sql<string>`to_char(max(${sql.ref(column)}), 'YYYY-MM-DD')`;
+    const latestDay = (table: string) =>
+      sql<string>`to_char(max(greatest(${sql.ref(`${table}.updated_at`)}, ${sql.ref(`${table}.created_at`)})), 'YYYY-MM-DD')`;
+    const enabled = (table: string) =>
+      sql<boolean>`coalesce((select el.is_enabled from explanation_languages el where el.language_code = ${sql.ref(`${table}.language_code`)}), true)`;
 
     const [chapters, events, topics] = await Promise.all([
       connection
         .selectFrom("explanations")
         .innerJoin("chapters", "chapters.chapter_id", "explanations.chapter_id")
-        .select((eb) => [
+        .select([
+          "explanations.language_code",
           "chapters.book_id",
           "chapters.chapter_number",
-          eb.fn.max("explanations.created_at").as("last_modified"),
+          day("explanations.created_at").as("last_modified"),
         ])
-        .where("explanations.language_code", "=", language)
         .where("explanations.is_active", "=", true)
-        .groupBy(["chapters.book_id", "chapters.chapter_number"])
+        .where(enabled("explanations"))
+        .groupBy([
+          "explanations.language_code",
+          "chapters.book_id",
+          "chapters.chapter_number",
+        ])
         .orderBy("chapters.book_id")
         .orderBy("chapters.chapter_number")
         .execute(),
@@ -1329,54 +1334,61 @@ export class BibleService {
           "jesus_event_explanations.event_id",
         )
         .select([
+          "jesus_event_explanations.language_code",
           "jesus_events.slug",
-          sql<Date | null>`max(greatest(jesus_event_explanations.updated_at, jesus_event_explanations.created_at))`.as(
-            "last_modified",
-          ),
+          latestDay("jesus_event_explanations").as("last_modified"),
         ])
-        .where("jesus_event_explanations.language_code", "=", language)
         .where("jesus_event_explanations.is_active", "=", true)
-        .groupBy("jesus_events.slug")
+        .where("jesus_events.is_active", "=", true)
+        .where(enabled("jesus_event_explanations"))
+        .groupBy([
+          "jesus_event_explanations.language_code",
+          "jesus_events.slug",
+        ])
         .orderBy("jesus_events.slug")
         .execute(),
       connection
         .selectFrom("topic_explanations")
+        .innerJoin("topics", "topics.topic_id", "topic_explanations.topic_id")
         .select([
+          "topic_explanations.language_code",
           "topic_explanations.topic_id",
-          sql<Date | null>`max(greatest(topic_explanations.updated_at, topic_explanations.created_at))`.as(
-            "last_modified",
-          ),
+          latestDay("topic_explanations").as("last_modified"),
         ])
-        .where("topic_explanations.language_code", "=", language)
         .where("topic_explanations.is_active", "=", true)
-        .groupBy("topic_explanations.topic_id")
+        .where("topics.is_active", "=", true)
+        .where(enabled("topic_explanations"))
+        .groupBy([
+          "topic_explanations.language_code",
+          "topic_explanations.topic_id",
+        ])
         .orderBy("topic_explanations.topic_id")
         .execute(),
     ]);
 
-    return {
-      language,
-      chapters: chapters.map((row) => ({
+    const byLanguage = new Map<string, LastModifiedLists>();
+    const listsOf = (language: string) => {
+      const lists = byLanguage.get(language) ?? emptyLists();
+      byLanguage.set(language, lists);
+      return lists;
+    };
+    for (const row of chapters.filter((row) => row.last_modified))
+      listsOf(row.language_code).chapters.push({
         bookId: row.book_id,
         chapter: row.chapter_number,
-        lastModified: isoDate(row.last_modified),
-      })),
-      events: events.flatMap((row) =>
-        row.last_modified
-          ? [{ slug: row.slug, lastModified: isoDate(row.last_modified) }]
-          : [],
-      ),
-      topics: topics.flatMap((row) =>
-        row.last_modified
-          ? [
-              {
-                topicId: row.topic_id,
-                lastModified: isoDate(row.last_modified),
-              },
-            ]
-          : [],
-      ),
-    };
+        lastModified: row.last_modified,
+      });
+    for (const row of events.filter((row) => row.last_modified))
+      listsOf(row.language_code).events.push({
+        slug: row.slug,
+        lastModified: row.last_modified,
+      });
+    for (const row of topics.filter((row) => row.last_modified))
+      listsOf(row.language_code).topics.push({
+        topicId: row.topic_id,
+        lastModified: row.last_modified,
+      });
+    return byLanguage;
   }
 
   private async readExplanationCoverage() {

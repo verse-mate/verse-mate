@@ -121,7 +121,7 @@ export const ExplanationCoverageSchema = t.Object({
   ),
 });
 
-const LastModified = t.String({ format: "date-time" });
+const LastModified = t.String({ format: "date" });
 
 export const ExplanationLastModifiedSchema = t.Object({
   language: t.String(),

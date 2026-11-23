@@ -196,6 +196,7 @@ const plugin = new Elysia()
           query: t.Object({
             lang: t.String({
               pattern: "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+              maxLength: 35,
               description:
                 "BCP-47 language code (e.g. 'en-US', 'pt-BR') whose explanation dates to list.",
             }),
