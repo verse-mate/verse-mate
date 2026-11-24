@@ -22,12 +22,8 @@ This repository holds VerseMate's backend API, its admin app and the website at 
   - ✅**Text Display:** The selected chapter’s text is presented in a clear, readable format to enhance the user experience.
   - ✅**Last Chapter Visited:** VerseMate saves the last book and chapter viewed, allowing users to continue reading where they left off.
 
-- **AI-Powered Translations and Explanations**
-  - ✅**Complete AI-Generated Translations:**  VerseMate provides comprehensive GPT-based translations for every book of the Bible. These translations allow users to compare and better understand the original text.
-  - ✅**AI Chapter Explanations:** Each chapter includes AI-generated explanations to help users deepen their understanding of complex or significant passages.
-
-- **Interactive AI Q&A Feature**
-  - ✅**Ask Questions to the AI:** Users can ask the AI specific questions about each chapter. The application keeps a record of these interactions, enabling users to continue the conversation with the AI based on previous discussions within the same chapter.
+- **AI-Powered Explanations**
+  - ✅**Chapter Summaries and Explanations:** Each chapter comes with a summary and a verse-by-verse explanation, generated with AI, to help readers understand complex or significant passages.
 
 - **User Interface and Experience**
   - ✅**Responsive Design:** VerseMate is optimized for desktops, tablets (landscape and portrait), and mobile devices, providing a seamless reading experience across all screen types.
