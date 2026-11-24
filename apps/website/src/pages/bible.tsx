@@ -22,8 +22,9 @@ export default function Bible() {
               Books of the Bible
             </h1>
             <p className="m-0 max-w-[720px] font-inter text-body-lg text-brand-slate">
-              Pick a book to start at its first chapter. Every chapter comes
-              with its text, a summary and a verse-by-verse explanation.
+              Pick a book to see all its chapters, or start reading at its
+              first chapter. Every chapter comes with its text, a summary and
+              a verse-by-verse explanation.
             </p>
           </div>
           <BooksOfTheBible />

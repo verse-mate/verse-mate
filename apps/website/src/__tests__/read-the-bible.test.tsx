@@ -33,17 +33,22 @@ describe("the home page", () => {
 });
 
 describe("the books page", () => {
-  it("links all 66 books to their first chapter, under one heading per testament", () => {
+  it("links each of the 66 books to its page and to its first chapter, under one heading per testament", () => {
     const html = renderToStaticMarkup(<BooksOfTheBible />);
     const sections = html.split(/<h2[^>]*>/).slice(1);
+    const bookPages = (section: string) => links(section).filter((href) => /^\/bible\/[a-z0-9-]+\/?$/.test(href));
+    const firstChapters = (section: string) =>
+      links(section).filter((href) => /^https:\/\/app\.versemate\.org\/bible\/[a-z0-9-]+\/1$/.test(href));
 
     expect(sections).toHaveLength(2);
     expect(sections[0]).toStartWith("Old Testament");
     expect(sections[1]).toStartWith("New Testament");
-    expect(links(sections[0])).toHaveLength(39);
-    expect(links(sections[1])).toHaveLength(27);
+    expect(bookPages(sections[0])).toHaveLength(39);
+    expect(firstChapters(sections[0])).toHaveLength(39);
+    expect(bookPages(sections[1])).toHaveLength(27);
+    expect(firstChapters(sections[1])).toHaveLength(27);
+    expect(links(html)).toHaveLength(132);
     expect(links(html)).toContain("https://app.versemate.org/bible/song-of-solomon/1");
-    expect(links(html)).toContain("https://app.versemate.org/bible/1-corinthians/1");
-    expect(links(html).every((href) => /^https:\/\/app\.versemate\.org\/bible\/[a-z0-9-]+\/1$/.test(href))).toBe(true);
+    expect(links(html).map((href) => href.replace(/\/?$/, "/"))).toContain("/bible/1-corinthians/");
   });
 });
