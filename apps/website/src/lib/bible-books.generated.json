@@ -1,0 +1,530 @@
+[
+  {
+    "id": 1,
+    "name": "Genesis",
+    "slug": "genesis",
+    "testament": "OT",
+    "chapters": 50,
+    "paragraph": "Genesis serves as the foundation of the entire biblical narrative, explaining the origins of the world, humanity, sin, and God's covenant relationship with His people. It sets the stage for the story of redemption that unfolds throughout Scripture."
+  },
+  {
+    "id": 2,
+    "name": "Exodus",
+    "slug": "exodus",
+    "testament": "OT",
+    "chapters": 40,
+    "paragraph": "Exodus tells the foundational story of Israel's identity as God's chosen people. It narrates their miraculous deliverance from Egyptian slavery, the giving of the Law at Mount Sinai, and the establishment of the covenant relationship."
+  },
+  {
+    "id": 3,
+    "name": "Leviticus",
+    "slug": "leviticus",
+    "testament": "OT",
+    "chapters": 27,
+    "paragraph": "Leviticus provides detailed instructions for Israel's worship, priesthood, and holiness. It teaches God's people how to approach Him through sacrifice, maintain ritual purity, and live as a holy nation set apart for His purposes."
+  },
+  {
+    "id": 4,
+    "name": "Numbers",
+    "slug": "numbers",
+    "testament": "OT",
+    "chapters": 36,
+    "paragraph": "Numbers chronicles Israel's wilderness journey from Mount Sinai to the edge of the Promised Land. It records both God's faithfulness in providing for His people and their repeated rebellions, illustrating the consequences of unbelief and disobedience."
+  },
+  {
+    "id": 5,
+    "name": "Deuteronomy",
+    "slug": "deuteronomy",
+    "testament": "OT",
+    "chapters": 34,
+    "paragraph": "Deuteronomy records Moses's farewell speeches to Israel on the plains of Moab, reviewing God's faithfulness, reiterating the Law, and calling the new generation to covenant loyalty as they prepare to enter the Promised Land."
+  },
+  {
+    "id": 6,
+    "name": "Joshua",
+    "slug": "joshua",
+    "testament": "OT",
+    "chapters": 24,
+    "paragraph": "Joshua records Israel's conquest of Canaan under Joshua's leadership, demonstrating God's faithfulness in fulfilling His promises to Abraham. It shows how God gives His people victory when they trust and obey Him."
+  },
+  {
+    "id": 7,
+    "name": "Judges",
+    "slug": "judges",
+    "testament": "OT",
+    "chapters": 21,
+    "paragraph": "Judges chronicles Israel's repeated cycle of sin, oppression, crying out to God, and deliverance through judges. It reveals the spiritual and moral chaos that results when everyone does what is right in their own eyes."
+  },
+  {
+    "id": 8,
+    "name": "Ruth",
+    "slug": "ruth",
+    "testament": "OT",
+    "chapters": 4,
+    "paragraph": "Ruth tells a beautiful story of loyalty, redemption, and God's providence during the dark period of Judges. It shows how a Moabite widow becomes part of Jesus's genealogy through faith and the kinsman-redeemer's love."
+  },
+  {
+    "id": 9,
+    "name": "1 Samuel",
+    "slug": "1-samuel",
+    "testament": "OT",
+    "chapters": 31,
+    "paragraph": "First Samuel records Israel's transition from judges to monarchy, focusing on Samuel, Saul, and David. It shows that God seeks leaders after His own heart."
+  },
+  {
+    "id": 10,
+    "name": "2 Samuel",
+    "slug": "2-samuel",
+    "testament": "OT",
+    "chapters": 24,
+    "paragraph": "Second Samuel records David's reign as king, his triumphs and failures. It establishes the Davidic covenant promising an eternal kingdom through David's line."
+  },
+  {
+    "id": 11,
+    "name": "1 Kings",
+    "slug": "1-kings",
+    "testament": "OT",
+    "chapters": 22,
+    "paragraph": "First Kings chronicles Solomon's reign and the kingdom's division. It demonstrates how covenant faithfulness brings blessing while idolatry leads to judgment."
+  },
+  {
+    "id": 12,
+    "name": "2 Kings",
+    "slug": "2-kings",
+    "testament": "OT",
+    "chapters": 25,
+    "paragraph": "Second Kings chronicles both kingdoms' decline and fall—Israel to Assyria, Judah to Babylon. It demonstrates that covenant disobedience leads to exile."
+  },
+  {
+    "id": 13,
+    "name": "1 Chronicles",
+    "slug": "1-chronicles",
+    "testament": "OT",
+    "chapters": 29,
+    "paragraph": "First Chronicles retells Israel's history from Adam to David, emphasizing worship, priesthood, and God's faithfulness. It provides genealogical continuity and theological reflection."
+  },
+  {
+    "id": 14,
+    "name": "2 Chronicles",
+    "slug": "2-chronicles",
+    "testament": "OT",
+    "chapters": 36,
+    "paragraph": "Second Chronicles continues Israel's history from Solomon through exile, emphasizing temple worship and covenant faithfulness. It ends with Cyrus's decree allowing return."
+  },
+  {
+    "id": 15,
+    "name": "Ezra",
+    "slug": "ezra",
+    "testament": "OT",
+    "chapters": 10,
+    "paragraph": "Ezra records the first return from exile and temple rebuilding. It demonstrates God's faithfulness in restoring His people despite opposition."
+  },
+  {
+    "id": 16,
+    "name": "Nehemiah",
+    "slug": "nehemiah",
+    "testament": "OT",
+    "chapters": 13,
+    "paragraph": "Nehemiah records Jerusalem's wall rebuilding and spiritual renewal. It shows godly leadership overcoming opposition through prayer and perseverance."
+  },
+  {
+    "id": 17,
+    "name": "Esther",
+    "slug": "esther",
+    "testament": "OT",
+    "chapters": 10,
+    "paragraph": "Esther shows God's providence protecting His people from genocide. Though God's name isn't mentioned, His hand clearly guides events to deliver Israel."
+  },
+  {
+    "id": 18,
+    "name": "Job",
+    "slug": "job",
+    "testament": "OT",
+    "chapters": 42,
+    "paragraph": "Job explores why the righteous suffer, challenging simplistic views of divine justice. Through Job's dialogue with friends and God's response, it reveals that God's wisdom transcends human understanding and that faith must trust God even without answers."
+  },
+  {
+    "id": 19,
+    "name": "Psalms",
+    "slug": "psalms",
+    "testament": "OT",
+    "chapters": 150,
+    "paragraph": "Psalms is Israel's hymnal and prayer book, expressing the full range of human emotion before God. It teaches worship, lament, and trust while containing Messianic prophecies."
+  },
+  {
+    "id": 20,
+    "name": "Proverbs",
+    "slug": "proverbs",
+    "testament": "OT",
+    "chapters": 31,
+    "paragraph": "Proverbs provides practical wisdom for daily living, teaching how to make godly choices. It presents the fear of the Lord as wisdom's foundation."
+  },
+  {
+    "id": 21,
+    "name": "Ecclesiastes",
+    "slug": "ecclesiastes",
+    "testament": "OT",
+    "chapters": 12,
+    "paragraph": "Ecclesiastes explores life's meaning from a perspective 'under the sun'—without divine revelation. The Preacher concludes that without God, life is meaningless, but fearing God and keeping His commandments gives purpose to existence."
+  },
+  {
+    "id": 22,
+    "name": "Song of Solomon",
+    "slug": "song-of-solomon",
+    "testament": "OT",
+    "chapters": 8,
+    "paragraph": "Song of Solomon celebrates romantic love and marriage as God's good gift. It uses poetic imagery to portray passionate, committed love between husband and wife."
+  },
+  {
+    "id": 23,
+    "name": "Isaiah",
+    "slug": "isaiah",
+    "testament": "OT",
+    "chapters": 66,
+    "paragraph": "Isaiah prophesies judgment on sinful Judah while offering hope of a coming Messiah and restoration. Its vivid prophecies of the Suffering Servant and the glorious future kingdom make it the most quoted Old Testament book in the New Testament."
+  },
+  {
+    "id": 24,
+    "name": "Jeremiah",
+    "slug": "jeremiah",
+    "testament": "OT",
+    "chapters": 52,
+    "paragraph": "Jeremiah prophesied during Judah's final decades before the Babylonian exile, warning of coming judgment while also promising future restoration. His ministry spanned the reigns of five kings and witnessed Jerusalem's destruction in 586 BC, making him the prophet of judgment and hope."
+  },
+  {
+    "id": 25,
+    "name": "Lamentations",
+    "slug": "lamentations",
+    "testament": "OT",
+    "chapters": 5,
+    "paragraph": "Lamentations is Jeremiah's poetic grief over Jerusalem's destruction, expressing the depths of sorrow while maintaining faith in God's character. It teaches believers how to mourn devastating loss while clinging to hope in God's compassion and faithfulness."
+  },
+  {
+    "id": 26,
+    "name": "Ezekiel",
+    "slug": "ezekiel",
+    "testament": "OT",
+    "chapters": 48,
+    "paragraph": "Ezekiel prophesied to Jewish exiles in Babylon, explaining why judgment came, calling them to repentance, and promising restoration. His dramatic visions and symbolic actions communicated God's glory, holiness, and future plans for His people and temple."
+  },
+  {
+    "id": 27,
+    "name": "Daniel",
+    "slug": "daniel",
+    "testament": "OT",
+    "chapters": 12,
+    "paragraph": "Daniel records prophetic visions and narratives from Babylonian exile, revealing God's sovereignty over kingdoms and His plans for the end times. It encourages faithfulness under persecution and provides apocalyptic visions of future kingdoms and the Messiah."
+  },
+  {
+    "id": 28,
+    "name": "Hosea",
+    "slug": "hosea",
+    "testament": "OT",
+    "chapters": 14,
+    "paragraph": "Hosea uses his own painful marriage to an unfaithful wife as a living metaphor for Israel's spiritual adultery against God. The book reveals God's relentless love and desire for His people's return, despite their persistent idolatry."
+  },
+  {
+    "id": 29,
+    "name": "Joel",
+    "slug": "joel",
+    "testament": "OT",
+    "chapters": 3,
+    "paragraph": "Joel uses a devastating locust plague as a picture of coming judgment (the Day of the LORD) and calls for national repentance. He promises that God will restore and pour out His Spirit on all people, a prophecy fulfilled at Pentecost."
+  },
+  {
+    "id": 30,
+    "name": "Amos",
+    "slug": "amos",
+    "testament": "OT",
+    "chapters": 9,
+    "paragraph": "Amos, a shepherd called to prophesy against Israel's elite, condemned social injustice, religious hypocrisy, and complacency during prosperity. He declared that God demands justice and righteousness, not empty religious ritual."
+  },
+  {
+    "id": 31,
+    "name": "Obadiah",
+    "slug": "obadiah",
+    "testament": "OT",
+    "chapters": 1,
+    "paragraph": "Obadiah pronounces judgment on Edom for their pride and violence against Judah during Jerusalem's destruction. It affirms God's justice against those who gloat over His people's suffering and promises ultimate restoration for God's kingdom."
+  },
+  {
+    "id": 32,
+    "name": "Jonah",
+    "slug": "jonah",
+    "testament": "OT",
+    "chapters": 4,
+    "paragraph": "Jonah recounts a prophet's reluctant mission to Nineveh, demonstrating God's compassion for all nations and challenging ethnic exclusivism. The book reveals God's desire to show mercy even to Israel's enemies and critiques narrow nationalism."
+  },
+  {
+    "id": 33,
+    "name": "Micah",
+    "slug": "micah",
+    "testament": "OT",
+    "chapters": 7,
+    "paragraph": "Micah condemned social injustice and false religion in both Israel and Judah, prophesying judgment while promising a coming Messiah from Bethlehem. His famous summary of true religion—do justice, love mercy, walk humbly with God—captures prophetic ethics."
+  },
+  {
+    "id": 34,
+    "name": "Nahum",
+    "slug": "nahum",
+    "testament": "OT",
+    "chapters": 3,
+    "paragraph": "Nahum prophesies Nineveh's destruction for their cruelty and violence, demonstrating God's justice against oppressive nations. The book comforts Judah that God will judge their Assyrian oppressors and vindicates His character as both patient and just."
+  },
+  {
+    "id": 35,
+    "name": "Habakkuk",
+    "slug": "habakkuk",
+    "testament": "OT",
+    "chapters": 3,
+    "paragraph": "Habakkuk dialogues with God about the problem of evil and divine justice, wrestling with how God can use wicked Babylon to judge Judah. The book moves from questioning complaint to confident faith: 'the righteous will live by faith.'"
+  },
+  {
+    "id": 36,
+    "name": "Zephaniah",
+    "slug": "zephaniah",
+    "testament": "OT",
+    "chapters": 3,
+    "paragraph": "Zephaniah prophesies the Day of the LORD as imminent universal judgment on Judah and the nations, calling for repentance. Beyond judgment, he promises restoration and joy when God dwells in the midst of His purified people."
+  },
+  {
+    "id": 37,
+    "name": "Haggai",
+    "slug": "haggai",
+    "testament": "OT",
+    "chapters": 2,
+    "paragraph": "Haggai calls the post-exilic community to prioritize rebuilding God's temple over their own comfort. He challenges spiritual apathy and promises God's presence and blessing when His people honor Him first."
+  },
+  {
+    "id": 38,
+    "name": "Zechariah",
+    "slug": "zechariah",
+    "testament": "OT",
+    "chapters": 14,
+    "paragraph": "Zechariah encourages the post-exilic community through visions of God's future restoration, emphasizing both the rebuilding of the temple and messianic hope. The book contains more messianic prophecies than any OT book except Isaiah."
+  },
+  {
+    "id": 39,
+    "name": "Malachi",
+    "slug": "malachi",
+    "testament": "OT",
+    "chapters": 4,
+    "paragraph": "Malachi confronts post-exilic spiritual apathy, calling Israel to faithfulness in worship, marriage, and tithes. As the final OT prophet, he promises the coming messenger who will prepare the way for the LORD and the day of judgment."
+  },
+  {
+    "id": 40,
+    "name": "Matthew",
+    "slug": "matthew",
+    "testament": "NT",
+    "chapters": 28,
+    "paragraph": "Matthew presents Jesus as the Messiah and King of the Jews, demonstrating how He fulfills OT prophecies and establishes God's kingdom."
+  },
+  {
+    "id": 41,
+    "name": "Mark",
+    "slug": "mark",
+    "testament": "NT",
+    "chapters": 16,
+    "paragraph": "Mark presents Jesus as the suffering Servant and Son of God who came to serve and give His life as a ransom. Written for a Roman audience, it emphasizes Jesus's actions and power, moving rapidly from miracle to miracle toward the cross."
+  },
+  {
+    "id": 42,
+    "name": "Luke",
+    "slug": "luke",
+    "testament": "NT",
+    "chapters": 24,
+    "paragraph": "Luke presents Jesus as the Savior for all people—Jews and Gentiles, rich and poor, men and women. As a careful historian, Luke traces Jesus's life from birth through ascension, emphasizing His compassion for outcasts and His role as the fulfillment of God's saving plan."
+  },
+  {
+    "id": 43,
+    "name": "John",
+    "slug": "john",
+    "testament": "NT",
+    "chapters": 21,
+    "paragraph": "John presents Jesus as the eternal Word made flesh, the Son of God who offers eternal life through belief in Him. Written later than the Synoptics, John emphasizes Jesus's divine nature and includes extended theological discourses."
+  },
+  {
+    "id": 44,
+    "name": "Acts",
+    "slug": "acts",
+    "testament": "NT",
+    "chapters": 28,
+    "paragraph": "Acts narrates the early church's growth from Jerusalem to Rome, showing how the Holy Spirit empowers believers to spread the gospel. It bridges the Gospels and epistles, demonstrating how Jesus's followers continued His mission after His ascension."
+  },
+  {
+    "id": 45,
+    "name": "Romans",
+    "slug": "romans",
+    "testament": "NT",
+    "chapters": 16,
+    "paragraph": "Romans presents Paul's most systematic explanation of the gospel, demonstrating that all people—Jews and Gentiles—are justified by faith in Christ alone. It addresses fundamental questions about sin, salvation, grace, and the place of Israel in God's plan."
+  },
+  {
+    "id": 46,
+    "name": "1 Corinthians",
+    "slug": "1-corinthians",
+    "testament": "NT",
+    "chapters": 16,
+    "paragraph": "First Corinthians addresses divisions, immorality, and doctrinal confusion in the Corinthian church. Paul provides practical wisdom on church unity, spiritual gifts, love, and the resurrection."
+  },
+  {
+    "id": 47,
+    "name": "2 Corinthians",
+    "slug": "2-corinthians",
+    "testament": "NT",
+    "chapters": 13,
+    "paragraph": "2 Corinthians reveals Paul's heart as he defends his apostolic ministry while dealing with opposition, reconciliation, and the collection for Jerusalem. It provides the most personal glimpse into Paul's sufferings, weaknesses, and the paradoxical power of the gospel."
+  },
+  {
+    "id": 48,
+    "name": "Galatians",
+    "slug": "galatians",
+    "testament": "NT",
+    "chapters": 6,
+    "paragraph": "Galatians defends justification by faith alone against those requiring Gentile believers to observe Jewish law. Paul passionately argues that adding anything to faith in Christ undermines the gospel and returns believers to slavery."
+  },
+  {
+    "id": 49,
+    "name": "Ephesians",
+    "slug": "ephesians",
+    "testament": "NT",
+    "chapters": 6,
+    "paragraph": "Ephesians reveals God's eternal plan to unite all things in Christ and describes the church as Christ's body and bride. It emphasizes believers' spiritual blessings and calls them to walk worthy of their calling in unity, holiness, and spiritual warfare."
+  },
+  {
+    "id": 50,
+    "name": "Philippians",
+    "slug": "philippians",
+    "testament": "NT",
+    "chapters": 4,
+    "paragraph": "Philippians is Paul's joyful letter from prison, encouraging believers to rejoice in Christ regardless of circumstances. It emphasizes unity, humility, and pressing forward in faith, containing the famous Christ hymn describing Jesus' incarnation and exaltation."
+  },
+  {
+    "id": 51,
+    "name": "Colossians",
+    "slug": "colossians",
+    "testament": "NT",
+    "chapters": 4,
+    "paragraph": "Colossians confronts early heresies by exalting Christ's absolute supremacy over all creation, powers, and philosophies. It calls believers to live out their union with Christ, having died to the old life and been raised to new life in Him."
+  },
+  {
+    "id": 52,
+    "name": "1 Thessalonians",
+    "slug": "1-thessalonians",
+    "testament": "NT",
+    "chapters": 5,
+    "paragraph": "1 Thessalonians encourages new believers facing persecution and clarifies questions about Christ's return and believers who have died. It emphasizes holy living, brotherly love, and readiness for the Lord's coming."
+  },
+  {
+    "id": 53,
+    "name": "2 Thessalonians",
+    "slug": "2-thessalonians",
+    "testament": "NT",
+    "chapters": 3,
+    "paragraph": "2 Thessalonians corrects misunderstandings about Christ's return, clarifying that the Day of the Lord hasn't yet arrived and won't come without warning signs. Paul encourages perseverance under persecution and addresses idleness in the congregation."
+  },
+  {
+    "id": 54,
+    "name": "1 Timothy",
+    "slug": "1-timothy",
+    "testament": "NT",
+    "chapters": 6,
+    "paragraph": "1 Timothy provides pastoral instruction for church leadership, sound doctrine, and orderly worship. Paul guides his protégé Timothy in combating false teaching while establishing qualified leaders and maintaining the church as 'the pillar and foundation of truth.'"
+  },
+  {
+    "id": 55,
+    "name": "2 Timothy",
+    "slug": "2-timothy",
+    "testament": "NT",
+    "chapters": 4,
+    "paragraph": "2 Timothy is Paul's final letter, written from prison shortly before his execution. He charges Timothy to remain faithful, endure suffering, guard the gospel, and pass on apostolic teaching to the next generation of leaders."
+  },
+  {
+    "id": 56,
+    "name": "Titus",
+    "slug": "titus",
+    "testament": "NT",
+    "chapters": 3,
+    "paragraph": "Titus provides apostolic instruction for organizing the church in Crete, emphasizing godly leadership, sound doctrine, and transformed living that adorns the gospel. It stresses that grace teaches believers to live godly lives in the present age."
+  },
+  {
+    "id": 57,
+    "name": "Philemon",
+    "slug": "philemon",
+    "testament": "NT",
+    "chapters": 1,
+    "paragraph": "Philemon is Paul's personal appeal to a slave owner to receive back his runaway slave Onesimus as a brother in Christ. The letter demonstrates Christian reconciliation, forgiveness, and the transforming power of the gospel on social relationships."
+  },
+  {
+    "id": 58,
+    "name": "Hebrews",
+    "slug": "hebrews",
+    "testament": "NT",
+    "chapters": 13,
+    "paragraph": "Hebrews demonstrates Christ's supremacy over all OT institutions—prophets, angels, Moses, priesthood, sacrifices, and covenant. It warns against apostasy while encouraging perseverance in faith, showing Jesus as the fulfillment of Israel's hopes."
+  },
+  {
+    "id": 59,
+    "name": "James",
+    "slug": "james",
+    "testament": "NT",
+    "chapters": 5,
+    "paragraph": "James provides practical wisdom for Christian living, emphasizing that genuine faith produces works. The letter addresses trials, temptation, favoritism, controlling the tongue, and living out faith in everyday situations."
+  },
+  {
+    "id": 60,
+    "name": "1 Peter",
+    "slug": "1-peter",
+    "testament": "NT",
+    "chapters": 5,
+    "paragraph": "1 Peter encourages believers suffering persecution by emphasizing their identity as God's chosen people and the hope of future glory. It calls them to holy living, submission to authorities, and faithful witness despite opposition."
+  },
+  {
+    "id": 61,
+    "name": "2 Peter",
+    "slug": "2-peter",
+    "testament": "NT",
+    "chapters": 3,
+    "paragraph": "2 Peter warns against false teachers who deny Christ's return and promote immorality. Peter emphasizes growing in knowledge of Christ, the certainty of His return, and the inspiration of Scripture as defenses against deception."
+  },
+  {
+    "id": 62,
+    "name": "1 John",
+    "slug": "1-john",
+    "testament": "NT",
+    "chapters": 5,
+    "paragraph": "1 John assures believers of eternal life while testing genuine faith against early Gnostic teaching. John emphasizes that true believers confess Jesus came in the flesh, love other believers, and walk in the light practicing righteousness."
+  },
+  {
+    "id": 63,
+    "name": "2 John",
+    "slug": "2-john",
+    "testament": "NT",
+    "chapters": 1,
+    "paragraph": "2 John warns against receiving false teachers who deny Jesus came in the flesh. This brief letter emphasizes walking in truth and love while refusing hospitality to those promoting heresy."
+  },
+  {
+    "id": 64,
+    "name": "3 John",
+    "slug": "3-john",
+    "testament": "NT",
+    "chapters": 1,
+    "paragraph": "3 John addresses a church conflict where Diotrephes refuses to receive traveling missionaries. John commends Gaius for supporting true teachers and warns against Diotrephes' divisive behavior, illustrating proper Christian hospitality."
+  },
+  {
+    "id": 65,
+    "name": "Jude",
+    "slug": "jude",
+    "testament": "NT",
+    "chapters": 1,
+    "paragraph": "Jude warns believers to contend for the faith against false teachers who pervert grace into license for immorality. Using vivid examples of divine judgment, he calls believers to remain in God's love while showing mercy to those being deceived."
+  },
+  {
+    "id": 66,
+    "name": "Revelation",
+    "slug": "revelation",
+    "testament": "NT",
+    "chapters": 22,
+    "paragraph": "Revelation unveils God's ultimate victory over evil, the return of Christ, final judgment, and the new heavens and earth. Written to encourage persecuted Christians, it assures believers that despite present suffering, Christ reigns and will consummate His kingdom."
+  }
+]
