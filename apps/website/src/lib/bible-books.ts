@@ -1,91 +1,42 @@
+import generated from "./bible-books.generated.json";
+
 export const READER_ORIGIN = "https://app.versemate.org";
-
-const OLD_TESTAMENT = [
-  "Genesis",
-  "Exodus",
-  "Leviticus",
-  "Numbers",
-  "Deuteronomy",
-  "Joshua",
-  "Judges",
-  "Ruth",
-  "1 Samuel",
-  "2 Samuel",
-  "1 Kings",
-  "2 Kings",
-  "1 Chronicles",
-  "2 Chronicles",
-  "Ezra",
-  "Nehemiah",
-  "Esther",
-  "Job",
-  "Psalms",
-  "Proverbs",
-  "Ecclesiastes",
-  "Song of Solomon",
-  "Isaiah",
-  "Jeremiah",
-  "Lamentations",
-  "Ezekiel",
-  "Daniel",
-  "Hosea",
-  "Joel",
-  "Amos",
-  "Obadiah",
-  "Jonah",
-  "Micah",
-  "Nahum",
-  "Habakkuk",
-  "Zephaniah",
-  "Haggai",
-  "Zechariah",
-  "Malachi",
-];
-
-const NEW_TESTAMENT = [
-  "Matthew",
-  "Mark",
-  "Luke",
-  "John",
-  "Acts",
-  "Romans",
-  "1 Corinthians",
-  "2 Corinthians",
-  "Galatians",
-  "Ephesians",
-  "Philippians",
-  "Colossians",
-  "1 Thessalonians",
-  "2 Thessalonians",
-  "1 Timothy",
-  "2 Timothy",
-  "Titus",
-  "Philemon",
-  "Hebrews",
-  "James",
-  "1 Peter",
-  "2 Peter",
-  "1 John",
-  "2 John",
-  "3 John",
-  "Jude",
-  "Revelation",
-];
 
 export interface BibleBook {
   name: string;
   slug: string;
+  testament: "Old Testament" | "New Testament";
+  chapters: number;
+  paragraph: string;
 }
 
-const book = (name: string): BibleBook => ({
-  name,
-  slug: name.toLowerCase().replace(/ /g, "-"),
-});
+const TESTAMENT_NAMES = { OT: "Old Testament", NT: "New Testament" } as const;
 
-export const TESTAMENTS = [
-  { name: "Old Testament", books: OLD_TESTAMENT.map(book) },
-  { name: "New Testament", books: NEW_TESTAMENT.map(book) },
-];
+export const BOOKS: BibleBook[] = generated.map((book) => ({
+  name: book.name,
+  slug: book.slug,
+  testament: TESTAMENT_NAMES[book.testament as keyof typeof TESTAMENT_NAMES],
+  chapters: book.chapters,
+  paragraph: book.paragraph,
+}));
+
+export const TESTAMENTS = Object.values(TESTAMENT_NAMES).map((name) => ({
+  name,
+  books: BOOKS.filter((book) => book.testament === name),
+}));
+
+export const bookBySlug = (slug: string) =>
+  BOOKS.find((book) => book.slug === slug);
+
+export const neighbours = (slug: string) => {
+  const index = BOOKS.findIndex((book) => book.slug === slug);
+  return {
+    previous: index > 0 ? BOOKS[index - 1] : undefined,
+    next: index >= 0 && index < BOOKS.length - 1 ? BOOKS[index + 1] : undefined,
+  };
+};
+
+export const bookPath = (slug: string) => `/bible/${slug}/`;
 
 export const chapterUrl = (slug: string, chapter: number) =>
   `${READER_ORIGIN}/bible/${slug}/${chapter}`;
