@@ -51,3 +51,14 @@ export const POPULAR_CHAPTERS = [
   { label: "Romans 8", slug: "romans", chapter: 8, note: "No condemnation" },
   { label: "1 Corinthians 13", slug: "1-corinthians", chapter: 13, note: "Love is patient" },
 ];
+
+export const bookMeta = (book: BibleBook) => ({
+  title:
+    book.chapters === 1
+      ? `${book.name}: its one chapter, explained | VerseMate`
+      : `${book.name}: all ${book.chapters} chapters, explained | VerseMate`,
+  description:
+    book.chapters === 1
+      ? `Read the one chapter of ${book.name} on VerseMate, with its text, a summary and a verse-by-verse explanation. Free, for everyone.`
+      : `Read all ${book.chapters} chapters of ${book.name} on VerseMate, each with its text, a summary and a verse-by-verse explanation. Free, for everyone.`,
+});
