@@ -3,6 +3,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/sections/home/Hero";
 import HowItWorks from "@/components/sections/home/HowItWorks";
+import ReadTheBible from "@/components/sections/home/ReadTheBible";
 import WhyVersemate from "@/components/sections/home/WhyVersemate";
 import Global from "@/components/sections/home/Global";
 import GetInvolved from "@/components/sections/home/GetInvolved";
@@ -20,6 +21,7 @@ export default function Home() {
       <main id="main-content" className="flex-1">
         <Hero />
         <HowItWorks />
+        <ReadTheBible />
         <WhyVersemate />
         <Global />
         <GetInvolved />
