@@ -33,8 +33,9 @@ describe("a book page", () => {
     const romans = BOOKS.find((book) => book.slug === "romans");
 
     expect(html).toMatch(/<h1[^>]*>Romans<\/h1>/);
-    expect(romans?.paragraph.length).toBeGreaterThan(40);
-    expect(html).toContain(romans?.paragraph.replace(/'/g, "&#x27;") ?? "missing");
+    const shown = /<\/h1><p[^>]*>([^<]*)<\/p>/.exec(html)?.[1];
+    expect(shown).toBe(romans?.paragraph.replace(/'/g, "&#x27;"));
+    expect(shown).not.toBe("");
     expect(chapterLinks(html)).toEqual(
       Array.from({ length: 16 }, (_, index) => ({
         href: `https://app.versemate.org/bible/romans/${index + 1}`,
@@ -44,11 +45,21 @@ describe("a book page", () => {
   });
 
   it("links the previous book, the next book and the list of books", () => {
+    const links = anchors(render("romans")).map((link) => ({
+      href: link.href.replace(/\/?$/, "/"),
+      text: link.text,
+    }));
+
+    expect(links).toContainEqual({ href: "/bible/acts/", text: "Previous book: Acts" });
+    expect(links).toContainEqual({ href: "/bible/1-corinthians/", text: "Next book: 1 Corinthians" });
+    expect(links.map((link) => link.href)).toContain("/bible/");
+  });
+
+  it("carries the footer's links for AI assistants", () => {
     const html = render("romans");
 
-    expect(hrefs(html)).toContain("/bible/acts/");
-    expect(hrefs(html)).toContain("/bible/1-corinthians/");
-    expect(hrefs(html)).toContain("/bible/");
+    expect(hrefs(html)).toContain("https://versemate.org/llms.txt");
+    expect(hrefs(html)).toContain("https://app.versemate.org/llms.txt");
   });
 
   it("gives Obadiah one chapter link", () => {
@@ -77,6 +88,13 @@ describe("a book page", () => {
     expect(genesis.description).toContain("Genesis");
     expect(romans.title).not.toBe(genesis.title);
     expect(romans.description).not.toBe(genesis.description);
+  });
+
+  it("speaks of Obadiah's one chapter in the singular", () => {
+    const obadiah = bookMeta(BOOKS.find((book) => book.slug === "obadiah")!);
+
+    expect(obadiah.title).toContain("Obadiah: its one chapter");
+    expect(obadiah.description).toContain("the one chapter of Obadiah");
   });
 });
 

@@ -49,6 +49,12 @@ describe("the books page", () => {
     expect(firstChapters(sections[1])).toHaveLength(27);
     expect(links(html)).toHaveLength(132);
     expect(links(html)).toContain("https://app.versemate.org/bible/song-of-solomon/1");
-    expect(links(html).map((href) => href.replace(/\/?$/, "/"))).toContain("/bible/1-corinthians/");
+    const items = html.split("<li").slice(1);
+    expect(items).toHaveLength(66);
+    for (const item of items) {
+      const slugs = links(item).map((href) => /\/bible\/([a-z0-9-]+)/.exec(href)?.[1]);
+      expect(slugs).toHaveLength(2);
+      expect(slugs[0]).toBe(slugs[1]);
+    }
   });
 });

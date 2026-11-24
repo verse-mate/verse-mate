@@ -4,11 +4,14 @@ import {
   BOOKS,
   chapterUrl,
   POPULAR_CHAPTERS,
-  READER_ORIGIN,
 } from "../src/lib/bible-books";
-import { GENERATED_FILE, run as checkBookData } from "./bible-books";
+import {
+  GENERATED_FILE,
+  READER_SITEMAP,
+  run as checkBookData,
+  sitemapUrls,
+} from "./bible-books";
 
-const SITEMAP = `${READER_ORIGIN}/sitemaps/bible-en-US.xml`;
 const llms = readFileSync(join(import.meta.dir, "../public/llms.txt"), "utf8");
 
 const failures: string[] = [];
@@ -17,16 +20,13 @@ const fail = (line: string) => {
   console.error(`FAIL ${line}`);
 };
 
-const sitemapResponse = await fetch(SITEMAP);
-if (!sitemapResponse.ok) {
-  console.error(`FAIL ${SITEMAP}: HTTP ${sitemapResponse.status}`);
+let listed: Set<string>;
+try {
+  listed = await sitemapUrls((url) => fetch(url));
+} catch (error) {
+  console.error(`FAIL ${READER_SITEMAP}: ${error instanceof Error ? error.message : error}`);
   process.exit(1);
 }
-const listed = new Set(
-  [...(await sitemapResponse.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-    (match) => match[1],
-  ),
-);
 
 const bookChapters = BOOKS.flatMap((book) =>
   Array.from({ length: book.chapters }, (_, index) =>
@@ -38,13 +38,13 @@ const linkedChapters = new Set([
   ...POPULAR_CHAPTERS.map((popular) => chapterUrl(popular.slug, popular.chapter)),
 ]);
 for (const url of linkedChapters) {
-  if (!listed.has(url)) fail(`${url} is not in ${SITEMAP}`);
+  if (!listed.has(url)) fail(`${url} is not in ${READER_SITEMAP}`);
 }
 for (const url of listed) {
-  if (!linkedChapters.has(url)) fail(`${url} is in ${SITEMAP} but no book page links it`);
+  if (!linkedChapters.has(url)) fail(`${url} is in ${READER_SITEMAP} but no book page links it`);
 }
 console.log(
-  `checked ${linkedChapters.size} chapter links (${bookChapters.length} on the book pages) against the ${listed.size} chapters of ${SITEMAP}`,
+  `checked ${linkedChapters.size} chapter links (${bookChapters.length} on the book pages) against the ${listed.size} chapters of ${READER_SITEMAP}`,
 );
 
 const bookData = await checkBookData({

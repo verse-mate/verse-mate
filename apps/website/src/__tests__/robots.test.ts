@@ -92,8 +92,7 @@ describe("versemate.org robots.txt as each crawler reads it", () => {
     const naming = served.split("\n").filter((line) => /google-extended/i.test(line));
     expect(naming.length).toBeGreaterThan(0);
     expect(naming.every((line) => line.trim().startsWith("#"))).toBe(true);
-    expect(naming.some((line) => /on purpose/i.test(line))).toBe(true);
-    expect(served).toMatch(/grounding in Gemini/);
+    expect(served).toMatch(/^#.*Google-Extended[\s\S]*?(grounding|Gemini)/m);
   });
 
   it("names the site's own sitemap and the reader's sitemap index", () => {

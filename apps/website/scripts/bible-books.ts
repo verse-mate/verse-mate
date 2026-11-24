@@ -9,6 +9,9 @@ export const GENERATED_FILE = join(
   "../src/lib/bible-books.generated.json",
 );
 const BOOK_COUNT = 66;
+const MOST_CHAPTERS = 150;
+const BOOK_NAME = /^[1-3]? ?[A-Z][A-Za-z ]*$/;
+const SLUG = /^[a-z0-9-]+$/;
 
 export type GeneratedBook = {
   id: number;
@@ -70,8 +73,23 @@ export async function generateBooks(fetcher: Fetch): Promise<GeneratedBook[]> {
   const listed = await sitemapUrls(fetcher);
   const books: GeneratedBook[] = [];
   for (const entry of [...testaments].sort((a, b) => a.b - b.b)) {
+    if (typeof entry.n !== "string" || !BOOK_NAME.test(entry.n))
+      throw new BookDataError(
+        `unexpected book name ${JSON.stringify(entry.n)}`,
+      );
     if (entry.t !== "OT" && entry.t !== "NT")
       throw new BookDataError(`${entry.n}: unknown testament "${entry.t}"`);
+    if (
+      !Number.isInteger(entry.b) ||
+      !Number.isInteger(entry.c) ||
+      entry.c < 1 ||
+      entry.c > MOST_CHAPTERS
+    )
+      throw new BookDataError(
+        `${entry.n}: unexpected id ${JSON.stringify(entry.b)} or chapter count ${JSON.stringify(entry.c)}`,
+      );
+    if (!SLUG.test(slugOf(entry.n)))
+      throw new BookDataError(`${entry.n}: unexpected slug "${slugOf(entry.n)}"`);
     const { introduction } = await readJson<IntroductionAnswer>(
       fetcher,
       `${API_ORIGIN}/bible/book/${entry.b}/introduction`,
@@ -145,8 +163,15 @@ export async function run({
   try {
     books = await generateBooks(fetcher);
   } catch (error) {
-    if (!(error instanceof BookDataError)) throw error;
-    return { ok: false, lines: [`book data refused: ${error.message}`] };
+    const reason = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      lines: [
+        error instanceof BookDataError
+          ? `book data refused: ${reason}`
+          : `book data could not be read: ${reason}`,
+      ],
+    };
   }
   const chapters = books.reduce((sum, book) => sum + book.chapters, 0);
 

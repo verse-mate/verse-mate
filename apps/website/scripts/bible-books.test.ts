@@ -41,6 +41,11 @@ const fakeFetch =
     return new Response("not found", { status: 404 });
   };
 
+const failing =
+  (pattern: RegExp, answer: () => Response | Promise<Response>) =>
+  (url: string) =>
+    pattern.test(url) ? answer() : fakeFetch({ books: BIBLE })(url);
+
 const scratch = () => join(mkdtempSync(join(tmpdir(), "bible-books-")), "books.json");
 
 describe("bible-books generation", () => {
@@ -88,6 +93,80 @@ describe("bible-books generation", () => {
     expect(result.ok).toBe(false);
     expect(result.lines.join("\n")).toContain("65 books");
     expect(existsSync(file)).toBe(false);
+  });
+});
+
+describe("bible-books when VerseMate's data cannot be read or looks wrong", () => {
+  it("names the failing answer when the book list answers 500, and writes nothing", async () => {
+    const file = scratch();
+    const result = await run({
+      fetcher: failing(/\/bible\/testaments/, () => new Response("down", { status: 500 })),
+      file,
+      check: false,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.lines.join("\n")).toContain("HTTP 500");
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it("names the introduction that answers 503", async () => {
+    const result = await run({
+      fetcher: failing(/\/bible\/book\/45\/introduction/, () => new Response("busy", { status: 503 })),
+      file: scratch(),
+      check: false,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.lines.join("\n")).toContain(`${API_ORIGIN}/bible/book/45/introduction answered HTTP 503`);
+  });
+
+  it("reports a network failure as a line, not a crash", async () => {
+    const result = await run({
+      fetcher: failing(/sitemaps/, () => Promise.reject(new TypeError("fetch failed"))),
+      file: scratch(),
+      check: false,
+    });
+
+    expect(result).toEqual({ ok: false, lines: ["book data could not be read: fetch failed"] });
+  });
+
+  it("fails the check and leaves the committed file alone when the sitemap answers 500", async () => {
+    const file = scratch();
+    writeFileSync(file, serialize(BIBLE));
+    const result = await run({
+      fetcher: failing(/sitemaps/, () => new Response("down", { status: 500 })),
+      file,
+      check: true,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.lines.join("\n")).toContain(`${READER_SITEMAP} answered HTTP 500`);
+    expect(readFileSync(file, "utf8")).toBe(serialize(BIBLE));
+  });
+
+  it("refuses a chapter count no book of the Bible has", async () => {
+    const books = BIBLE.map((book) => (book.name === "Jude" ? { ...book, chapters: 0 } : book));
+    const result = await run({ fetcher: fakeFetch({ books }), file: scratch(), check: false });
+
+    expect(result.ok).toBe(false);
+    expect(result.lines.join("\n")).toContain("Jude: unexpected id 65 or chapter count 0");
+  });
+
+  it("refuses a book name that would not make a plain slug", async () => {
+    const books = BIBLE.map((book) => (book.name === "Jude" ? { ...book, name: "../Jude" } : book));
+    const result = await run({ fetcher: fakeFetch({ books }), file: scratch(), check: false });
+
+    expect(result.ok).toBe(false);
+    expect(result.lines.join("\n")).toContain('unexpected book name "../Jude"');
+  });
+
+  it("refuses a sitemap that lists chapters no book has", async () => {
+    const sitemap = [...BIBLE.flatMap(chapterUrls), "https://app.versemate.org/bible/jude/2"];
+    const result = await run({ fetcher: fakeFetch({ books: BIBLE, sitemap }), file: scratch(), check: false });
+
+    expect(result.ok).toBe(false);
+    expect(result.lines.join("\n")).toContain("lists chapters no book has: https://app.versemate.org/bible/jude/2");
   });
 });
 
