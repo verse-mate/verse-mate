@@ -305,6 +305,12 @@ jobs:
         working-directory: ./apps/website
         run: bun scripts/indexnow.ts versemate.org out/sitemap.xml
 
+      - name: Check the website's chapter links and book data against the reader
+        if: env.CLOUDFLARE_ENV == 'production'
+        continue-on-error: true
+        working-directory: ./apps/website
+        run: bun scripts/check-reader-links.ts
+
       - name: Check the links in the website's structured data
         if: env.CLOUDFLARE_ENV == 'production'
         continue-on-error: true

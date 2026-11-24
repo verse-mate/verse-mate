@@ -79,6 +79,22 @@ describe("versemate.org robots.txt as each crawler reads it", () => {
     expect(served).not.toMatch(/use=/);
   });
 
+  it("names OAI-SearchBot in a group of its own that starts with Allow: /", () => {
+    const lines = served.split("\n").map((line) => line.trim());
+    const index = lines.indexOf("User-agent: OAI-SearchBot");
+    expect(index).toBeGreaterThanOrEqual(0);
+    expect(lines[index + 1]).toBe("Allow: /");
+    const group = lines.slice(index, lines.indexOf("", index));
+    expect(group.some((line) => /^content-signal:/i.test(line))).toBe(false);
+  });
+
+  it("names Google-Extended only in comments, one of them saying why it is not blocked", () => {
+    const naming = served.split("\n").filter((line) => /google-extended/i.test(line));
+    expect(naming.length).toBeGreaterThan(0);
+    expect(naming.every((line) => line.trim().startsWith("#"))).toBe(true);
+    expect(served).toMatch(/^#.*Google-Extended[\s\S]*?(grounding|Gemini)/m);
+  });
+
   it("names the site's own sitemap and the reader's sitemap index", () => {
     expect(robots.getSitemaps()).toEqual([
       "https://versemate.org/sitemap.xml",

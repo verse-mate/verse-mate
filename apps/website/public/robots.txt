@@ -2,6 +2,12 @@ User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
+User-agent: OAI-SearchBot
+Allow: /
+
+# Google-Extended is left out of the list below on purpose. The token governs
+# training and also grounding in Gemini's answers, so disallowing it would take
+# VerseMate out of those answers. Do not add it.
 User-agent: GPTBot
 User-agent: ClaudeBot
 User-agent: anthropic-ai

@@ -2,7 +2,7 @@
 
 > VerseMate is a free Bible reading companion from VerseMate, a 501(c)(3) nonprofit. Every chapter of the Bible comes with its text, a summary and a verse-by-verse explanation. The life of Jesus and Bible topics are explained the same way. It is available on the web, on iOS and on Android.
 
-The content lives on the web reader at https://app.versemate.org. This site, versemate.org, is about the nonprofit and its apps.
+The content lives on the web reader at https://app.versemate.org. This site, versemate.org, is about the nonprofit and its apps, and has a page for each book of the Bible linking every chapter on the reader.
 
 ## Full index
 
@@ -10,6 +10,7 @@ The content lives on the web reader at https://app.versemate.org. This site, ver
 
 ## URL patterns
 
+- A book of the Bible on this site: `https://versemate.org/bible/{book}/`, for example [Romans](https://versemate.org/bible/romans/). A book page links every chapter of its book on the reader, and the [list of books](https://versemate.org/bible/) links all 66 book pages.
 - A Bible chapter: `https://app.versemate.org/bible/{book}/{chapter}`, for example [Matthew 5](https://app.versemate.org/bible/matthew/5) or [John 3](https://app.versemate.org/bible/john/3). The book is its English name in lowercase with hyphens (`1-corinthians`, `song-of-solomon`).
 - An event in the life of Jesus: `https://app.versemate.org/jesus/event/{event}`, for example [The baptism of Jesus](https://app.versemate.org/jesus/event/event-baptism).
 - A topic: `https://app.versemate.org/topic/{category}/{topic}`, for example [The Creation of the World](https://app.versemate.org/topic/events/the-creation-of-the-world).
