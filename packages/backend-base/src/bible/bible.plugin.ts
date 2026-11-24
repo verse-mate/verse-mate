@@ -31,6 +31,7 @@ import {
   ChapterIdSchema,
   ChapterSchema,
   ExplanationCoverageSchema,
+  ExplanationLastModifiedSchema,
   ExplanationSchema,
   HighlightAddSchema,
   HighlightDeleteSchema,
@@ -178,6 +179,30 @@ const plugin = new Elysia()
         {
           response: {
             200: ExplanationCoverageSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/explanations/last-modified",
+        async ({ query, set, store: { bibleService } }) => {
+          const lastModified = await bibleService.getExplanationLastModified(
+            query.lang,
+          );
+          set.headers["cache-control"] = "public, max-age=3600";
+          return lastModified;
+        },
+        {
+          query: t.Object({
+            lang: t.String({
+              pattern: "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+              maxLength: 35,
+              description:
+                "BCP-47 language code (e.g. 'en-US', 'pt-BR') whose explanation dates to list.",
+            }),
+          }),
+          response: {
+            200: ExplanationLastModifiedSchema,
             ...StandardErrorResponses,
           },
         },
