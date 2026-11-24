@@ -256,7 +256,7 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     section: "parables",
     blurb: "Every story He told",
     intro:
-      "Jesus told stories that hide as much as they reveal. Gathered by topic below: what each set of stories is about, and where He tells them.",
+      "Jesus told stories that hide as much as they reveal. Each one below says what it is about and where He tells it.",
     sortOrder: 15,
   },
 };
