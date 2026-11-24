@@ -5,6 +5,14 @@ import { getAppUrl, navigateToApp } from "@/lib/navigation";
 const LINK_CLASS =
   "font-inter text-sm font-medium text-white/70 no-underline transition-colors duration-200 hover:text-white";
 
+const SMALL_LINK_CLASS =
+  "font-inter text-xs font-medium text-white/70 no-underline transition-colors duration-200 hover:text-white";
+
+const LLMS_TXT_LINKS = [
+  { href: "https://versemate.org/llms.txt", label: "versemate.org/llms.txt" },
+  { href: "https://app.versemate.org/llms.txt", label: "app.versemate.org/llms.txt" },
+];
+
 const FOOTER_LINKS = [
   { href: "/download-app", label: "Get the app" },
   { href: "/volunteer", label: "Volunteer" },
@@ -57,18 +65,27 @@ export default function Footer() {
           U.S.
         </p>
 
-        {/* Bottom: copyright + privacy */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-inter text-xs text-white/50">
             © {new Date().getFullYear()} VerseMate. Built by believers. Guided by
             the Word.
           </p>
-          <Link
-            href="/privacy"
-            className="font-inter text-xs font-medium text-white/70 no-underline transition-colors duration-200 hover:text-white"
-          >
-            Privacy Policy
-          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
+            <p className="m-0 font-inter text-xs text-white/50">
+              For AI assistants:{" "}
+              {LLMS_TXT_LINKS.map((link, index) => (
+                <span key={link.href}>
+                  {index > 0 ? ", " : null}
+                  <a href={link.href} className={SMALL_LINK_CLASS}>
+                    {link.label}
+                  </a>
+                </span>
+              ))}
+            </p>
+            <Link href="/privacy" className={SMALL_LINK_CLASS}>
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
