@@ -46,7 +46,7 @@ export default function CoachNotetakerConnected() {
               </li>
               <li>
                 Start the class as usual, signed in to the Zoom account you just
-                connected. <b>VerseMate Coaching</b> joins and Zoom tells
+                connected. <b>VerseMate Coach</b> joins and Zoom tells
                 everyone the class is being recorded.
               </li>
             </ol>

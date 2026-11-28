@@ -34,7 +34,7 @@ export default function CoachNotetaker() {
               <p className="hero-sub">
                 Connect your Zoom account once, then invite the recorder to the
                 classes you want coached. It joins as{" "}
-                <b>VerseMate Coaching</b>, records the class, and your coaching
+                <b>VerseMate Coach</b>, records the class, and your coaching
                 report follows.
               </p>
               <div className="hero-ctas">
@@ -81,7 +81,7 @@ export default function CoachNotetaker() {
               </div>
               <div className="dim-row">
                 <span className="dn">Joins as</span>
-                <span className="nt-val">VerseMate Coaching</span>
+                <span className="nt-val">VerseMate Coach</span>
               </div>
               <div className="dim-row">
                 <span className="dn">Report</span>
